@@ -11,11 +11,18 @@ Deft is an offline, accountless Android ebook reader with a built-in reading tra
 
 ## Workflow
 
-1. Find the first milestone in the roadmap that isn't finished.
-2. If it has no plan in `plans/` yet, write one with the superpowers:writing-plans skill, using the spec and the roadmap. Commit the plan before writing code.
-3. Execute the plan task by task with superpowers:subagent-driven-development, test-first (red → green → commit).
-4. A milestone is done when its roadmap acceptance criteria are verified and `./gradlew check assembleRelease` is green.
-5. When a decision changes, or the spec is silent and you make a call, add a row to the spec's **Decision log** (§20) in the same commit.
+1. Find the first milestone in the roadmap that isn't finished (the latest `v0.B.0-*` tag on `main` names the last merged one).
+2. Branch from `main`: `feat/mN-<name>` (fixes: `fix/<topic>`). There are no pull requests. Push the branch so CI runs on it.
+3. If the milestone has no plan in `plans/` yet, write one with superpowers:writing-plans, using the spec and the roadmap. Commit it on the branch before writing code.
+4. Execute the plan task by task with superpowers:subagent-driven-development. Each change goes red → green → commit (superpowers:test-driven-development). Shape modules with mattpocock-skills:codebase-design.
+5. Before handover, run superpowers:requesting-code-review on the branch and superpowers:verification-before-completion. `./gradlew check assembleRelease` must be green.
+6. **Handover:** build `./gradlew assembleDebug` and write `plans/mN-test-checklist.md` (the roadmap acceptance criteria plus anything risky, as tickable device steps). Give the author the APK path and the checklist.
+7. **Merge only after the author says the checklist passed:** `git merge --no-ff` into `main`, then tag and push the tag (see Versioning).
+8. When a decision changes, or the spec is silent and you make a call, add a row to the spec's **Decision log** (§20) in the same commit.
+
+## Versioning
+
+Tags are `vA.B.C-D`: A major, B feature, C fix, D build (a rebuild of the same A.B.C with only build, CI or packaging changes; resets to 1 when A, B or C changes). Tag **every** merge to `main`: a milestone bumps B (M1 is `v0.1.0-1`), a fix bumps C, a build-only change bumps D. Update `deft.version` in `gradle.properties` in the merge. `versionCode = A*1_000_000 + B*10_000 + C*100 + D`. Every tag publishes a GitHub Release (pre-release while A = 0). M10 ships `v1.0.0-1`.
 
 ## Guardrails
 
@@ -27,8 +34,11 @@ These come from the spec. They are hard rules.
 - **DRM is detected and labelled ("Protected").** It is never decrypted, and no code that breaks DRM is added, in any branch.
 - **Dependencies are GPL-3.0-compatible and F-Droid-clean.** Native libraries (PDFium, djvulibre, libmobi) are built from source. Never add Google Play Services, Firebase or analytics.
 - **Every Room schema change ships with a migration and a migration test.**
+- **App ID and root package: `com.kmab.deft`.** It is permanent.
 - **The social features** (profiles, clubs, chat) **belong to a future, separate app.** Deft's only link to it is the exported Reading Profile (§12.3).
 
 ## Commits
 
 Author every commit as `Samuel Worash Getaneh <samuelworash@gmail.com>`. The repo-local git config already sets this, so verify it with `git config user.email`. Use Conventional Commit messages (`feat(scanner): …`, `fix: …`, `build: …`).
+
+Every commit is small and focused on one change, and leaves the build and tests green. Finish the code fully: no commented-out code, and no TODO without an issue link. `main` only receives merge commits from verified branches, plus planning and doc commits.

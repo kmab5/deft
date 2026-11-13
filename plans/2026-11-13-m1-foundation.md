@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Application ID and root package: `io.github.kmab5.deft`. Module packages: `io.github.kmab5.deft.<module path with dots>` (e.g. `io.github.kmab5.deft.core.model`).
+- Application ID and root package: `com.kmab.deft`. Module packages: `com.kmab.deft.<module path with dots>` (e.g. `com.kmab.deft.core.model`).
 - `minSdk = 26`; `compileSdk`/`targetSdk` = latest stable; JVM toolchain 17.
 - License GPL-3.0-only. Every dependency must be GPL-3.0-compatible (Apache-2.0, BSD, MIT, LGPL, GPL-2.0-or-later). No Google Play Services, Firebase, analytics, or crash reporters (F-Droid).
 - No network: the merged app manifest must **not** contain `android.permission.INTERNET` in M1 (remove it with `tools:node="remove"` if a library adds it). No module may depend on an HTTP client (OkHttp, Ktor client, Retrofit, Volley, coil-network-*).
@@ -37,11 +37,11 @@
 **Files:**
 - Create: `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/libs.versions.toml`, Gradle wrapper (`gradlew`, `gradlew.bat`, `gradle/wrapper/*`)
 - Create: `build-logic/convention/build.gradle.kts`, `build-logic/settings.gradle.kts`, convention plugins `deft.android.application`, `deft.android.library`, `deft.android.compose`, `deft.android.hilt`, `deft.android.room`, `deft.jvm.library` under `build-logic/convention/src/main/kotlin/`
-- Create: `app/build.gradle.kts`, `app/src/main/AndroidManifest.xml`, `app/src/main/kotlin/io/github/kmab5/deft/DeftApplication.kt`, `.../MainActivity.kt`
+- Create: `app/build.gradle.kts`, `app/src/main/AndroidManifest.xml`, `app/src/main/kotlin/com/kmab/deft/DeftApplication.kt`, `.../MainActivity.kt`
 - Create: `core/designsystem/` module: `DeftTheme.kt`, `Color.kt`, `Type.kt`
 - Create: `config/detekt/detekt.yml`, `.editorconfig`
 - Create: `.github/workflows/ci.yml`
-- Test: `app/src/test/kotlin/io/github/kmab5/deft/SmokeTest.kt`
+- Test: `app/src/test/kotlin/com/kmab/deft/SmokeTest.kt`
 
 **Interfaces:**
 - Produces: `@Composable fun DeftTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit)`; convention plugin IDs above; `@HiltAndroidApp class DeftApplication`; `@AndroidEntryPoint class MainActivity` hosting a `NavHost` (start destination `"books"`).
@@ -52,13 +52,14 @@
 - [ ] **Step 4:** Write `SmokeTest` (Robolectric): launching `MainActivity` doesn't crash and displays "Deft".
 - [ ] **Step 5:** Run `./gradlew :app:testDebugUnitTest`. Expected: PASS.
 - [ ] **Step 6:** Configure ktlint and detekt in convention plugins, wired into `check`. Run `./gradlew check`. Expected: BUILD SUCCESSFUL.
-- [ ] **Step 7:** `ci.yml`: on push and pull_request run on `ubuntu-latest` with JDK 17: `./gradlew check assembleDebug assembleRelease` (release unsigned for now). Cache Gradle.
+- [ ] **Step 7:** `ci.yml`: on push to any branch, run on `ubuntu-latest` with JDK 17: `./gradlew check assembleDebug assembleRelease` (release unsigned until M10 adds signing + the tag-triggered GitHub Release job). Cache Gradle.
+- [ ] **Step 7b:** Versioning: `app/build.gradle.kts` reads `deft.version=A.B.C-D` from `gradle.properties` (start at `0.1.0-1`), sets `versionName = "A.B.C"` and `versionCode = A*1_000_000 + B*10_000 + C*100 + D`; a `VersionTest` in `build-logic` asserts `0.1.0-1 → 10001` and `1.2.3-4 → 1020304`, and rejects D outside 1..99.
 - [ ] **Step 8:** Commit `build: scaffold multi-module project, theme and CI`.
 
 ### Task 2: Domain model
 
 **Files:**
-- Create: `core/model/src/main/kotlin/io/github/kmab5/deft/core/model/BookFormat.kt`, `ContentHash.kt`, `AuthorNames.kt`, `SortTitle.kt`, `ExtractedMetadata.kt`
+- Create: `core/model/src/main/kotlin/com/kmab/deft/core/model/BookFormat.kt`, `ContentHash.kt`, `AuthorNames.kt`, `SortTitle.kt`, `ExtractedMetadata.kt`
 - Test: `core/model/src/test/kotlin/.../BookFormatTest.kt`, `AuthorNamesTest.kt`, `SortTitleTest.kt`
 
 **Interfaces:**
@@ -86,7 +87,7 @@
 ### Task 3: Hashing and time
 
 **Files:**
-- Create: `core/common/src/main/kotlin/io/github/kmab5/deft/core/common/ContentHasher.kt`, `TimeSource.kt`, `DispatchersModule.kt`
+- Create: `core/common/src/main/kotlin/com/kmab/deft/core/common/ContentHasher.kt`, `TimeSource.kt`, `DispatchersModule.kt`
 - Test: `core/common/src/test/kotlin/.../ContentHasherTest.kt`
 
 **Interfaces:**
@@ -104,18 +105,19 @@
 ### Task 4: Library database
 
 **Files:**
-- Create in `core/database/src/main/kotlin/io/github/kmab5/deft/core/database/`: `AppDatabase.kt`, `entity/BookEntity.kt`, `entity/BookFileEntity.kt`, `entity/AuthorEntity.kt`, `entity/AuthorAliasEntity.kt`, `entity/BookAuthorEntity.kt`, `entity/LibraryFolderEntity.kt`, `dao/BookDao.kt`, `dao/BookFileDao.kt`, `dao/AuthorDao.kt`, `dao/LibraryFolderDao.kt`, `model/BookListItem.kt`, `Converters.kt`, `DatabaseModule.kt`
+- Create in `core/database/src/main/kotlin/com/kmab/deft/core/database/`: `AppDatabase.kt`, `entity/BookEntity.kt`, `entity/BookFileEntity.kt`, `entity/AuthorEntity.kt`, `entity/AuthorAliasEntity.kt`, `entity/BookAuthorEntity.kt`, `entity/LibraryFolderEntity.kt`, `dao/BookDao.kt`, `dao/BookFileDao.kt`, `dao/AuthorDao.kt`, `dao/LibraryFolderDao.kt`, `model/BookListItem.kt`, `Converters.kt`, `DatabaseModule.kt`
 - Create: `core/database/schemas/` (Room schema export, committed)
 - Test: `core/database/src/test/kotlin/.../BookDaoTest.kt`, `BookFileDaoTest.kt`, `AuthorDaoTest.kt`
 
 **Interfaces:**
 - Consumes: `BookFormat`, `ContentHash` (Task 2).
 - Produces (DB version 1):
-  - `BookEntity(id: Long = 0, contentHash: String /*unique*/, format: BookFormat, title: String, sortTitle: String, titleOverride: String?, language: String?, publisher: String?, publishedDate: String?, description: String?, isbn10: String?, isbn13: String?, pageCount: Int?, coverPath: String?, coverOverridePath: String?, extractedSeriesName: String?, extractedSeriesIndex: Double?, drmProtected: Boolean, metadataError: String?, addedAt: Instant, lastOpenedAt: Instant?)`
+  - `BookEntity(id: Long = 0, contentHash: String /*unique*/, format: BookFormat, title: String, sortTitle: String, titleOverride: String?, language: String?, publisher: String?, publishedDate: String?, description: String?, isbn10: String?, isbn13: String?, pageCount: Int?, coverPath: String?, coverOverridePath: String?, extractedSeriesName: String?, extractedSeriesIndex: Double?, drmProtected: Boolean, ignored: Boolean = false, metadataError: String?, addedAt: Instant, lastOpenedAt: Instant?)`
   - `BookFileEntity(id: Long = 0, bookId: Long /*FK, NO cascade delete from file to book*/, rootUri: String, uri: String /*unique*/, displayPath: String, size: Long, lastModified: Long, missing: Boolean, lastSeenAt: Instant)`
   - `AuthorEntity(id, name, sortName, normalizedName /*unique*/)`, `AuthorAliasEntity(aliasNormalizedName /*PK*/, authorId)`, `BookAuthorEntity(bookId, authorId, position: Int, overridden: Boolean)` PK `(bookId, authorId)`
   - `LibraryFolderEntity(treeUri: String /*PK*/, displayName: String, addedAt: Instant)`
-  - `BookListItem(id, title /* = titleOverride ?: title */, sortTitle, authorsDisplay: String /* "A, B" in position order */, format, coverPath, addedAt, missing: Boolean, drmProtected)`
+  - `ExcludedFolderEntity(treeUri: String, documentId: String, displayPath: String)` PK `(treeUri, documentId)`, FK `treeUri` → `LibraryFolderEntity` ON DELETE CASCADE; `LibraryFolderDao` gains `observeExclusions(treeUri)`, `addExclusion`, `removeExclusion`.
+  - `BookListItem(id, title /* = titleOverride ?: title */, sortTitle, authorsDisplay: String /* "A, B" in position order */, format, coverPath, addedAt, missing: Boolean, drmProtected)` — ignored books are **never** returned by `observeList` (spec §6.2).
   - `BookDao`: `suspend fun findByHash(hash: String): BookEntity?`, `suspend fun insert(book: BookEntity): Long`, `fun observeList(includeMissing: Boolean, formats: Set<BookFormat>, sort: BookSort): Flow<List<BookListItem>>`, `suspend fun isMissing(bookId: Long): Boolean`.
   - `BookFileDao`: `findByUri`, `insert`, `update`, `suspend fun markMissingUnderRootsExcept(rootUris: List<String>, seenUris: Set<String>)` (implement as two statements in a `@Transaction` using a temp table or chunked `IN` lists of ≤ 900 to respect SQLite variable limits), `suspend fun markMissingForRoot(rootUri: String)`, `suspend fun pruneMissingWherePresentCopyExists()`, `fun observeForBook(bookId: Long): Flow<List<BookFileEntity>>`.
   - `AuthorDao`: `suspend fun getOrCreate(rawName: String): Long` (`@Transaction`, resolves aliases by `AuthorNames.normalizedKey`), `suspend fun setBookAuthors(bookId: Long, rawNames: List<String>)`.
@@ -129,6 +131,7 @@
   - `markMissingUnderRootsExcept`: 2 000 files under root R, 1 999 seen → exactly one marked missing (proves chunking past 999 variables).
   - `authorAliasesResolve`: `getOrCreate("Sanderson, Brandon")` and `getOrCreate("Brandon Sanderson")` return the same id.
   - `titleOverrideWins`: list item title equals override when set.
+  - `ignoredBooksNeverListed`: `ignored = true` → absent from `observeList` for both `includeMissing` values.
   - `sortByAuthorUsesFirstAuthorSortName`.
 - [ ] **Step 2:** Run `./gradlew :core:database:testDebugUnitTest` → FAIL.
 - [ ] **Step 3:** Implement entities, DAOs, `Converters` (Instant↔epoch millis, BookFormat↔name), `AppDatabase(version = 1, exportSchema = true)`, Hilt `DatabaseModule` (file name `deft.db`).
@@ -138,7 +141,7 @@
 ### Task 5: EPUB metadata extractor
 
 **Files:**
-- Create: `format/epub/src/main/kotlin/io/github/kmab5/deft/format/epub/EpubMetadataExtractor.kt`, `OpfParser.kt`
+- Create: `format/epub/src/main/kotlin/com/kmab/deft/format/epub/EpubMetadataExtractor.kt`, `OpfParser.kt`
 - Create: `core/model/src/main/kotlin/.../MetadataExtractor.kt` (interface)
 - Test: `format/epub/src/test/kotlin/.../EpubMetadataExtractorTest.kt`, `format/epub/src/testFixtures/kotlin/.../TestEpubBuilder.kt` (builds EPUB bytes in memory: `mimetype`, `META-INF/container.xml`, OPF, optional cover, optional `encryption.xml`)
 
@@ -165,7 +168,7 @@
 ### Task 6: Filename heuristics and extractor registry
 
 **Files:**
-- Create: `library/scanner/src/main/kotlin/io/github/kmab5/deft/library/scanner/FilenameMetadata.kt`, `MetadataExtractorRegistry.kt`, `CoverStore.kt`
+- Create: `library/scanner/src/main/kotlin/com/kmab/deft/library/scanner/FilenameMetadata.kt`, `MetadataExtractorRegistry.kt`, `CoverStore.kt`
 - Test: `library/scanner/src/test/kotlin/.../FilenameMetadataTest.kt`, `MetadataExtractorRegistryTest.kt`
 
 **Interfaces:**
@@ -197,7 +200,7 @@
 - Consumes: `ContentHasher`, `MetadataExtractorRegistry`, `CoverStore`, DAOs (Task 4), `TimeSource`.
 - Produces:
   - `data class DocumentEntry(val uri: String, val rootUri: String, val displayPath: String, val name: String, val size: Long, val lastModified: Long)`
-  - `interface DocumentTree { suspend fun isAccessible(rootUri: String): Boolean; fun walk(rootUri: String): Flow<DocumentEntry>; fun open(uri: String): InputStream }` (`walk` recurses all subfolders, emits files only)
+  - `interface DocumentTree { suspend fun isAccessible(rootUri: String): Boolean; fun walk(rootUri: String, excludedDocumentIds: Set<String>): Flow<DocumentEntry>; fun open(uri: String): InputStream }` (`walk` recurses all subfolders except excluded subtrees, emits files only)
   - `data class ScanReport(val added: Int, val updated: Int, val unchanged: Int, val reattached: Int, val markedMissing: Int, val errors: Int, val unavailableRoots: List<String>)`
   - `class LibraryScanner(tree, hasher, registry, coverStore, db: AppDatabase, time: TimeSource) { suspend fun scan(roots: List<String>, formats: Set<BookFormat>, removedRoots: List<String> = emptyList()): ScanReport }`
   - `class BookRepository(db) { fun observeBooks(includeMissing: Boolean, formats: Set<BookFormat>, sort: BookSort): Flow<List<BookListItem>> }` — thin wrapper used by UI.
@@ -216,6 +219,8 @@
   - `changedContentIsNewBook`: same uri, different bytes/size → new book id; the old book is missing (spec §6.2); report `updated == 1`.
   - `unavailableRootDoesNotMarkFilesMissing`: `isAccessible == false` → files untouched, root listed in `unavailableRoots`.
   - `removedRootMarksItsFilesMissing`: passing it in `removedRoots` → its books missing.
+  - `excludedSubfolderMarksItsFilesMissing`: exclude `root/manuals` after a scan → its books missing, siblings untouched; remove the exclusion and rescan → same book ids, present.
+  - `ignoredBookStaysIgnoredAcrossRescans`: set `ignored` on a book, rescan (including after its file moves) → still ignored, same id.
   - `corruptFileStillAddedWithFilenameMetadata`: garbage `.epub` → added, title from filename, `metadataError` set, `errors == 1`, scan continues to next file.
   - `drmEpubFlagged`: EPUB with AES `encryption.xml` → `drmProtected == true`.
 - [ ] **Step 2:** Run `./gradlew :library:scanner:testDebugUnitTest` → FAIL.
@@ -224,7 +229,7 @@
   for root in roots:
     if !tree.isAccessible(root): unavailable += root; continue
     seen = mutableSet
-    tree.walk(root) filtered by BookFormat.fromFileName(name) in formats:
+    tree.walk(root, exclusionsFor(root)) filtered by BookFormat.fromFileName(name) in formats:
       existing = fileDao.findByUri(uri); seen += uri
       if existing != null && existing.size == size && existing.lastModified == lastModified:
         if existing.missing → set present (count reattached); else count unchanged; touch lastSeenAt; continue
@@ -243,7 +248,7 @@
 ### Task 8: Settings, SAF folders, background scanning
 
 **Files:**
-- Create: `core/datastore/src/main/kotlin/io/github/kmab5/deft/core/datastore/LibrarySettings.kt`, `LibrarySettingsRepository.kt`
+- Create: `core/datastore/src/main/kotlin/com/kmab/deft/core/datastore/LibrarySettings.kt`, `LibrarySettingsRepository.kt`
 - Create: `library/scanner/src/main/kotlin/.../SafDocumentTree.kt`, `LibraryFolderRepository.kt`, `ScanWorker.kt`, `ScanScheduler.kt`, `ScannerModule.kt`
 - Test: `core/datastore/src/test/kotlin/.../LibrarySettingsRepositoryTest.kt`, `library/scanner/src/test/kotlin/.../ScanSchedulerTest.kt`, `ScanWorkerTest.kt`
 
@@ -264,16 +269,16 @@
 ### Task 9: Settings → Library screen
 
 **Files:**
-- Create: `feature/settings/src/main/kotlin/io/github/kmab5/deft/feature/settings/SettingsScreen.kt`, `LibrarySettingsScreen.kt`, `LibrarySettingsViewModel.kt`, `SettingsNavigation.kt`
+- Create: `feature/settings/src/main/kotlin/com/kmab/deft/feature/settings/SettingsScreen.kt`, `LibrarySettingsScreen.kt`, `LibrarySettingsViewModel.kt`, `SettingsNavigation.kt`
 - Test: `feature/settings/src/test/kotlin/.../LibrarySettingsViewModelTest.kt`, `feature/settings/src/androidTest/kotlin/.../LibrarySettingsScreenTest.kt`
 
 **Interfaces:**
 - Consumes: `LibraryFolderRepository`, `LibrarySettingsRepository`, `ScanScheduler`.
 - Produces: routes `"settings"` and `"settings/library"`; `fun NavGraphBuilder.settingsGraph(navController: NavController)`.
 
-Screen content (spec §6.1, §14): "Folders" list with display names and a remove (×) action with confirmation ("Books in this folder will be marked missing. Their history is kept."); "Add folder" launches `ActivityResultContracts.OpenDocumentTree`; "File types" with one checkbox per `BookFormat` (labels: EPUB, MOBI/PRC, AZW, AZW3, FB2, TXT, PDF, DjVu, CBZ); "Rescan now" button showing a progress indicator while the unique work is running and the last `ScanReport` summary after ("Added 12 · Missing 1 · 0 errors"). The Settings root lists only "Library" in M1.
+Screen content (spec §6.1, §14): "Folders" list with display names and a remove (×) action with confirmation ("Books in this folder will be marked missing. Their history is kept."); "Add folder" launches `ActivityResultContracts.OpenDocumentTree`; each folder row expands to its **excluded subfolders** with "Exclude a subfolder" (opens `OpenDocumentTree` with the root as initial URI; reject a pick that isn't inside that root with "Pick a folder inside <root>") and a remove action per exclusion — adding or removing an exclusion schedules a scan; "File types" with one checkbox per `BookFormat` (labels: EPUB, MOBI/PRC, AZW, AZW3, FB2, TXT, PDF, DjVu, CBZ); "Rescan now" button showing a progress indicator while the unique work is running and the last `ScanReport` summary after ("Added 12 · Missing 1 · 0 errors"). The Settings root lists only "Library" in M1.
 
-- [ ] **Step 1: Failing tests:** ViewModel — removing a folder calls repository `remove` and the scheduler with that root in `removedRoots`; toggling a format updates settings and schedules a scan. Compose test — 9 format checkboxes exist; tapping "Rescan now" calls `scanNow()`.
+- [ ] **Step 1: Failing tests:** ViewModel — removing a folder calls repository `remove` and the scheduler with that root in `removedRoots`; toggling a format updates settings and schedules a scan. Exclusions — a pick outside the root is rejected with "Pick a folder inside <root>"; a valid pick is stored and schedules a scan. Compose test — 9 format checkboxes exist; tapping "Rescan now" calls `scanNow()`.
 - [ ] **Step 2:** Run `./gradlew :feature:settings:testDebugUnitTest` → FAIL.
 - [ ] **Step 3:** Implement.
 - [ ] **Step 4:** Run unit tests → PASS; run `./gradlew :feature:settings:connectedDebugAndroidTest` on an emulator if available, otherwise run the Compose test under Robolectric.
@@ -282,7 +287,7 @@ Screen content (spec §6.1, §14): "Folders" list with display names and a remov
 ### Task 10: Books screen
 
 **Files:**
-- Create: `feature/library/src/main/kotlin/io/github/kmab5/deft/feature/library/BooksScreen.kt`, `BooksViewModel.kt`, `BookCard.kt`, `BookRow.kt`, `LibraryNavigation.kt`
+- Create: `feature/library/src/main/kotlin/com/kmab/deft/feature/library/BooksScreen.kt`, `BooksViewModel.kt`, `BookCard.kt`, `BookRow.kt`, `LibraryNavigation.kt`
 - Modify: `app/.../MainActivity.kt` (NavHost with `"books"` start + settings graph; top-bar overflow → Settings)
 - Test: `feature/library/src/test/kotlin/.../BooksViewModelTest.kt`, `feature/library/src/androidTest/kotlin/.../BooksScreenTest.kt`
 

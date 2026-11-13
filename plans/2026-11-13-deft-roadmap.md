@@ -4,31 +4,37 @@
 
 **Spec:** `plans/2026-11-13-deft-design.md` — every milestone argues from it. Section references below (§n) point there.
 
-**Rule for every milestone:** it ends with an installable app that is better than the previous milestone's, all tests green, CI green, and the design doc updated if a decision changed (record changed decisions in a "Decision log" at the end of the design doc, with date and reason).
+**Rule for every milestone:** it ends with an installable app that is better than the previous milestone's, all tests green, CI green, and the design doc updated if a decision changed (add a row to the design doc's Decision log, §20).
+
+## Branching, handover, tagging
+1. Work on `feat/mN-<name>` (fixes: `fix/<topic>`), branched from `main`. Push the branch so CI runs.
+2. When the milestone's acceptance criteria pass, build a debug APK (`./gradlew assembleDebug`) and write `plans/mN-test-checklist.md`: the roadmap acceptance criteria plus anything risky the milestone touched, as tickable device steps. Give the author the APK path and the checklist in chat.
+3. Merge only after the author explicitly says the checklist passed: `git merge --no-ff` into `main` (merge commit; history is not squashed).
+4. Tag every merge to `main` (§3 of the design): milestone → bump B (M1 = `v0.1.0-1`), fix → bump C, build/CI/packaging-only → bump D. Push the tag; CI publishes a GitHub Release (pre-release while A = 0).
 
 ---
 
 ## M1 — Foundation: scan folders, list books
-**Spec:** §3, §5, §6.1–6.4, §6.5 (EPUB DRM detection only), §14 (Books screen, Settings → Library), §15 (library tables), §16 (CI, privacy check).
-**Delivers:** Gradle multi-module skeleton, CI, design system, Room database (library tables), settings, SAF folder management, scanner with content-hash identity, missing/reattach, EPUB metadata extraction (other formats: filename heuristics), Books screen.
+**Spec:** §3, §5, §6.1–6.4 (incl. excluded subfolders; the `ignored` column exists but its UI arrives in M2), §6.5 (EPUB DRM detection only), §14 (Books screen, Settings → Library), §15 (library tables), §16 (CI, privacy check).
+**Delivers:** Gradle multi-module skeleton, CI, versioning (`versionCode` from the tag scheme), design system, Room database (library tables), settings, SAF folder management with excluded subfolders, scanner with content-hash identity, missing/reattach, EPUB metadata extraction (other formats: filename heuristics), Books screen.
 **Acceptance:** pick a folder of EPUBs → Books screen shows covers/titles/authors; delete a file → it disappears (visible under "Show missing"); put it back elsewhere → same Book reattaches; same file in two folders → one Book.
 **Produces for later:** `BookFormat`, `ContentHash`, `BookRepository`, `LibraryScanner`, `MetadataExtractor` + `MetadataExtractorRegistry`, `AppDatabase` with migrations, `DeftTheme`.
 
 ## M2 — EPUB reader
 **Spec:** §10.1, §10.3, §11 (bookmarks only), §15 (`currentLocator`, `Bookmark`).
-**Delivers:** Readium-based reader shell (Compose host around the Readium EPUB navigator fragment), paged/scroll, themes (Light/Sepia/Dark/Black + custom), fonts (bundled + imported TTF/OTF), size, line spacing, margins, alignment, hyphenation, brightness slider (quick panel + settings default), keep screen on, volume keys, status line, TOC, bookmarks, progress slider, position restore. Reader settings in DataStore (global). "Continue reading" card on Books. Book detail page (basic: cover, metadata, Read/Continue, file info).
+**Delivers:** Readium-based reader shell (Compose host around the Readium EPUB navigator fragment), paged/scroll, themes (Light/Sepia/Dark/Black + custom), fonts (bundled + imported TTF/OTF), size, line spacing, margins, alignment, hyphenation, brightness slider (quick panel + settings default), keep screen on, volume keys, status line, TOC, bookmarks, progress slider, position restore. Reader settings in DataStore (global). "Continue reading" card on Books. Book detail page (basic: cover, metadata, Read/Continue, file info, Ignore/Un-ignore, Forget). Settings → Library → Ignored books.
 **Acceptance:** open any EPUB from the library, change every typography option, leave and come back to the same position; bookmarks persist.
 **Produces:** `ReaderLauncher.open(bookId)`, `ReaderPreferences`, `ReadingPosition(locatorJson, totalProgression)`, a `ReaderEvents` flow (page turn, scroll step, selection, visibility) that M3 consumes.
 
 ## M3 — Tracking: sessions, read-throughs, states
 **Spec:** §8 (all), §9, §15 (`ReadThrough`, `ReadingSession`).
-**Delivers:** `SessionTracker` driven by `ReaderEvents` + lifecycle (idle timeout, min 60 s, 30 s incremental writes, screen-off/background end), read-through state machine with all §8.3 prompts, manual state changes and date editing on the book page, ratings (half-star), favorite, review. Books screen state chips become real. Settings → Tracking.
+**Delivers:** `SessionTracker` driven by `ReaderEvents` + lifecycle (two idle timeouts incl. Off + the 15-min keep-screen-on safety net, `browsing` sessions, min 60 s, 30 s incremental writes, screen-off/background end), read-through state machine with all §8.3 prompts, manual state changes and date editing on the book page, ratings (half-star), favorite, review. Books screen state chips become real. Settings → Tracking.
 **Acceptance:** fake-clock tests cover every row of §8.3 and every idle/background edge; reading for 3 min with a 6-min idle gap records exactly 3 min.
 **Produces:** `SessionRepository`, `ReadThroughRepository`, `BookState` derivation query used by stats and library filters.
 
 ## M4 — Categories, types, series, authors
 **Spec:** §6.4, §7, §14 (Categories, Authors pages).
-**Delivers:** categories (nesting, types, built-in Series type, manual order, decimal series positions), series auto-fill from metadata with `suggested` flag + review indicator, "Next in series", category progress and computed/overridden rating, author pages, author merge/rename, multi-select "Add to category" on Books.
+**Delivers:** categories (no nesting in v1, non-unique names, types, built-in Series type, manual order, decimal series positions, merge), series auto-fill into auto-created Series categories only (+ merge aliases) with `suggested` flag + review indicator, "Next in series", category/author/series progress with abandoned = unresolved, computed/overridden rating, author pages, author merge/rename, multi-select "Add to category" on Books.
 **Acceptance:** scanning a series of EPUBs with `calibre:series` creates one ordered Series category; overriding a category rating and resetting it works; merging two authors combines their books.
 
 ## M5 — Highlights, notes, search

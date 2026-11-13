@@ -67,7 +67,9 @@ Tracking matters to them for two reasons: to see their own reading behavior, and
 - **License:** GPL-3.0-only for all Deft code. All dependencies must be GPL-3.0-compatible (Apache-2.0, BSD, MIT, LGPL, GPL-2.0-or-later are fine; GPL-2.0-only, AGPL-incompatible combos, and proprietary SDKs are not in the core build).
 - **Storage access:** Storage Access Framework (SAF) persisted tree URIs. Do **not** request `MANAGE_EXTERNAL_STORAGE`.
 - **Legal:** no DRM circumvention code, ever, in any branch.
-- **Git authorship:** commits are authored as `Samuel Worash Getaneh <samuelworash@gmail.com>`; repo is `github.com/kmab5/deft`.
+- **Application ID / root package:** `com.kmab.deft` (permanent once released).
+- **Git authorship:** commits are authored as `Samuel Worash Getaneh <samuelworash.com>`; repo is `github.com/kmab5/deft`.
+- **Versioning:** tags `vA.B.C-D` — A major release, B feature release, C fix, D build (rebuild of the same A.B.C with only build/CI/packaging changes; resets to 1 when A, B or C changes; max 99). `versionName = "A.B.C"`, `versionCode = A*1_000_000 + B*10_000 + C*100 + D`. Pre-1.0: each milestone bumps B (M1 → `v0.1.0-1`); M10's public release is `v1.0.0-1`. Every merge to `main` is tagged; every tag publishes a GitHub Release. F-Droid submission at `v1.0.0`.
 - **Distribution:** GitHub Releases (signed APK) and **F-Droid**. F-Droid requires every native dependency (PDFium, djvulibre, libmobi) to build from source reproducibly, no proprietary dependencies, no Google Play Services, no non-free network services enabled by default. Design the native build (NDK + CMake, sources as git submodules or fetched by pinned hash) for this from phase 1. Google Play is a possible later channel, not a v1 target.
 
 ## 4. Approaches considered
@@ -152,7 +154,7 @@ Converted EPUBs are cached in app-private storage keyed by `(contentHash, conver
 
 ### 6.1 Sources
 Settings → Library:
-- **Folders:** list of SAF tree URIs, add/remove. Subfolders always included.
+- **Folders:** list of SAF tree URIs, add/remove. Subfolders are included unless **excluded**: each folder has an optional list of excluded subfolders. Excluding a subfolder treats its books like removed files (marked missing, history kept); un-excluding reattaches them.
 - **File types:** checkboxes for each of the 9 formats (all on by default).
 - **Rescan** button; automatic rescan on app start (debounced, at most once per 6 h) and pull-to-refresh on the Books screen.
 
@@ -163,6 +165,8 @@ Settings → Library:
 - **A changed file is a different Book.** If a file is edited in place (e.g. Calibre writes metadata into it) or replaced by a corrected edition, its new content hash makes it a new Book with fresh stats; the old Book becomes missing and keeps its history. This is intentional (decided by the author): separate files have separate stats. No "is this the same book?" heuristics, no history transfer.
 - A file that disappears → its BookFile is marked missing. A Book with no present files is **missing**: hidden from the Books screen by default (filter "Show missing"), but still counted everywhere in stats, history, categories and exports, shown with a "File missing" badge.
 - A missing Book whose hash reappears (new path, restored backup) **reattaches automatically** with all history intact.
+- **Ignore:** any book can be ignored ("Not a book": manuals, receipts, papers). An ignored book is hidden from every list and excluded from every stat, progress bar, export and series auto-fill; its history is kept. Un-ignore from Settings → Library → Ignored books restores everything. Ignore survives rescans (it's keyed to the Book, i.e. the content hash).
+- **Forget** ("Remove from Deft and forget history") is the only permanent deletion, with confirmation.
 
 ### 6.3 Metadata
 Extracted per format on scan: title, authors, series name + index, language, publisher, published date, description, ISBN(s), page count (fixed-layout) and cover image (saved as a thumbnail in app storage). Sources:
@@ -178,6 +182,7 @@ Users can **edit** title, authors, series and cover inside Deft. Edits are store
 - Created automatically from book metadata. Names normalized: "Sanderson, Brandon" → "Brandon Sanderson"; whitespace/case collapsed for matching.
 - Users can **merge** authors (aliases) and rename. A book can have several authors.
 - Author page: books, state breakdown, progress (finished/total), total time, average rating of the author's rated books.
+- A co-authored book belongs fully to each of its authors: it appears on every author page, counts in each author's progress, and its reading time is credited **in full** to each author (never split).
 
 ### 6.5 DRM
 - During metadata extraction, detect DRM: EPUB `META-INF/encryption.xml` with non-font-obfuscation algorithms or `rights.xml`/`license.lcpl`; MOBI/AZW encryption type ≠ 0; KFX containers; PDF encryption dictionary that blocks opening (password-protected PDFs: prompt for password — that's not DRM).
@@ -187,13 +192,16 @@ Users can **edit** title, authors, series and cover inside Deft. Edits are store
 
 ## 7. Categories, types, and series
 
-- A **Category** is a user-created named collection of books: name, optional description, optional parent category (nesting allowed), optional cover (defaults to a collage of member covers), an ordering mode, and a set of **types**.
+- A **Category** is a user-created named collection of books: name, optional description, optional cover (defaults to a collage of member covers), an ordering mode, and a set of **types**.
 - A **CategoryType** is a user-created label (e.g. "TBR", "Book club", "Self-help"). One type, **Series**, is built-in and cannot be deleted. A category can have zero or more types; the Categories screen can filter/group by type.
 - **Ordering:** every category supports manual ordering (drag to reorder) or a sort (title, author, date added, rating). A **Series**-typed category is always ordered by a **decimal position** per member (1, 2, 2.5, …), editable.
-- **Auto-fill:** when scanning finds series metadata, Deft creates (or reuses, case-insensitive name match) a Series-typed category and adds the book at the given position. Auto-added memberships are flagged `suggested` until the user edits or confirms them; the category shows a small "review" indicator while any member is suggested. Users can disable auto-fill in settings.
+- **Names are not unique.** Categories are identified by ID; two categories may share a name.
+- **No nesting in v1.** The schema carries a nullable `parentId` (FK to Category, `ON DELETE SET NULL`) from the first schema version that contains categories (M4), always null in v1, so nesting can be added later as UI + rules (SQLite recursive CTEs) without a data migration.
+- **Auto-fill:** when scanning finds series metadata, Deft adds the book (at the given position) to a Series-typed category **that auto-fill itself created** (`autoCreated = true`) whose name matches the series name case-insensitively; if none exists it creates one. Auto-fill never attaches to a category the user created. If the user merges an auto-created series into one of their own categories, the series name is recorded as an alias on the target (`CategorySeriesAlias`) and auto-fill uses that category from then on. Auto-added memberships are flagged `suggested` until the user edits or confirms them; the category shows a small "review" indicator while any member is suggested. Users can disable auto-fill in settings.
 - Book page shows **"Next in series"** (the lowest-positioned member after this one that is not finished).
-- **Category progress:** finished members / total members (including descendants of nested categories and missing books).
-- **Category rating:** by default the average of its rated books (including descendants), shown with one decimal. The user can **override** with their own rating; a reset returns to the computed average. UI shows which one is in effect.
+- **Category progress:** finished members ÷ total members (missing books included, ignored books excluded). **Abandoned books are unresolved:** they stay in the denominator, so a category containing an abandoned book never shows 100%. The bar shows finished, reading/paused, and abandoned as distinct segments. The same rule applies to author and series progress.
+- Users can merge two categories (members are unioned; on position conflicts the target's positions win).
+- **Category rating:** by default the average of its rated books, shown with one decimal. The user can **override** with their own rating; a reset returns to the computed average. UI shows which one is in effect.
 
 ## 8. Reading states, read-throughs and sessions
 
@@ -211,14 +219,15 @@ A **ReadThrough** is one attempt at reading a book: `startedAt`, `endedAt?`, `ou
 | Reading | user marks Paused / Abandoned / Finished | as chosen |
 | Paused | opened & session recorded | resume same read-through → `READING` |
 | Abandoned | opened | prompt: "Resume" (same read-through → `READING`) or "Start over" (new read-through) |
-| Finished | opened | prompt: "Re-read" (new read-through, position reset to start) or "Just browsing" (no state change; sessions are still recorded but attached to the finished read-through and excluded from "time this month on unfinished books") |
+| Finished | opened | prompt: "Re-read" (new read-through, position reset to start) or "Just browsing" (no state change; sessions are recorded with `browsing = true` and appear in the book's own session list, but are **excluded** from daily reading time, the heatmap, streaks, goals and all aggregate stats) |
 | any | user sets state manually on book page | allowed; manual finish asks for finish date (default now) |
 
 Users can edit read-through dates and delete read-throughs from the book page.
 
 ### 8.4 Session tracking (the core promise)
 - A session is active while the reader screen is **resumed and visible** and the screen is on.
-- **Idle pause:** if there is no page turn, scroll, or selection for `idleTimeout` (default 5 min, settings: 2/5/10/15/30), the session stops accruing; the next interaction resumes it. Idle time is never counted. *Exception:* fixed-layout pages with a zoom/pan in the last idle window count as interaction.
+- **Idle pause:** if there is no page turn, scroll, or selection for the idle timeout, the session stops accruing; the next interaction resumes it. Idle time is never counted. Two user-adjustable timeouts (any whole number of minutes 1–60, plus **Off**): reflowable default **5 min**, fixed-layout default **10 min**.
+- **Idle timeout Off safety net:** when the applicable timeout is Off, "keep screen on" is released after **15 min** without interaction, so the screen sleeps normally and the session ends on screen-off. Nothing is counted after the screen turns off. *Exception:* fixed-layout pages with a zoom/pan in the last idle window count as interaction.
 - Session **ends** when the reader is left, the app goes to background, or the screen turns off.
 - Sessions with < 60 s of active time are discarded.
 - Each session stores: book, read-through, `startedAt`, `endedAt`, `activeSeconds`, `startLocator`, `endLocator`, `startProgression`, `endProgression`, and `pagesTurned` (count of page-turn/scroll-step events).
@@ -330,17 +339,17 @@ Books
 ```
 - **Books:** grid/list, sort (title, author, recently read, date added, rating, progress), filter (state, format, favorite, category, rating, missing, protected, matched). Multi-select → add to category, set state, match editions.
 - **Book page:** cover, title/author (tap author → author page), state control, rating/favorite, progress, "Read"/"Continue", categories (with positions), next in series, read-throughs, stats, notes tab, edition match, file info (paths, format, size, missing/protected).
-- **Categories:** list/grid grouped or filtered by type; each with progress bar and rating. Category page: ordered members, progress, stats, rating override, edit types/parent.
+- **Categories:** list/grid grouped or filtered by type; each with progress bar and rating. Category page: ordered members, progress, stats, rating override, edit types, merge.
 - **Authors:** list with progress and counts; author page.
 - **Notes:** §11. **Stats:** §13. **Reader:** §10.
-- **Settings:** Library (folders, types, rescan, series auto-fill), Reader (defaults for §10), Tracking (idle timeout, min session, streak threshold), Goals, Appearance (app theme light/dark/system, accent), Matching (providers, Hardcover token), Backup & export, Storage (conversion cache size, clear), About (version, license, source link, third-party licenses).
+- **Settings:** Library (folders + excluded subfolders, file types, rescan, series auto-fill, ignored books), Reader (defaults for §10), Tracking (idle timeouts reflowable/fixed incl. Off, min session, streak threshold), Goals, Appearance (app theme light/dark/system, accent), Matching (providers, Hardcover token), Backup & export, Storage (conversion cache size, clear), About (version, license, source link, third-party licenses).
 
 Visual direction: quiet and typographic, cover-led, Lithium-like restraint. The app chrome follows the system theme; the reader follows reader themes. Builder has latitude on visual design within that.
 
 ## 15. Data model (Room, logical)
 
 ```
-Book(id, contentHash UNIQUE, format, title, sortTitle, titleOverride?, language, publisher, publishedDate,
+Book(id, contentHash UNIQUE, format, ignored, title, sortTitle, titleOverride?, language, publisher, publishedDate,
      description, isbn10?, isbn13?, pageCount?, coverPath?, coverOverridePath?, drmProtected,
      addedAt, lastOpenedAt?, favorite, rating?, review?, currentLocator?, currentProgression,
      readerPrefsJson? /*fixed-layout per-book*/, convertedVersion?)
@@ -349,11 +358,12 @@ Author(id, name, sortName, normalizedName UNIQUE)
 AuthorAlias(aliasNormalizedName UNIQUE, authorId)
 BookAuthor(bookId, authorId, position, overridden)
 CategoryType(id, name UNIQUE, builtIn /*Series*/)
-Category(id, name, description?, parentId?, coverPath?, orderMode, sortField?, ratingOverride?, createdAt)
+Category(id, name /*not unique*/, description?, parentId? /*FK ON DELETE SET NULL; always null in v1*/, autoCreated, coverPath?, orderMode, sortField?, ratingOverride?, createdAt)
+CategorySeriesAlias(normalizedSeriesName UNIQUE, categoryId)
 CategoryTypeLink(categoryId, typeId)
 CategoryMember(categoryId, bookId, position REAL, suggested, addedAt)
 ReadThrough(id, bookId, startedAt, endedAt?, outcome, finishPromptShown)
-ReadingSession(id, bookId, readThroughId, startedAtUtc, endedAtUtc, zoneOffsetMinutes, activeSeconds,
+ReadingSession(id, bookId, readThroughId, browsing, startedAtUtc, endedAtUtc, zoneOffsetMinutes, activeSeconds,
      startLocator?, endLocator?, startProgression, endProgression, startPosition?, endPosition?, pagesTurned)
 Bookmark(id, bookId, locator, label, createdAt)
 Highlight(id, bookId, locator, text, color, note?, createdAt, updatedAt)
@@ -362,6 +372,7 @@ EditionMatch(bookId PK, provider, isbn10?, isbn13?, openLibraryWorkId?, openLibr
      googleBooksId?, hardcoverId?, matchedTitle, matchedAuthors, publishedYear?, pages?, confirmedAt)
 Goal(year, booksTarget?, dailyMinutesTarget?)
 LibraryFolder(treeUri UNIQUE, displayName, addedAt)
+ExcludedFolder(treeUri, documentId /*SAF document id of the subfolder*/, displayPath, PRIMARY KEY(treeUri, documentId))
 ```
 Rules: deleting a `BookFile` never cascades to `Book`. A `Book` is only deleted by explicit user action ("Remove from Deft and forget history"), with confirmation. Room schema export is on; every schema change ships a migration and a migration test.
 
@@ -369,7 +380,7 @@ Rules: deleting a `BookFile` never cascades to `Book`. A `Book` is only deleted 
 - **Tests:** unit tests for every converter and metadata extractor against fixture files in `testdata/` (public-domain books, e.g. Project Gutenberg, Standard Ebooks; small synthetic files for edge cases); session tracker and state machine with a fake clock; stats calculators with fixed datasets; CSV/JSON exporters against golden files; Room migration tests; Compose UI tests for library and reader shell flows.
 - **Performance targets:** library of 5 000 books scrolls at 60 fps on a mid-range device; cold start to Books < 1.5 s; opening an already-converted book < 1 s; initial scan of 1 000 files completes in the background without blocking UI.
 - **Accessibility:** TalkBack labels, 48 dp touch targets, dynamic font scaling in app chrome, sufficient contrast in all built-in themes.
-- **CI:** GitHub Actions — build, ktlint/detekt, unit tests, assembleRelease on every PR; tagged releases build a signed APK and attach it to a GitHub Release (signing key from repository secrets).
+- **CI:** GitHub Actions — build, ktlint/detekt, unit tests, assembleRelease on every push to any branch; every version tag builds a signed APK and publishes a GitHub Release (pre-release while major = 0). Signing key from repository secrets. See §3 for versioning.
 - **Privacy check:** a test asserting no module other than `data/matching` depends on the HTTP client; `INTERNET` permission is required only for matching (document this in the README).
 
 ## 17. Implementation order (summary — full plan in the implementation plan doc)
@@ -412,3 +423,11 @@ Record every decision made or changed after approval: date, decision, reason.
 | 2026-11-13 | RTF and LIT dropped from v1. | Author: not needed; LIT has no clean, DRM-free reference implementation. |
 | 2026-11-13 | Distribution: GitHub Releases + F-Droid. | Author. Requires reproducible from-source native builds. |
 | 2026-11-13 | Planning docs live in `plans/`, not `docs/`. | `docs/` is reserved for the GitHub Pages landing page. |
+| 2026-11-13 | "Ignore book" (hidden, excluded from stats, history kept, reversible) and excluded subfolders (books marked missing, reattach on un-exclude). | Grilling: scanned folders contain non-books. |
+| 2026-11-13 | Abandoned books are unresolved in category/author/series progress; never 100% with a DNF. | Author. |
+| 2026-11-13 | Co-authored books credit full time to each author. | Grilling. |
+| 2026-11-13 | Idle timeouts adjustable (1–60 min or Off): reflowable 5, fixed-layout 10; Off releases keep-screen-on after 15 min idle. | Author: reading speeds differ. |
+| 2026-11-13 | "Just browsing" sessions excluded from daily time, heatmap, streaks, goals, aggregates. | Author. |
+| 2026-11-13 | No category nesting in v1; nullable `parentId` (ON DELETE SET NULL) present from the categories table's first version. Category names not unique. Series auto-fill only uses auto-created Series categories (+ merge aliases). | Author. |
+| 2026-11-13 | App ID `com.kmab.deft`; tags `vA.B.C-D`, versionCode `A·10⁶+B·10⁴+C·10²+D`; planning commit `v0.0.0-1`. | Author. |
+| 2026-11-13 | No PRs: branch per milestone/fix, local debug APK + test checklist handover, merge commit to `main` after author confirms, then tag. | Author: single device/repo. |
