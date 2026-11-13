@@ -110,9 +110,9 @@ Offered, in this order: **original** (the book's own fonts, i.e. publisher defau
 
 ## 6. The mark and app icon
 
-- The Deft mark is **(b), a closed book with a ribbon on top**, chosen by the author on 2026-11-14. Geometry on a 128 grid: book outline 66×82 (≈1 : 1.2, a little taller than wide), stroke 14, corner radius 7 (softened, not round), spine line 17 units in from the left edge, optically centred. A filled ribbon (18 wide) hangs from the top edge right of centre, poking 7 units above the top and ending in a notched tail. At 48dp and below, use stroke 15–16 so it holds up.
-- Colourway: two options are in the preview (purple book + light ribbon, or light book + purple ribbon). The author confirms one; until then use colourway 1.
-- App icon: adaptive icon (ink background, purple mark), plus a **monochrome layer** for Android 13+ themed icons. Wordmark: "deft" in Space Grotesk 600, lowercase, set beside the mark only in About and on the landing page.
+- The Deft mark is **(b), a closed book with a ribbon on top**, chosen by the author on 2026-11-14. Geometry on a 128 grid: book outline 66×82 (≈1 : 1.2, a little taller than wide), stroke 11, corner radius 7 (softened, not round), spine line 17 units in from the left edge, optically centred. A filled ribbon (18 wide) hangs from the top edge right of centre, poking 7 units above the top and ending in a notched tail. At 48dp and below, use stroke 12–13 so it holds up.
+- Colour (final): **off-white book strokes (`#EDEBE4`) and a purple ribbon (`#C373FF`) on ink (`#0E0E11`)**. On paper: ink strokes (`#17171B`), ribbon `#B24BFF`.
+- App icon: adaptive icon (ink background, off-white book, purple ribbon), plus a **monochrome layer** for Android 13+ themed icons. Wordmark: "deft" in Space Grotesk 600, lowercase, set beside the mark only in About and on the landing page.
 
 ## 7. Components
 
@@ -272,6 +272,8 @@ Every change previews live behind the sheet. Status line (optional): clock · ch
 
 ### 11.9 settings
 Grouped list, lowercase group headers in `monoSmall` `muted`: library · reader · tracking · goals · appearance (theme, celebrations) · matching · backup & export · storage · about.
+
+**settings → reader** holds every reader setting from the in-book sheet (§11.8), in the same three groups (text · theme · page), plus the ones that only make sense app-wide: imported fonts (add and remove), custom themes (create, edit, delete), the default fit mode and dark inversion for PDF, DjVu and CBZ, and the default brightness. Reader settings are global (spec §10.1), so the in-book sheet and this screen edit the **same values**: a change in either place shows in the other. The in-book sheet is the quick path; settings is the complete one.
 
 ## 12. Voice and copy
 

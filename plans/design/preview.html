@@ -244,12 +244,12 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:square;stro
   <span class="eyebrow">deft · visual design · living preview · v2 · 2026-11-14</span>
   <h1>read like you mean it.</h1>
   <p class="lede">The reference for Deft's look. Written spec: <span class="mono">plans/2026-11-13-deft-visual-design.md</span>; where they disagree, the spec wins.</p>
-  <div class="changes"><span>v2 changes: mark (b) reworked · lighter purple accent · app type is sans only · reader gets lato, open sans, pt serif, bitter and the book's own font · calmer books screen + filter sheet + list/selection · reader settings behind one button · new full-screen finish that ends by itself · smaller type</span></div>
+  <div class="changes"><span>v3: final mark (off-white book, purple ribbon, thinner strokes). v2 changes: mark (b) reworked · lighter purple accent · app type is sans only · reader gets lato, open sans, pt serif, bitter and the book's own font · calmer books screen + filter sheet + list/selection · reader settings behind one button · new full-screen finish that ends by itself · smaller type</span></div>
 </header>
 
 <section>
-  <div class="sechead"><span class="eyebrow">01 · the mark</span><h2>(b) closed book, ribbon on top</h2>
-  <p class="muted">Thicker strokes, softened corners, a little taller than wide (1 : 1.2), optically centred, the ribbon hanging from the top edge. Two colourways, since "accent" could mean either part. Shown at app-icon sizes too.</p></div>
+  <div class="sechead"><span class="eyebrow">01 · the mark</span><h2>closed book, ribbon on top</h2>
+  <p class="muted">Final: off-white strokes on ink, purple ribbon. Stroke 11 on a 128 grid, softened corners, a little taller than wide (1 : 1.2), optically centred. Shown on paper and at app-icon sizes.</p></div>
   <div class="marks" id="marks"></div>
 </section>
 
@@ -539,21 +539,20 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:square;stro
   const $ = id => document.getElementById(id);
 
   // ---- marks: (b) closed book, ribbon on top. 128 grid, book 72x86 (1:1.2), optically centred
-  const mark = (book, ribbon, sw=14) => `<svg viewBox="0 0 128 128" aria-hidden="true">
+  const mark = (book, ribbon, sw=11) => `<svg viewBox="0 0 128 128" aria-hidden="true">
     <rect x="31" y="23" width="66" height="82" rx="7" fill="none" stroke="${book}" stroke-width="${sw}" stroke-linejoin="round"/>
     <path d="M48 23 V105" stroke="${book}" stroke-width="${sw}" stroke-linecap="butt"/>
     <path d="M66 16 H84 V58 L75 50 L66 58 Z" fill="${ribbon}"/>
   </svg>`;
   const ways = [
-    ['colourway 1 · purple book, light ribbon', ['#C373FF','#EDEBE4'], ['#9940DB','#17171B']],
-    ['colourway 2 · light book, purple ribbon', ['#EDEBE4','#C373FF'], ['#17171B','#B24BFF']]
+    ['final · ink, off-white book, purple ribbon', ['#EDEBE4','#C373FF'], ['#17171B','#B24BFF']]
   ];
   $('marks').innerHTML = ways.map(([name, ink, paper]) => `<div class="card mark">
     <div class="tiles">
       <div class="tile">${mark(ink[0], ink[1])}</div>
       <div class="tile light">${mark(paper[0], paper[1])}</div>
-      <div class="tile sm">${mark(ink[0], ink[1], 15)}</div>
-      <div class="tile xs">${mark(ink[0], ink[1], 16)}</div>
+      <div class="tile sm">${mark(ink[0], ink[1], 12)}</div>
+      <div class="tile xs">${mark(ink[0], ink[1], 13)}</div>
     </div><h3>${name}</h3></div>`).join('');
 
   // ---- covers
