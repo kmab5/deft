@@ -6,6 +6,8 @@ Deft is an offline, accountless Android ebook reader with a built-in reading tra
 
 - `plans/2026-11-13-deft-design.md` is the **spec**: what Deft is, plus every decision already made. Read it before planning or building any feature. Section numbers (§n) in other docs point into it.
 - `plans/2026-11-13-deft-roadmap.md` lists the **milestones** (M1–M10), each with its scope, acceptance criteria and the interfaces it hands on to later milestones.
+- `plans/2026-11-13-deft-visual-design.md` is the **visual design**: colours, type, components, screens, motion, celebrations, copy. Every UI change follows it; `plans/design/preview.html` is its visual reference. It is a living doc: the author's feedback on a device overrides it, logged in the spec's §20.
+- `GLOSSARY.md` holds the domain **terms**. Use them in code, UI copy and docs.
 - `plans/YYYY-MM-DD-mN-<name>.md` holds the task-level **milestone plans**. M1 is `plans/2026-11-13-m1-foundation.md`.
 - `docs/` is reserved for the GitHub Pages landing page. Planning material goes in `plans/`.
 

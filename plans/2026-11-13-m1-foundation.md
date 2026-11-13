@@ -47,7 +47,8 @@
 - Produces: `@Composable fun DeftTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit)`; convention plugin IDs above; `@HiltAndroidApp class DeftApplication`; `@AndroidEntryPoint class MainActivity` hosting a `NavHost` (start destination `"books"`).
 
 - [ ] **Step 1:** Create the root Gradle files, version catalog, and convention plugins. Declare modules in `settings.gradle.kts`: `:app`, `:core:model`, `:core:common`, `:core:database`, `:core:datastore`, `:core:designsystem`, `:format:epub`, `:library:scanner`, `:feature:library`, `:feature:settings`. Create empty modules as needed so the build configures.
-- [ ] **Step 2:** `DeftTheme`: Material 3 light/dark color schemes, quiet and typographic (spec §14). No dynamic color by default.
+- [ ] **Step 2:** `DeftTheme` from `plans/2026-11-13-deft-visual-design.md`: `DeftColors` ink/paper exactly per its §2.2 (no dynamic colour), `DeftTypography` per §3.1 with Space Grotesk, Space Mono and Literata bundled as subset `res/font` resources (§3), `DeftShapes` per §4, `DeftMotion` tokens per §9. Test: `ContrastTest` asserts every text/background pair in §2.2 ≥ 4.5:1 and every state colour ≥ 3:1 on `bg` in both themes.
+- [ ] **Step 2b:** App icon: adaptive + monochrome layers using placeholder mark (c) from `plans/design/preview.html`.
 - [ ] **Step 3:** `MainActivity` shows `DeftTheme { Text("Deft") }` inside the NavHost placeholder.
 - [ ] **Step 4:** Write `SmokeTest` (Robolectric): launching `MainActivity` doesn't crash and displays "Deft".
 - [ ] **Step 5:** Run `./gradlew :app:testDebugUnitTest`. Expected: PASS.

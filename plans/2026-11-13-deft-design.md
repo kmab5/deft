@@ -344,7 +344,7 @@ Books
 - **Notes:** §11. **Stats:** §13. **Reader:** §10.
 - **Settings:** Library (folders + excluded subfolders, file types, rescan, series auto-fill, ignored books), Reader (defaults for §10), Tracking (idle timeouts reflowable/fixed incl. Off, min session, streak threshold), Goals, Appearance (app theme light/dark/system, accent), Matching (providers, Hardcover token), Backup & export, Storage (conversion cache size, clear), About (version, license, source link, third-party licenses).
 
-Visual direction: quiet and typographic, cover-led, Lithium-like restraint. The app chrome follows the system theme; the reader follows reader themes. Builder has latitude on visual design within that.
+Visual design: **`plans/2026-11-13-deft-visual-design.md`** (colours, type, components, every screen, motion, celebrations, copy). The sketches above are layout only; the visual doc wins on look and copy.
 
 ## 15. Data model (Room, logical)
 
@@ -398,8 +398,6 @@ Rules: deleting a `BookFile` never cascades to `Book`. A `Book` is only deleted 
 
 ## 18. Left to the builder
 - Exact libraries where the doc names candidates (PDFium binding, libmobi vs pure Kotlin, charset detector, chart library or hand-drawn Compose charts).
-- Visual design details within §14's direction; icon and app icon.
-- Bundled font choice (must be OFL or similarly licensed).
 - TXT chapter-detection heuristics.
 - Cache eviction details, WorkManager constraints.
 - Exact wording of prompts and empty states.
@@ -431,3 +429,6 @@ Record every decision made or changed after approval: date, decision, reason.
 | 2026-11-13 | No category nesting in v1; nullable `parentId` (ON DELETE SET NULL) present from the categories table's first version. Category names not unique. Series auto-fill only uses auto-created Series categories (+ merge aliases). | Author. |
 | 2026-11-13 | App ID `com.kmab.deft`; tags `vA.B.C-D`, versionCode `A·10⁶+B·10⁴+C·10²+D`; planning commit `v0.0.0-1`. | Author. |
 | 2026-11-13 | No PRs: branch per milestone/fix, local debug APK + test checklist handover, merge commit to `main` after author confirms, then tag. | Author: single device/repo. |
+| 2026-11-13 | Visual design agreed: kmab-derived structure (ink neutrals, Space Grotesk/Mono, square-capped Lucide, colour = meaning) + Deft's own paper light mode, Literata, and book mark; purple = accent and "reading"; Material You off; lowercase UI copy. Full spec in `plans/2026-11-13-deft-visual-design.md`. | Design grilling with the author. |
+| 2026-11-13 | Celebrations (full-screen, smooth, skippable; toggle "celebrations", default on) for book finished, goal, series, streak milestones, personal bests. | Author: "a bit more hurrah", but switchable. |
+| 2026-11-13 | Visual feedback is gathered at each milestone handover, not at separate checkpoints; the visual design is a living doc. | Author. |
