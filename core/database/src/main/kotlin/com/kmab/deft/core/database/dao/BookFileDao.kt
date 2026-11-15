@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 abstract class BookFileDao {
+    @Query("SELECT * FROM book_files")
+    abstract suspend fun getAll(): List<BookFileEntity>
+
     @Query("SELECT * FROM book_files WHERE uri = :uri")
     abstract suspend fun findByUri(uri: String): BookFileEntity?
 

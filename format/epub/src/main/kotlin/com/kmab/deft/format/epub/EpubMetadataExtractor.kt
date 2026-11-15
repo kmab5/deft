@@ -5,6 +5,7 @@ import com.kmab.deft.core.model.ExtractedMetadata
 import com.kmab.deft.core.model.MetadataException
 import com.kmab.deft.core.model.MetadataExtractor
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.net.URI
@@ -20,7 +21,9 @@ class EpubMetadataExtractor : MetadataExtractor {
         fileName: String,
     ): ExtractedMetadata {
         try {
-            return TemporaryEpub(Files.createTempFile("deft-epub-", ".zip")).use { spool ->
+            return TemporaryEpub(
+                Files.createTempFile(File(System.getProperty("java.io.tmpdir")).toPath(), "deft-epub-", ".zip"),
+            ).use { spool ->
                 Files.newOutputStream(spool.path).use { output -> copyBounded(input, MAX_ARCHIVE_BYTES, output::write) }
                 ZipFile(spool.path.toFile()).use(::extractZip)
             }
