@@ -15,4 +15,16 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
 }
 
-dependencies { testImplementation(libs.junit) }
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    testImplementation(project(":core:common"))
+    testImplementation("androidx.room:room-ktx:2.8.4")
+    testImplementation("androidx.datastore:datastore-preferences:1.1.7")
+    testImplementation("androidx.work:work-testing:2.10.1")
+    testImplementation("androidx.test:core:1.7.0")
+    testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
+}
