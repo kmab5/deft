@@ -104,8 +104,11 @@ internal class OpfParser(
             seriesName = collection?.textContent?.trim() ?: named("calibre:series"),
             seriesIndex =
                 (
-                    collection?.let { refinement(it.getAttribute("id"), "group-position") }
-                        ?: named("calibre:series_index")
+                    if (collection != null) {
+                        refinement(collection.getAttribute("id"), "group-position")
+                    } else {
+                        named("calibre:series_index")
+                    }
                 )?.toDoubleOrNull()?.takeIf(Double::isFinite),
             language = dc("language").firstOrNull(),
             publisher = dc("publisher").firstOrNull(),

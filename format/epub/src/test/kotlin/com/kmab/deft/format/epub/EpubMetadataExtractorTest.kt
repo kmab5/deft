@@ -40,6 +40,22 @@ class EpubMetadataExtractorTest {
         assertEquals(1.5, r.seriesIndex)
     }
 
+    @Test fun `EPUB3 series without position does not borrow calibre position`() {
+        val builder = TestEpubBuilder().calibreSeries("Old Series", 7.0)
+        builder.rawOpf =
+            """
+            <package xmlns="http://www.idpf.org/2007/opf"><metadata>
+              <meta property="belongs-to-collection" id="series">New Series</meta>
+              <meta refines="#series" property="collection-type">series</meta>
+              <meta name="calibre:series" content="Old Series"/>
+              <meta name="calibre:series_index" content="7"/>
+            </metadata></package>
+            """.trimIndent()
+        val result = extract(builder)
+        assertEquals("New Series", result.seriesName)
+        assertNull(result.seriesIndex)
+    }
+
     @Test fun `ISBN identifiers ignore UUIDs`() {
         val r = extract(TestEpubBuilder().isbn("urn:isbn:9780765326355").isbn("0765326353"))
         assertEquals("9780765326355", r.isbn13)

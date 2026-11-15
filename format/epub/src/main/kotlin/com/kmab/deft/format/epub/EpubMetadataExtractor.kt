@@ -9,7 +9,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.net.URI
 import java.nio.file.Files
-import java.nio.file.Path
 import java.util.zip.ZipFile
 
 /** Bounded private spool permits any ZIP entry order; ZIP paths are never extracted. */
@@ -20,11 +19,11 @@ class EpubMetadataExtractor : MetadataExtractor {
         input: InputStream,
         fileName: String,
     ): ExtractedMetadata {
-        var spool: Path? = null
         try {
-            spool = Files.createTempFile("deft-epub-", ".zip")
-            Files.newOutputStream(spool).use { output -> copyBounded(input, MAX_ARCHIVE_BYTES, output::write) }
-            return ZipFile(spool.toFile()).use(::extractZip)
+            return TemporaryEpub(Files.createTempFile("deft-epub-", ".zip")).use { spool ->
+                Files.newOutputStream(spool.path).use { output -> copyBounded(input, MAX_ARCHIVE_BYTES, output::write) }
+                ZipFile(spool.path.toFile()).use(::extractZip)
+            }
         } catch (error: IOException) {
             throw MetadataException("Cannot read EPUB metadata", error)
         } catch (error: org.xmlpull.v1.XmlPullParserException) {
@@ -33,8 +32,6 @@ class EpubMetadataExtractor : MetadataExtractor {
             throw MetadataException("Invalid EPUB XML structure", error)
         } catch (error: java.net.URISyntaxException) {
             throw MetadataException("Invalid EPUB path", error)
-        } finally {
-            spool?.let(Files::deleteIfExists)
         }
     }
 
