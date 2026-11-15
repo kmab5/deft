@@ -39,6 +39,8 @@ android {
     }
 }
 dependencies {
+    implementation(project(":feature:library"))
+    implementation(project(":feature:settings"))
     implementation(project(":library:scanner"))
     implementation("androidx.work:work-runtime-ktx:2.10.1")
     implementation("androidx.hilt:hilt-work:1.2.0")

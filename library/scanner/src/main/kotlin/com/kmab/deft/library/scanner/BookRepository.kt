@@ -4,7 +4,7 @@ import com.kmab.deft.core.database.AppDatabase
 import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
 
-class BookRepository(
+class BookRepository @javax.inject.Inject constructor(
     private val db: AppDatabase,
 ) {
     fun observeBooks(

@@ -15,6 +15,6 @@ class SmokeTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
     @Test fun launchesBooksDestination() {
-        compose.onNodeWithText("Deft").assertIsDisplayed()
+        compose.onNodeWithText("books").assertIsDisplayed()
     }
 }
