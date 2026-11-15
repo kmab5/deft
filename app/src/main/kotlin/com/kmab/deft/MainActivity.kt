@@ -13,9 +13,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.kmab.deft.core.designsystem.DeftTheme
 import com.kmab.deft.core.designsystem.LocalDeftColors
-import com.kmab.deft.library.scanner.ScanScheduler
 import com.kmab.deft.feature.library.libraryGraph
 import com.kmab.deft.feature.settings.settingsGraph
+import com.kmab.deft.library.scanner.ScanScheduler
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject

@@ -91,12 +91,12 @@ internal fun privateCover(
     root: File,
 ): File? {
     if (path == null) return null
-    val candidate = try {
-        File(path).toPath().normalize()
+    return try {
+        val candidate = File(path).toPath().normalize()
+        if (candidate.isAbsolute && candidate.startsWith(root.toPath().normalize())) candidate.toFile() else null
     } catch (_: InvalidPathException) {
-        return null
+        null
     }
-    return if (candidate.isAbsolute && candidate.startsWith(root.toPath().normalize())) candidate.toFile() else null
 }
 
 internal fun BookListItem.firstAuthor(): String = authorsDisplay.substringBefore(", ")

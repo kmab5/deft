@@ -143,40 +143,7 @@ fun BooksScreen(
                 )
             }
         }
-        if (state.error != null) DeftSnackbar(state.error, Modifier.padding(horizontal = 20.dp), "retry", onRescan)
-        if (state.isScanning || state.scanMessage != null) {
-            Row(
-                Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                if (state.isScanning) {
-                    CircularProgressIndicator(
-                        Modifier.size(16.dp),
-                        color = c.accent,
-                        strokeWidth = 2.dp,
-                    )
-                }
-                Text(state.scanMessage ?: "Scanning folders.", style = DeftTypography.mono, color = c.muted)
-            }
-        } else {
-            state.scanReport?.let { report ->
-                Text(
-                    "added ${report.added} · missing ${report.markedMissing} · ${report.errors} errors",
-                    Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                    style = DeftTypography.mono,
-                    color = c.muted,
-                )
-            }
-        }
-        if (!state.isScanning && state.scanReport?.unavailableRoots?.isNotEmpty() == true) {
-            DeftButton(
-                "library settings",
-                onAddFolder,
-                Modifier.padding(horizontal = 20.dp),
-                style = DeftButtonStyle.Text,
-            )
-        }
+        ScanFeedback(state, onRescan, onAddFolder)
         PullToRefreshBox(isRefreshing = state.isScanning, onRefresh = onRescan, modifier = Modifier.weight(1f)) {
             BooksCollection(state, loader, onAddFolder, onRescan, onSettings) {
                 BookFormat.entries.forEach { onFormatChange(it, true) }
@@ -195,30 +162,30 @@ private fun BooksFilters(
     onFormatChange: (BookFormat, Boolean) -> Unit,
 ) {
     val c = LocalDeftColors.current
-        DeftSheet(onDismiss) {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("filter & sort", style = DeftTypography.headline, color = c.text)
-                Text("format", style = DeftTypography.monoSmall, color = c.muted)
-                BookFormat.entries.chunked(FORMAT_COLUMNS).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        row.forEach { format ->
-                            FilterChip(
-                                format.displayName.lowercase(),
-                                format in state.formatFilter,
-                                { onFormatChange(format, format !in state.formatFilter) },
-                                Modifier.weight(1f),
-                            )
-                        }
+    DeftSheet(onDismiss) {
+        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("filter & sort", style = DeftTypography.headline, color = c.text)
+            Text("format", style = DeftTypography.monoSmall, color = c.muted)
+            BookFormat.entries.chunked(FORMAT_COLUMNS).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    row.forEach { format ->
+                        FilterChip(
+                            format.displayName.lowercase(),
+                            format in state.formatFilter,
+                            { onFormatChange(format, format !in state.formatFilter) },
+                            Modifier.weight(1f),
+                        )
                     }
                 }
-                Text("sort", style = DeftTypography.monoSmall, color = c.muted)
-                BookSort.entries.forEach { sort ->
-                    FilterChip(sort.label(), state.sort == sort, { onSortChange(sort) })
-                }
-                FilterChip("show missing", state.showMissing, { onShowMissingChange(!state.showMissing) })
-                DeftButton("done", onDismiss)
             }
+            Text("sort", style = DeftTypography.monoSmall, color = c.muted)
+            BookSort.entries.forEach { sort ->
+                FilterChip(sort.label(), state.sort == sort, { onSortChange(sort) })
+            }
+            FilterChip("show missing", state.showMissing, { onShowMissingChange(!state.showMissing) })
+            DeftButton("done", onDismiss)
         }
+    }
 }
 
 private const val FORMAT_COLUMNS = 3
@@ -233,42 +200,42 @@ private fun BooksCollection(
     onClear: () -> Unit,
 ) {
     val c = LocalDeftColors.current
-            when {
-                state.isLoading ->
-                    Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.Center) {
-                        CircularProgressIndicator(color = c.accent)
-                        Text("loading books…", style = DeftTypography.mono, color = c.muted)
-                    }
-                state.books.isEmpty() -> EmptyBooks(state, onAddFolder, onRescan, onSettings, onClear)
-                state.gridView ->
-                    LazyVerticalGrid(
-                        GridCells.Adaptive(110.dp),
-                        Modifier.fillMaxSize().testTag("book_grid"),
-                        contentPadding =
-                            androidx.compose.foundation.layout.PaddingValues(
-                                start = 20.dp,
-                                end = 20.dp,
-                                top = 12.dp,
-                                bottom = 24.dp,
-                            ),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(22.dp),
-                    ) {
-                        items(state.books, key = { it.id }) { book -> BookCard(book, loader) }
-                    }
-                else ->
-                    LazyColumn(
-                        Modifier.fillMaxSize().testTag("book_list"),
-                        contentPadding =
-                            androidx.compose.foundation.layout.PaddingValues(
-                                horizontal = 20.dp,
-                                vertical = 12.dp,
-                            ),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        items(state.books, key = { it.id }) { book -> BookRow(book, loader) }
-                    }
+    when {
+        state.isLoading ->
+            Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.Center) {
+                CircularProgressIndicator(color = c.accent)
+                Text("loading books…", style = DeftTypography.mono, color = c.muted)
             }
+        state.books.isEmpty() -> EmptyBooks(state, onAddFolder, onRescan, onSettings, onClear)
+        state.gridView ->
+            LazyVerticalGrid(
+                GridCells.Adaptive(110.dp),
+                Modifier.fillMaxSize().testTag("book_grid"),
+                contentPadding =
+                    androidx.compose.foundation.layout.PaddingValues(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = 12.dp,
+                        bottom = 24.dp,
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(22.dp),
+            ) {
+                items(state.books, key = { it.id }) { book -> BookCard(book, loader) }
+            }
+        else ->
+            LazyColumn(
+                Modifier.fillMaxSize().testTag("book_list"),
+                contentPadding =
+                    androidx.compose.foundation.layout.PaddingValues(
+                        horizontal = 20.dp,
+                        vertical = 12.dp,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                items(state.books, key = { it.id }) { book -> BookRow(book, loader) }
+            }
+    }
 }
 
 @Composable
@@ -329,3 +296,46 @@ internal fun BookSort.label(): String =
         BookSort.AUTHOR -> "author"
         BookSort.DATE_ADDED -> "date added"
     }
+
+@Composable
+private fun ScanFeedback(
+    state: BooksUiState,
+    onRescan: () -> Unit,
+    onSettings: () -> Unit,
+) {
+    val c = LocalDeftColors.current
+    if (state.error != null) DeftSnackbar(state.error, Modifier.padding(horizontal = 20.dp), "retry", onRescan)
+    if (state.isScanning || state.scanMessage != null) {
+        Row(
+            Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (state.isScanning) {
+                CircularProgressIndicator(
+                    Modifier.size(16.dp),
+                    color = c.accent,
+                    strokeWidth = 2.dp,
+                )
+            }
+            Text(state.scanMessage ?: "Scanning folders.", style = DeftTypography.mono, color = c.muted)
+        }
+    } else {
+        state.scanReport?.let { report ->
+            Text(
+                "added ${report.added} · missing ${report.markedMissing} · ${report.errors} errors",
+                Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                style = DeftTypography.mono,
+                color = c.muted,
+            )
+        }
+    }
+    if (!state.isScanning && state.scanReport?.unavailableRoots?.isNotEmpty() == true) {
+        DeftButton(
+            "library settings",
+            onSettings,
+            Modifier.padding(horizontal = 20.dp),
+            style = DeftButtonStyle.Text,
+        )
+    }
+}

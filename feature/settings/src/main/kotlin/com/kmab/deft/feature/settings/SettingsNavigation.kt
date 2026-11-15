@@ -1,16 +1,20 @@
 package com.kmab.deft.feature.settings
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import com.kmab.deft.core.designsystem.DeftButton
+import com.kmab.deft.core.designsystem.DeftButtonStyle
+import com.kmab.deft.core.designsystem.DeftTopBar
+import com.kmab.deft.core.designsystem.LocalDeftColors
 
 fun NavGraphBuilder.settingsGraph(navController: NavController) {
     composable("settings") {
@@ -21,16 +25,24 @@ fun NavGraphBuilder.settingsGraph(navController: NavController) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onLibrary: () -> Unit) {
-    Scaffold(topBar = {
-        TopAppBar(title = { Text("settings") }, navigationIcon = {
-            TextButton(onClick = onBack) { Text("back") }
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onLibrary: () -> Unit,
+) {
+    val colors = LocalDeftColors.current
+    Scaffold(containerColor = colors.bg, contentColor = colors.text, topBar = {
+        DeftTopBar("settings", actions = {
+            DeftButton("back", onBack, style = DeftButtonStyle.Text)
         })
     }) { padding ->
-        Column(androidx.compose.ui.Modifier.padding(padding)) {
-            TextButton(onClick = onLibrary) { Text("library") }
+        Column(Modifier.padding(padding).padding(horizontal = 20.dp)) {
+            DeftButton(
+                "library",
+                onLibrary,
+                Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                style = DeftButtonStyle.Text,
+            )
         }
     }
 }

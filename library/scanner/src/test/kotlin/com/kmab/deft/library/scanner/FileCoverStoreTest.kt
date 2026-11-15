@@ -48,21 +48,29 @@ class FileCoverStoreTest {
             assertEquals(400, decoded.height)
         }
 
-    @Test fun `large compressed dimensions are sampled before decoding and invalid bounds rejected`() = runBlocking {
-        val store = FileCoverStore(temporary.newFolder())
-        val path = store.save(hash, solidPng(16384, 16384))!!
-        val result = BitmapFactory.decodeFile(path)
-        assertEquals(600, result.width)
-        assertEquals(600, result.height)
-        result.recycle()
-        assertNull(store.save(hash, solidPng(0, 1)))
-    }
+    @Test fun `large compressed dimensions are sampled before decoding and invalid bounds rejected`() =
+        runBlocking {
+            val store = FileCoverStore(temporary.newFolder())
+            val path = store.save(hash, solidPng(16384, 16384))!!
+            val result = BitmapFactory.decodeFile(path)
+            assertEquals(600, result.width)
+            assertEquals(600, result.height)
+            result.recycle()
+            assertNull(store.save(hash, solidPng(0, 1)))
+        }
 
-    private fun solidPng(width: Int, height: Int): ByteArray {
+    private fun solidPng(
+        width: Int,
+        height: Int,
+    ): ByteArray {
         val output = ByteArrayOutputStream()
         val data = java.io.DataOutputStream(output)
         data.write(byteArrayOf(137.toByte(), 80, 78, 71, 13, 10, 26, 10))
-        fun chunk(type: String, payload: ByteArray) {
+
+        fun chunk(
+            type: String,
+            payload: ByteArray,
+        ) {
             val name = type.toByteArray(Charsets.US_ASCII)
             data.writeInt(payload.size)
             data.write(name)

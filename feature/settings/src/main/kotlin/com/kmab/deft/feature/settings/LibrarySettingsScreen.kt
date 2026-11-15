@@ -9,110 +9,154 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kmab.deft.core.database.entity.LibraryFolderEntity
 import com.kmab.deft.core.datastore.LibrarySettings
+import com.kmab.deft.core.designsystem.DeftButton
+import com.kmab.deft.core.designsystem.DeftButtonStyle
+import com.kmab.deft.core.designsystem.DeftDialog
+import com.kmab.deft.core.designsystem.DeftTopBar
+import com.kmab.deft.core.designsystem.DeftTypography
+import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.model.BookFormat
+import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibrarySettingsScreen(onBack: () -> Unit, viewModel: LibrarySettingsViewModel = hiltViewModel()) {
+fun LibrarySettingsScreen(
+    onBack: () -> Unit,
+    viewModel: LibrarySettingsViewModel = hiltViewModel(),
+) {
+    val colors = LocalDeftColors.current
     val folders by viewModel.folders.folders.collectAsState(emptyList())
     val settings by viewModel.settings.settings.collectAsState(LibrarySettings())
     val error by viewModel.error.collectAsState()
-    val scan by viewModel.scanStatus.collectAsState(com.kmab.deft.library.scanner.ScanStatus())
+    val scan by viewModel.scanStatus.collectAsState(
+        com.kmab.deft.library.scanner
+            .ScanStatus(),
+    )
     var removing by remember { mutableStateOf<LibraryFolderEntity?>(null) }
-    var exclusionRoot by remember { mutableStateOf<LibraryFolderEntity?>(null) }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        if (uri != null) {
-            val root = exclusionRoot
-            if (root == null) viewModel.add(uri) else viewModel.exclude(root.treeUri, root.displayName, uri)
+    var exclusionRootUri by rememberSaveable { mutableStateOf<String?>(null) }
+    var exclusionRootName by rememberSaveable { mutableStateOf<String?>(null) }
+    val picker =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            if (uri != null) {
+                val root = exclusionRootUri
+                if (root == null) viewModel.add(uri) else viewModel.exclude(root, exclusionRootName.orEmpty(), uri)
+            }
+            exclusionRootUri = null
+            exclusionRootName = null
         }
-        exclusionRoot = null
-    }
-    Scaffold(topBar = {
-        TopAppBar(title = { Text("library") }, navigationIcon = {
-            TextButton(onClick = onBack) { Text("back") }
+    Scaffold(containerColor = colors.bg, contentColor = colors.text, topBar = {
+        DeftTopBar("library", actions = {
+            DeftButton("back", onBack, style = DeftButtonStyle.Text)
         })
     }) { padding ->
-        Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(16.dp)) {
-            Text("folders", style = MaterialTheme.typography.titleLarge)
+        Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(20.dp)) {
+            Text("folders", style = DeftTypography.monoSmall, color = colors.muted)
+            if (folders.isEmpty()) Text("Choose a folder to find your books.", Modifier.padding(vertical = 12.dp))
             folders.forEach { folder ->
                 FolderRow(folder, viewModel, { removing = folder }) {
-                    exclusionRoot = folder
+                    exclusionRootUri = folder.treeUri
+                    exclusionRootName = folder.displayName
                     picker.launch(Uri.parse(folder.treeUri))
                 }
             }
-            TextButton(onClick = { exclusionRoot = null; picker.launch(null) }) { Text("add a folder") }
-            HorizontalDivider()
-            Text("file types", style = MaterialTheme.typography.titleLarge)
+            DeftButton("add a folder", {
+                exclusionRootUri = null
+                exclusionRootName = null
+                picker.launch(null)
+            }, style = DeftButtonStyle.Text)
+            HorizontalDivider(color = colors.line, modifier = Modifier.padding(vertical = 16.dp))
+            Text("file types", style = DeftTypography.monoSmall, color = colors.muted)
             BookFormat.entries.forEach { format ->
-                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                    Checkbox(checked = format in settings.enabledFormats,
-                        onCheckedChange = { viewModel.format(format, it) })
-                    Text(formatLabel(format), Modifier.padding(top = 12.dp))
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(
+                        value = format in settings.enabledFormats,
+                        role = Role.Checkbox,
+                        onValueChange = { viewModel.format(format, it) },
+                    ),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(
+                        checked = format in settings.enabledFormats,
+                        onCheckedChange = null,
+                    )
+                    Text(formatLabel(format), Modifier.padding(start = 12.dp))
                 }
             }
-            TextButton(onClick = { viewModel.scanNow() }, enabled = !scan.isScanning) { Text("rescan now") }
+            DeftButton("rescan now", { viewModel.scanNow() }, enabled = !scan.isScanning)
             if (scan.isScanning) LinearProgressIndicator(Modifier.fillMaxWidth())
             scan.message?.let { Text(it) }
             scan.report?.let { Text("added ${it.added} · missing ${it.markedMissing} · ${it.errors} errors") }
             error?.let { message ->
                 Text(message, color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = { viewModel.error.value = null }) { Text("dismiss") }
+                DeftButton("dismiss", viewModel::dismissError, style = DeftButtonStyle.Text)
             }
         }
     }
     removing?.let { folder ->
-        AlertDialog(onDismissRequest = { removing = null }, title = { Text("remove folder?") },
-            text = { Text("Books in this folder will be marked missing. Their history is kept.") },
-            confirmButton = { TextButton(onClick = { viewModel.remove(folder.treeUri); removing = null }) { Text("remove") } },
-            dismissButton = { TextButton(onClick = { removing = null }) { Text("cancel") } })
+        DeftDialog(
+            title = "remove this folder?",
+            body = "Its books will be marked missing. Their history stays.",
+            confirmLabel = "remove",
+            onConfirm = {
+                viewModel.remove(folder.treeUri)
+                removing = null
+            },
+            onDismiss = { removing = null },
+        )
     }
 }
 
 @Composable
-private fun FolderRow(folder: LibraryFolderEntity, viewModel: LibrarySettingsViewModel,
-    onRemove: () -> Unit, onExclude: () -> Unit) {
+private fun FolderRow(
+    folder: LibraryFolderEntity,
+    viewModel: LibrarySettingsViewModel,
+    onRemove: () -> Unit,
+    onExclude: () -> Unit,
+) {
     var expanded by remember(folder.treeUri) { mutableStateOf(false) }
     val exclusions by viewModel.folders.exclusions(folder.treeUri).collectAsState(emptyList())
     Row(Modifier.fillMaxWidth()) {
-        TextButton(onClick = { expanded = !expanded }, modifier = Modifier.weight(1f)) { Text(folder.displayName) }
-        TextButton(onClick = onRemove) { Text("remove") }
+        DeftButton(folder.displayName, { expanded = !expanded }, Modifier.weight(1f), style = DeftButtonStyle.Text)
+        DeftButton("remove", onRemove, style = DeftButtonStyle.Text)
     }
     if (expanded) {
         exclusions.forEach { exclusion ->
             Row(Modifier.fillMaxWidth()) {
                 Text(exclusion.displayPath, Modifier.weight(1f).padding(12.dp))
-                TextButton(onClick = { viewModel.unexclude(folder.treeUri, exclusion.documentId) }) { Text("include") }
+                DeftButton(
+                    "include",
+                    { viewModel.unexclude(folder.treeUri, exclusion.documentId) },
+                    style = DeftButtonStyle.Text,
+                )
             }
         }
-        TextButton(onClick = onExclude) { Text("exclude a subfolder") }
+        DeftButton("exclude a subfolder", onExclude, style = DeftButtonStyle.Text)
     }
 }
 
-internal fun formatLabel(format: BookFormat): String = when (format) {
-    BookFormat.MOBI -> "MOBI/PRC"
-    BookFormat.DJVU -> "DjVu"
-    else -> format.name
-}
-
+internal fun formatLabel(format: BookFormat): String =
+    when (format) {
+        BookFormat.MOBI -> "mobi/prc"
+        else -> format.name.lowercase(Locale.ROOT)
+    }

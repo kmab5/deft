@@ -1,11 +1,5 @@
 package com.kmab.deft.feature.library
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.test.resetMain
-import org.junit.rules.ExternalResource
-
 import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.SideEffect
@@ -48,11 +42,15 @@ import com.kmab.deft.library.scanner.ScanStatusObserver
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -60,6 +58,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExternalResource
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -72,11 +71,20 @@ import java.time.Instant
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class BooksViewModelTest {
-    @get:Rule(order = 0) val mainDispatcher = object : ExternalResource() {
-        override fun before() { Dispatchers.setMain(UnconfinedTestDispatcher()) }
-        override fun after() { Dispatchers.resetMain() }
-    }
-    @get:Rule(order = 1) val compose = createComposeRule()
+    @get:Rule(order = 0)
+    val mainDispatcher =
+        object : ExternalResource() {
+            override fun before() {
+                Dispatchers.setMain(UnconfinedTestDispatcher())
+            }
+
+            override fun after() {
+                Dispatchers.resetMain()
+            }
+        }
+
+    @get:Rule(order = 1)
+    val compose = createComposeRule()
 
     @get:Rule val temp = TemporaryFolder()
     private val context = ApplicationProvider.getApplicationContext<Context>()

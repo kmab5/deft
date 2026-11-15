@@ -4,7 +4,9 @@ plugins {
     id("deft.android.hilt")
 }
 dependencies {
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     implementation(project(":core:model"))
+    implementation(project(":core:designsystem"))
     implementation(project(":core:database"))
     implementation(project(":core:datastore"))
     implementation(project(":library:scanner"))
@@ -16,6 +18,7 @@ dependencies {
 }
 
 dependencies {
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     testImplementation(project(":core:common"))
     testImplementation("androidx.room:room-ktx:2.8.4")
@@ -26,5 +29,6 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.compose.ui.test.manifest)
     debugImplementation(libs.compose.ui.test.manifest)
 }

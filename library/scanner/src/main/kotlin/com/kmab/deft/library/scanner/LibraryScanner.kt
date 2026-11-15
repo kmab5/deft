@@ -47,13 +47,14 @@ class LibraryScanner(
             }
         }
 
-    private suspend fun isAccessible(root: String): Boolean = try {
-        tree.isAccessible(root)
-    } catch (_: IOException) {
-        false
-    } catch (_: SecurityException) {
-        false
-    }
+    private suspend fun isAccessible(root: String): Boolean =
+        try {
+            tree.isAccessible(root)
+        } catch (_: IOException) {
+            false
+        } catch (_: SecurityException) {
+            false
+        }
 
     private suspend fun validateRoots(roots: List<String>) {
         // Provider relationship failures propagate before any database writes.

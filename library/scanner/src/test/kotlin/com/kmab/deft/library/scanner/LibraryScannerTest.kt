@@ -184,17 +184,18 @@ class LibraryScannerTest {
             assertTrue(books().first { it.id == id }.missing)
         }
 
-    @Test fun unavailableRootCannotBlockHealthyRootAncestryValidation() = runBlocking {
-        tree.put("old", root = "R")
-        scan()
-        tree.unavailable += "R"
-        tree.relationshipFailure = java.io.IOException("Revoked root relationship")
-        tree.put("healthy", root = "S", bytes = byteArrayOf(42))
-        val report = scan(listOf("R", "S"))
-        assertEquals(listOf("R"), report.unavailableRoots)
-        assertEquals(1, report.added)
-        assertEquals(2, books().size)
-    }
+    @Test fun unavailableRootCannotBlockHealthyRootAncestryValidation() =
+        runBlocking {
+            tree.put("old", root = "R")
+            scan()
+            tree.unavailable += "R"
+            tree.relationshipFailure = java.io.IOException("Revoked root relationship")
+            tree.put("healthy", root = "S", bytes = byteArrayOf(42))
+            val report = scan(listOf("R", "S"))
+            assertEquals(listOf("R"), report.unavailableRoots)
+            assertEquals(1, report.added)
+            assertEquals(2, books().size)
+        }
 
     @Test fun unavailableAndIncompleteRootsNeverMarkUnseenMissing() =
         runBlocking {

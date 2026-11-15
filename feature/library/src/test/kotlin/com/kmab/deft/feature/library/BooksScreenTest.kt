@@ -105,7 +105,11 @@ class BooksScreenTest {
         compose.onNodeWithText("all books").performClick()
         compose.onNodeWithText("txt").performClick()
         compose.onNodeWithText("author").performClick()
-        compose.onNodeWithText("show missing").performScrollTo().assertIsDisplayed().performClick()
+        compose
+            .onNodeWithText("show missing")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
         assertFalse(BookFormat.TXT in state.value.formatFilter)
         assertEquals(BookSort.AUTHOR, state.value.sort)
         assertEquals(true, state.value.showMissing)

@@ -2,6 +2,19 @@
 
 Use the signed, R8-minified release APK at `app/build/outputs/apk/release/app-release.apk`. The agent's handover must identify the tested commit, version, certificate fingerprint and automated verification results. Unchecked items below require device verification; this file does not claim they passed.
 
+## Verified release — 2026-11-15
+
+- Version: `0.1.0-1`, Android version code `10001`, application ID `com.kmab.deft`.
+- APK size: 1,794,996 bytes.
+- APK SHA-256: `8d59de787b1e43a431718053bec68d13af184e5f725c0ead98826f1a6909b980`.
+- Signing certificate SHA-256: `adea6ec2edf4e9e2d809ed06300729e35ca156c06072736717b4a27449233e50`.
+- Combined `ktlintFormat check assembleRelease` passed. Recorded JVM/Robolectric results total 226 test executions with no failures or errors; four release-tooling tests also passed.
+- The negative network-isolation check rejected temporary OkHttp in `:core:common`. The clean dependency graph and merged release manifest passed afterward.
+- `scripts/verify-release.py` confirmed the persistent certificate, application ID/version, absence of INTERNET permission and R8 mapping output. Resource shrinking is enabled too.
+- Source commit and feature-branch CI status are identified in the chat handover. Device and update-install acceptance remain unchecked: no device or emulator was connected.
+
+Keep the private signing directory described in [release-signing.md](release-signing.md) backed up. Future release builds reuse that identity; do not replace it.
+
 ## Install and update
 
 - [ ] Install the release APK. Confirm Android identifies it as Deft and the approved book-and-ribbon icon appears.
@@ -51,3 +64,10 @@ Use the signed, R8-minified release APK at `app/build/outputs/apk/release/app-re
 - [ ] Check touch targets and contrast; enable reduced motion and confirm the interface remains usable.
 
 Record device model, Android version, APK version, failed steps and visual feedback when returning this checklist. The feature branch remains unmerged until the author confirms it passed.
+
+## Additional audit regressions
+
+- [ ] With two selected folders, revoke access to one and rescan. The other still updates, and Deft explains that a folder is unavailable.
+- [ ] Open the exclusion folder picker, rotate the device or recreate the app activity, then choose a subfolder. It is excluded from the original root rather than added as another library folder.
+- [ ] Scan a book with a very large cover image. Scanning finishes without a crash and shows a thumbnail.
+- [ ] On Android 8 or 9, verify parent/child folder rejection and subfolder exclusions through the compatibility path.

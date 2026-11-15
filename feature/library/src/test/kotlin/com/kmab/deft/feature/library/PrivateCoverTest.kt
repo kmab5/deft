@@ -5,8 +5,8 @@ import android.graphics.Bitmap
 import androidx.test.core.app.ApplicationProvider
 import coil3.ImageLoader
 import coil3.decode.BitmapFactoryDecoder
-import coil3.request.ImageRequest
 import coil3.request.ErrorResult
+import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals

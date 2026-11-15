@@ -21,17 +21,19 @@ abstract class NetworkIsolationCheck : DefaultTask() {
 
     @TaskAction
     fun verify() {
+        val violations = linkedSetOf<String>()
         project.subprojects.filter { it.path != ":data:matching" }.forEach { module ->
             module.configurations.filter { it.isCanBeResolved && it.name.endsWith("RuntimeClasspath") }.forEach { config ->
                 config.incoming.resolutionResult.allComponents.forEach { component ->
                     component.moduleVersion?.let { id ->
-                        check(!forbiddenNetworkDependency(id.group, id.name)) {
-                            "${module.path} contains prohibited network dependency $id"
+                        if (forbiddenNetworkDependency(id.group, id.name)) {
+                            violations += "${module.path} contains prohibited network dependency $id"
                         }
                     }
                 }
             }
         }
+        check(violations.isEmpty()) { violations.joinToString("\n") }
         val appRuntime = project.project(":app").configurations.getByName("releaseRuntimeClasspath")
         val matchingIncluded = appRuntime.incoming.resolutionResult.allComponents.any {
             (it.id as? ProjectComponentIdentifier)?.projectPath == ":data:matching"
