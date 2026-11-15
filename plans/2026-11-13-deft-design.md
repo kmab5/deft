@@ -437,3 +437,4 @@ Record every decision made or changed after approval: date, decision, reason.
 
 | 2026-11-15 | Generate one persistent release signing key in M1, keep it and credentials outside Git, and reuse it for every release. Enable R8 minification and resource shrinking. Hand over signed release APKs for device testing. | Author: install updates without uninstalling or losing data; test the release configuration. |
 | 2026-11-15 | M1 follows the final visual design for the filter-and-sort sheet, lowercase copy, final mark, reusable components and screenshot checks. | Reconcile the earlier task plan with approved visual feedback and roadmap scope. |
+| 2026-11-15 | Reject overlapping selected library roots with an explanation that subfolders are already included. Persist folder-removal reconciliation intent; incomplete scans never mark unseen files missing. | One unambiguous root per BookFile prevents false missing states, and cancellation must not lose removal requests. |
