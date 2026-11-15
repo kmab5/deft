@@ -98,8 +98,7 @@ class LibraryScanner(
                     require(entry.rootUri == root) { "Document entry belongs to another root" }
                     val format = BookFormat.fromFileName(entry.name)
                     if (format != null && format in formats) {
-                        seen += entry.uri // A failed read does not prove a known file missing.
-                        scanEntry(entry, format)
+                        if (scanEntry(entry, format)) seen += entry.uri
                     }
                 }
             } catch (_: IOException) {
@@ -116,20 +115,23 @@ class LibraryScanner(
         private suspend fun scanEntry(
             entry: DocumentEntry,
             format: BookFormat,
-        ) {
+        ): Boolean {
             currentCoroutineContext().ensureActive()
             val existing = files.findByUri(entry.uri)
             if (existing != null && fingerprintMatches(existing, entry)) {
                 db.withTransaction { saveFile(existing, entry, existing.bookId) }
                 if (existing.missing) candidates.merge(existing.bookId, 1, Int::plus) else unchanged++
-                return
+                return true
             }
-            try {
+            return try {
                 indexFile(entry, format, existing)
+                true
             } catch (_: IOException) {
                 errors++
+                existing?.missing == false
             } catch (_: SecurityException) {
                 errors++
+                existing?.missing == false
             }
         }
 

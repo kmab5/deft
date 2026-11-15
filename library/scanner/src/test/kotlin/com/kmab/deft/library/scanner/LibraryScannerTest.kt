@@ -432,4 +432,30 @@ class LibraryScannerTest {
                 assertEquals(0, cursor.getInt(0))
             }
         }
+
+    @Test fun failedReadDoesNotRestoreMissingBookWithUnverifiedReplacement() =
+        runBlocking {
+            tree.put("one", bytes = byteArrayOf(1))
+            scan()
+            val original = books().single().id
+            tree.files.clear()
+            scan()
+            assertTrue(books().single().missing)
+
+            tree.put("one", bytes = byteArrayOf(1, 2), stamp = 2)
+            tree.failOpen += "one"
+            val report = scan()
+            assertEquals(1, report.errors)
+            assertEquals(0, report.reattached)
+            assertEquals(original, books().single().id)
+            assertTrue(books().single().missing)
+            assertTrue(db.bookFileDao().findByUri("one")!!.missing)
+            assertTrue(books(false).isEmpty())
+
+            tree.failOpen.clear()
+            assertEquals(1, scan().updated)
+            assertEquals(2, books().size)
+            assertTrue(books().first { it.id == original }.missing)
+            assertFalse(books(false).single().id == original)
+        }
 }
