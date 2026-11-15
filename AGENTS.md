@@ -18,7 +18,7 @@ Deft is an offline, accountless Android ebook reader with a built-in reading tra
 3. If the milestone has no plan in `plans/` yet, write one with superpowers:writing-plans, using the spec and the roadmap. Commit it on the branch before writing code.
 4. Execute the plan task by task with superpowers:subagent-driven-development. Each change goes red → green → commit (superpowers:test-driven-development). Shape modules with mattpocock-skills:codebase-design.
 5. Before handover, run superpowers:requesting-code-review on the branch and superpowers:verification-before-completion. `./gradlew check assembleRelease` must be green.
-6. **Handover:** build `./gradlew assembleDebug` and write `plans/mN-test-checklist.md` (the roadmap acceptance criteria plus anything risky, as tickable device steps). Give the author the APK path and the checklist.
+6. **Handover:** build `./gradlew assembleRelease` with R8 minification and resource shrinking enabled, signed with the persistent Deft release key, and write `plans/mN-test-checklist.md` (the roadmap acceptance criteria plus anything risky, as tickable device steps). Give the author the signed release APK path and the checklist. Reuse the same release key for every release so updates preserve app data; never regenerate or commit the key or its credentials.
 7. **Merge only after the author says the checklist passed:** `git merge --no-ff` into `main`, then tag and push the tag (see Versioning).
 8. When a decision changes, or the spec is silent and you make a call, add a row to the spec's **Decision log** (§20) in the same commit.
 
