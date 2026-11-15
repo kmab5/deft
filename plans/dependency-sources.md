@@ -16,3 +16,4 @@ Pinned versions are defined in `gradle/libs.versions.toml` and the build convent
 - Palette source: https://github.com/kmab5/kmab-brand/blob/main/design-tokens.css . Full purple/green/amber scales are preserved; semantic paper accessibility adjustments are logged in the spec.
 
 No app dependency provides Google Play Services, Firebase, analytics, networking, or proprietary binaries.
+- kXML2 2.3.0: BSD-style license for org.kxml2 and Public Domain XmlPull API, verified from the published upstream POM: https://repo.maven.apache.org/maven2/net/sf/kxml/kxml2/2.3.0/kxml2-2.3.0.pom . Bundled offline XML tokenizer; no network resolution.
