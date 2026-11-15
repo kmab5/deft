@@ -15,7 +15,14 @@ object DatabaseModule {
     @Provides @Singleton
     fun database(
         @ApplicationContext context: Context,
-    ): AppDatabase = Room.databaseBuilder(context, AppDatabase::class.java, "deft.db").build()
+    ): AppDatabase =
+        Room
+            .databaseBuilder(
+                context,
+                AppDatabase::class.java,
+                "deft.db",
+            ).addMigrations(DatabaseMigrations.FROM_1_TO_2)
+            .build()
 
     @Provides fun books(db: AppDatabase) = db.bookDao()
 

@@ -39,6 +39,9 @@ android {
     }
 }
 dependencies {
+    implementation(project(":library:scanner"))
+    implementation("androidx.work:work-runtime-ktx:2.10.1")
+    implementation("androidx.hilt:hilt-work:1.2.0")
     implementation(project(":core:designsystem"))
     implementation(libs.activity.compose)
     implementation(libs.navigation.compose)

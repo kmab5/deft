@@ -14,6 +14,7 @@ import com.kmab.deft.core.database.entity.BookEntity
 import com.kmab.deft.core.database.entity.BookFileEntity
 import com.kmab.deft.core.database.entity.ExcludedFolderEntity
 import com.kmab.deft.core.database.entity.LibraryFolderEntity
+import com.kmab.deft.core.database.entity.PendingRootRemovalEntity
 
 @Database(
     entities = [
@@ -24,8 +25,9 @@ import com.kmab.deft.core.database.entity.LibraryFolderEntity
         BookAuthorEntity::class,
         LibraryFolderEntity::class,
         ExcludedFolderEntity::class,
+        PendingRootRemovalEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
