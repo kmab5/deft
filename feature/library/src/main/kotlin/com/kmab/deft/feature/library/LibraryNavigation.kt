@@ -11,7 +11,15 @@ fun NavGraphBuilder.libraryGraph(navController: NavController) {
     composable("books") {
         val viewModel: BooksViewModel = hiltViewModel()
         val state by viewModel.uiState.collectAsStateWithLifecycle()
-        BooksScreen(state, { navController.navigate("settings") }, { navController.navigate("settings/library") },
-            viewModel::rescan, viewModel::setGridView, viewModel::setSort, viewModel::setShowMissing, viewModel::setFormat)
+        BooksScreen(
+            state,
+            { navController.navigate("settings") },
+            { navController.navigate("settings/library") },
+            viewModel::rescan,
+            viewModel::setGridView,
+            viewModel::setSort,
+            viewModel::setShowMissing,
+            viewModel::setFormat,
+        )
     }
 }
