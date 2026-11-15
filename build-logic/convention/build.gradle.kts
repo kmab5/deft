@@ -4,6 +4,7 @@ plugins {
 }
 gradlePlugin {
     plugins {
+        create("networkIsolation") { id = "deft.network-isolation"; implementationClass = "NetworkIsolationPlugin" }
         create("androidApplication") { id = "deft.android.application"; implementationClass = "DeftAndroidApplicationPlugin" }
         create("androidLibrary") { id = "deft.android.library"; implementationClass = "DeftAndroidLibraryPlugin" }
         create("androidCompose") { id = "deft.android.compose"; implementationClass = "DeftAndroidComposePlugin" }
