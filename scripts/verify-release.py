@@ -5,19 +5,16 @@ import os
 from pathlib import Path
 import re
 import subprocess
+from release_sdk import resolve_sdk
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--allow-ci", action="store_true", help="Permit an explicitly CI-only certificate inside CI")
 args = parser.parse_args()
 root = Path(__file__).resolve().parent.parent
-sdk = Path(os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT") or "")
-if not sdk.is_dir():
-    properties = root / "local.properties"
-    if properties.is_file():
-        sdk_value = next(line.split("=", 1)[1] for line in properties.read_text().splitlines() if line.startswith("sdk.dir="))
-        sdk = Path(sdk_value.replace("\\:", ":").replace("\\\\", "\\"))
-if not sdk.is_dir():
-    raise SystemExit("Set ANDROID_HOME to the installed Android SDK.")
+try:
+    sdk = resolve_sdk(root, os.environ)
+except ValueError as error:
+    raise SystemExit(str(error)) from error
 suffix = ".bat" if os.name == "nt" else ""
 tools = sorted((sdk / "build-tools").glob("*"), key=lambda p: tuple(int(n) for n in p.name.split(".") if n.isdigit()))
 if not tools:
