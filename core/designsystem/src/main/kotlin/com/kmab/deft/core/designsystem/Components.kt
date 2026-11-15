@@ -29,7 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kmab.deft.core.designsystem.icons.DeftIcons
@@ -111,6 +116,14 @@ fun FilterChip(
     modifier: Modifier = Modifier,
 ) {
     val c = LocalDeftColors.current
+    val outline by animateColorAsState(
+        if (selected) c.accent else Color.Transparent,
+        tween(DeftMotion.SHORT, easing = DeftMotion.standard),
+    )
+    val foreground by animateColorAsState(
+        if (selected) c.accentText else c.text,
+        tween(DeftMotion.SHORT, easing = DeftMotion.standard),
+    )
     Box(
         modifier.heightIn(min = 48.dp).selectable(selected, role = Role.Checkbox, onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -122,9 +135,9 @@ fun FilterChip(
                     DeftShapes.small,
                 ).background(
                     c.surface2,
-                ).border(1.dp, if (selected) c.accent else Color.Transparent, DeftShapes.small)
+                ).border(1.dp, outline, DeftShapes.small)
                 .padding(horizontal = 10.dp, vertical = 6.dp),
-            color = if (selected) c.accentText else c.text,
+            color = foreground,
             style = DeftTypography.mono,
         )
     }
@@ -187,7 +200,12 @@ fun StateBar(
     val c = LocalDeftColors.current
     val value by animateFloatAsState(progress.coerceIn(0f, 1f), tween(DeftMotion.MEDIUM))
     val color by animateColorAsState(state.color(c), tween(DeftMotion.SHORT))
-    Canvas(modifier.fillMaxWidth().height(2.dp)) {
+    Canvas(
+        modifier.fillMaxWidth().height(2.dp).semantics {
+            stateDescription = state.label
+            progressBarRangeInfo = ProgressBarRangeInfo(progress.coerceIn(0f, 1f), 0f..1f)
+        },
+    ) {
         drawRect(c.line)
         if (state != DeftReadingState.NotRead) drawRect(color, size = size.copy(width = size.width * value))
     }
@@ -203,7 +221,7 @@ fun GeneratedCover(
     Column(modifier.fillMaxSize().background(tint).padding(10.dp), verticalArrangement = Arrangement.SpaceBetween) {
         Text(
             title,
-            style = DeftTypography.cardTitle,
+            style = DeftTypography.cardTitle.copy(fontWeight = FontWeight.SemiBold),
             color = DeftColors.Ink.text,
             maxLines = 5,
             overflow = TextOverflow.Ellipsis,
@@ -285,6 +303,19 @@ fun SegmentedProgress(
 ) {
     val c = LocalDeftColors.current
     val total = segments.sumOf { it.fraction.coerceAtLeast(0f).toDouble() }.toFloat().coerceAtLeast(1f)
+    val description =
+        if (segments.isEmpty()) {
+            "no reading progress"
+        } else {
+            segments.joinToString(", ") {
+                "${it.state.label} ${(it.fraction.coerceAtLeast(0f) / total * PERCENTAGE_SCALE).toInt()}%"
+            }
+        }
+    val finishedProgress =
+        segments
+            .filter { it.state == DeftReadingState.Finished }
+            .sumOf { it.fraction.coerceAtLeast(0f).toDouble() }
+            .toFloat() / total
     val fractions =
         segments.map { segment ->
             animateFloatAsState(segment.fraction.coerceAtLeast(0f) / total, tween(DeftMotion.MEDIUM)).value
@@ -293,7 +324,13 @@ fun SegmentedProgress(
         segments.map { segment ->
             animateColorAsState(segment.state.color(c), tween(DeftMotion.SHORT)).value
         }
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(
+        modifier.semantics(mergeDescendants = true) {
+            stateDescription = description
+            progressBarRangeInfo = ProgressBarRangeInfo(finishedProgress.coerceIn(0f, 1f), 0f..1f)
+        },
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
         Canvas(Modifier.fillMaxWidth().height(6.dp).clip(DeftShapes.cover)) {
             drawRect(c.surface2)
             var left = 0f
