@@ -1,0 +1,12 @@
+build:
+  maxIssues: 0
+complexity:
+  LongParameterList:
+    ignoreAnnotated: ['Composable']
+  LongMethod:
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    ignoreAnnotatedFunctions: ['Composable']
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable', 'Test']
