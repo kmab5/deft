@@ -39,12 +39,21 @@ class LibraryScanner(
         mutex.withLock {
             withContext(Dispatchers.IO) {
                 val selected = roots.distinct()
-                validateRoots(selected)
-                val session = ScanSession(files.getAll(), formats)
-                selected.forEach { session.scanRoot(it) }
+                val accessible = selected.filter { isAccessible(it) }
+                validateRoots(accessible)
+                val session = ScanSession(files.getAll(), formats, selected - accessible.toSet())
+                accessible.forEach { session.scanRoot(it) }
                 session.finish(removedRoots.distinct().filterNot { it in selected })
             }
         }
+
+    private suspend fun isAccessible(root: String): Boolean = try {
+        tree.isAccessible(root)
+    } catch (_: IOException) {
+        false
+    } catch (_: SecurityException) {
+        false
+    }
 
     private suspend fun validateRoots(roots: List<String>) {
         // Provider relationship failures propagate before any database writes.
@@ -60,6 +69,7 @@ class LibraryScanner(
     private inner class ScanSession(
         before: List<BookFileEntity>,
         private val formats: Set<BookFormat>,
+        unavailableRoots: List<String>,
     ) {
         private val presentBefore = before.filterNot { it.missing }.groupBy { it.bookId }
         private val candidates = mutableMapOf<Long, Int>()
@@ -68,7 +78,7 @@ class LibraryScanner(
         private var updated = 0
         private var unchanged = 0
         private var errors = 0
-        private val unavailable = mutableListOf<String>()
+        private val unavailable = unavailableRoots.toMutableList()
 
         suspend fun scanRoot(root: String) {
             currentCoroutineContext().ensureActive()

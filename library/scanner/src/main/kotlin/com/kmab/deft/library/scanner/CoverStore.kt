@@ -27,7 +27,15 @@ class FileCoverStore(
     ): String? =
         withContext(Dispatchers.IO) {
             ensureActive()
-            val decoded = BitmapFactory.decodeByteArray(image, 0, image.size) ?: return@withContext null
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(image, 0, image.size, bounds)
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@withContext null
+            var sample = 1
+            val longest = maxOf(bounds.outWidth, bounds.outHeight)
+            while (longest.toLong() > MAX_DECODE_EDGE.toLong() * sample) sample *= 2
+            ensureActive()
+            val options = BitmapFactory.Options().apply { inSampleSize = sample }
+            val decoded = BitmapFactory.decodeByteArray(image, 0, image.size, options) ?: return@withContext null
             var scaled = decoded
             try {
                 val longEdge = maxOf(decoded.width, decoded.height)
@@ -63,6 +71,7 @@ class FileCoverStore(
         }
 
     private companion object {
+        const val MAX_DECODE_EDGE = 1200
         const val MAX_EDGE = 600
         const val JPEG_QUALITY = 85
     }
