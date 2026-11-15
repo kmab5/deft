@@ -2,15 +2,15 @@ package com.kmab.deft.format.epub
 
 import com.kmab.deft.core.model.ExtractedMetadata
 import com.kmab.deft.core.model.MetadataException
-import org.kxml2.io.KXmlParser
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
 import javax.xml.parsers.DocumentBuilderFactory
 
 internal fun parseXml(bytes: ByteArray): Document {
     val parser =
-        KXmlParser().apply {
+        XmlPullParserFactory.newInstance().newPullParser().apply {
             setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
             setInput(bytes.inputStream(), null)
         }
@@ -44,7 +44,7 @@ internal fun parseXml(bytes: ByteArray): Document {
     return document
 }
 
-private fun resolvedEntity(parser: KXmlParser): String =
+private fun resolvedEntity(parser: XmlPullParser): String =
     parser.text ?: throw MetadataException("Unresolved EPUB XML entity")
 
 internal fun Document.elements(

@@ -4,7 +4,9 @@ plugins {
 }
 dependencies {
     implementation(project(":core:model"))
-    implementation("net.sf.kxml:kxml2:2.3.0")
+    // Android supplies XMLPull. Keep its duplicate API classes off the app runtime.
+    compileOnly("xmlpull:xmlpull:1.1.3.1")
+    testRuntimeOnly("net.sf.kxml:kxml2:2.3.0")
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
