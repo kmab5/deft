@@ -34,3 +34,6 @@ Thumbs.db
 # Python tooling
 __pycache__/
 *.pyc
+
+# Local feedback files
+plans/feedback/
