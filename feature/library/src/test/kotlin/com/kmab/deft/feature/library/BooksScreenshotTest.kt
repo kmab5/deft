@@ -38,6 +38,22 @@ class BooksScreenshotTest {
 
     @Test fun paperList() = render("books-paper-list", dark = false, layout = PreviewLayout(grid = false))
 
+    @Test fun paperGridLargeTextAndMissingMetadata() =
+        render(
+            "books-paper-grid-large-text",
+            dark = false,
+            fontScale = 1.5f,
+            layout = PreviewLayout(missingMetadata = true),
+        )
+
+    @Test fun inkListLargeTextAndMissingMetadata() =
+        render(
+            "books-ink-list-large-text",
+            dark = true,
+            fontScale = 1.5f,
+            layout = PreviewLayout(grid = false, missingMetadata = true),
+        )
+
     @Test fun largeTextDisplayControls() =
         render("books-display-large-text", dark = true, fontScale = 1.5f, sheet = "display")
 
@@ -71,7 +87,7 @@ class BooksScreenshotTest {
         val state =
             mutableStateOf(
                 BooksUiState(
-                    books = sampleBooks(layout.statuses),
+                    books = sampleBooks(layout.statuses, layout.missingMetadata),
                     hasFolders = true,
                     isLoading = false,
                     gridView = layout.grid,
@@ -105,6 +121,17 @@ class BooksScreenshotTest {
                 }
             compose.onNodeWithContentDescription(description).performClick()
         }
+        assertPreviewContent(layout, sheet)
+        compose.waitForIdle()
+        val output = File("build/reports/screenshots/$name.png").apply { parentFile?.mkdirs() }
+        val node = if (sheet == null) compose.onNodeWithTag("books_screen") else compose.onNodeWithTag("books_sheet")
+        node.captureRoboImage(output.path, roborazziOptions = RoborazziOptions(taskType = RoborazziTaskType.Record))
+    }
+
+    private fun assertPreviewContent(
+        layout: PreviewLayout,
+        sheet: String?,
+    ) {
         if (sheet == "display") {
             compose.onNodeWithText("small").assertIsDisplayed()
             compose.onNodeWithText("medium").assertIsDisplayed()
@@ -119,13 +146,16 @@ class BooksScreenshotTest {
                 compose.onNodeWithText("epub · missing · protected", useUnmergedTree = true).assertIsDisplayed()
             }
         }
-        compose.waitForIdle()
-        val output = File("build/reports/screenshots/$name.png").apply { parentFile?.mkdirs() }
-        val node = if (sheet == null) compose.onNodeWithTag("books_screen") else compose.onNodeWithTag("books_sheet")
-        node.captureRoboImage(output.path, roborazziOptions = RoborazziOptions(taskType = RoborazziTaskType.Record))
+        if (layout.missingMetadata) {
+            compose.onNodeWithText("<no-title>").assertIsDisplayed()
+            compose.onNodeWithText("<no-author>").assertIsDisplayed()
+        }
     }
 
-    private fun sampleBooks(statuses: Boolean): List<BookListItem> {
+    private fun sampleBooks(
+        statuses: Boolean,
+        missingMetadata: Boolean,
+    ): List<BookListItem> {
         val titles =
             listOf(
                 "The Well of Ascension",
@@ -147,9 +177,9 @@ class BooksScreenshotTest {
         return titles.mapIndexed { index, title ->
             BookListItem(
                 index.toLong(),
+                if (missingMetadata && index == 0) " " else title,
                 title,
-                title,
-                authors[index],
+                if (missingMetadata && index == 0) " " else authors[index],
                 BookFormat.EPUB,
                 null,
                 Instant.EPOCH,
@@ -163,5 +193,6 @@ class BooksScreenshotTest {
         val grid: Boolean = true,
         val size: BookDisplaySize = BookDisplaySize.MEDIUM,
         val statuses: Boolean = false,
+        val missingMetadata: Boolean = false,
     )
 }

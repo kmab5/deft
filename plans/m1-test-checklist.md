@@ -99,3 +99,16 @@ Record device model, Android version, APK version, failed steps and visual feedb
 	- allow several sizes for the home page display for both grid and list displays
 	- add "last read" for sorting and allow inverse sorting
 	- for the app icon, add a buffer space around the app icon (make the icon itself smaller)
+
+
+## Final M1 follow-up — 2026-11-18
+
+The author reports almost all prior tests passed and explicitly authorizes merging M1 after the listed fixes and local verification. Original test notes above are preserved. M1 is0.1.2; the next M2 APK includes these fixes and is the update for phones already running0.2.0.
+
+- [ ] Choose a format filter, sort and direction; navigate to Settings and back, then force-stop/reopen. The previous choices remain selected and results agree.
+- [ ] Deselect all view formats, reopen, then reset. Empty selection stays empty until reset and never changes Settings → Library scan formats.
+- [ ] Scan settings keeps status, progress and controls inside one coherent panel. Check idle/active/completed states and notification controls at150% system text.
+- [ ] Folder controls, exclusions, file-type choices and storage rows align and remain accessible at large text and landscape width.
+- [ ] Both book grid and list use padded, subtly outlined/lifted cards. Empty metadata reads `<no-title>` and `<no-author>`; long metadata still truncates cleanly.
+
+Local `check assembleRelease` passed on 2026-11-18: 362 test executions, zero failures/errors; ktlint, detekt, lint and network isolation passed. The final normal/150% paper/ink renders were inspected; large-text grids widen to two columns. A whole-change audit found no actionable regressions. Device checks above remain for the combined M2 patch handover; they are not claimed as tested by the agent.

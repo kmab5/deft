@@ -28,7 +28,7 @@ fun BookRow(
 ) {
     val c = LocalDeftColors.current
     Row(
-        modifier.fillMaxWidth().semantics(mergeDescendants = true) {
+        modifier.fillMaxWidth().libraryBookSurface(12.dp).semantics(mergeDescendants = true) {
             stateDescription =
                 if (book.lastReadAt == null) "not read" else "previously read"
         },
@@ -44,14 +44,14 @@ fun BookRow(
         )
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                book.title,
+                book.displayTitle(),
                 color = c.text,
                 style = if (size == BookDisplaySize.LARGE) DeftTypography.title else DeftTypography.label,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                book.authorsDisplay,
+                book.displayAuthors(),
                 color = c.muted,
                 style = DeftTypography.cardTitle,
                 maxLines = 1,

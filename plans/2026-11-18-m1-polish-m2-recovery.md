@@ -17,11 +17,11 @@
 
 ## Stage A — M1 in the isolated foundation checkout
 
-- [ ] Persist `LibrarySettings.formatFilter` with a distinct string-set preference key, default all formats, preserving an explicitly empty set. Add `setFormatFilter(format, enabled)` using atomic DataStore edit. BooksViewModel queries this durable setting rather than SavedStateHandle. Verify sort/direction/filter survive actual DataStore close/reopen and a fresh view model; rapid toggles cannot lose edits or change scan formats.
-- [ ] Restyle BookCard and BookRow with a shared 8 dp rounded surface, 1 dp border/lift and 8–12 dp interior padding. Blank/whitespace title/author displays `<no-title>` / `<no-author>` consistently including generated covers; do not alter stored metadata. Preserve all display sizes and 48 dp targets.
-- [ ] Redesign LibrarySettingsScreen and LibraryStorage: self-contained scan panel with status, compact action and contained progress; coherent folder header/actions, aligned file-type controls, and grouped storage rows. Keep active/idle/error states and large text usable, with no nested decorative cards or arbitrary empty areas.
-- [ ] Add regression tests for persistence and missing metadata. Render library/settings in paper/ink at normal and 150% font scale; inspect one batch, correct findings together.
-- [ ] Record visual/spec decisions and update M1 checklist without overwriting author feedback. Run combined check assembleRelease and whole-change audit; fix failures. Verify M1 certificate, manifest identity and minification explicitly without lowering the private marker from the newer M2 preview.
+- [x] Persist `LibrarySettings.formatFilter` with a distinct string-set preference key, default all formats, preserving an explicitly empty set. Add `setFormatFilter(format, enabled)` using atomic DataStore edit. BooksViewModel queries this durable setting rather than SavedStateHandle. Verify sort/direction/filter survive actual DataStore close/reopen and a fresh view model; rapid toggles cannot lose edits or change scan formats.
+- [x] Restyle BookCard and BookRow with a shared 8 dp rounded surface, 1 dp border/lift and 8–12 dp interior padding. Blank/whitespace title/author displays `<no-title>` / `<no-author>` consistently including generated covers; do not alter stored metadata. Preserve all display sizes and 48 dp targets.
+- [x] Redesign LibrarySettingsScreen and LibraryStorage: self-contained scan panel with status, compact action and contained progress; coherent folder header/actions, aligned file-type controls, and grouped storage rows. Keep active/idle/error states and large text usable, with no nested decorative cards or arbitrary empty areas.
+- [x] Add regression tests for persistence and missing metadata. Render library/settings in paper/ink at normal and 150% font scale; inspect one batch, correct findings together.
+- [x] Record visual/spec decisions and update M1 checklist without overwriting author feedback. Run combined check assembleRelease and whole-change audit; fix failures. Verify M1 certificate, manifest identity and minification explicitly without lowering the private marker from the newer M2 preview.
 - [ ] Commit/push M1, merge --no-ff into main, tag v0.1.2-1, push main/tag. This merge is explicitly requested by the author. Do not wait for CI.
 
 ## Stage B — M2 after merging M1

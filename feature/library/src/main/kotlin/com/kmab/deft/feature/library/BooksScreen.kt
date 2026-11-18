@@ -29,7 +29,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -44,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -182,17 +182,19 @@ private fun BooksCollection(
         state.books.isEmpty() -> EmptyBooks(state, onAddFolder, onRescan, onSettings, onClear)
         state.gridView ->
             LazyVerticalGrid(
-                GridCells.Adaptive(state.gridSize.gridMinimumWidth()),
+                GridCells.Adaptive(
+                    state.gridSize.gridMinimumWidth() * LocalDensity.current.fontScale.coerceAtLeast(1f),
+                ),
                 Modifier.fillMaxSize().testTag("book_grid"),
                 contentPadding =
                     androidx.compose.foundation.layout.PaddingValues(
-                        start = 20.dp,
-                        end = 20.dp,
+                        start = 16.dp,
+                        end = 16.dp,
                         top = 12.dp,
                         bottom = 24.dp,
                     ),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(state.books, key = {
                     it.id
@@ -210,19 +212,18 @@ private fun BooksCollection(
                 Modifier.fillMaxSize().testTag("book_list"),
                 contentPadding =
                     androidx.compose.foundation.layout.PaddingValues(
-                        horizontal = 20.dp,
+                        horizontal = 16.dp,
                         vertical = 12.dp,
                     ),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(state.books, key = { it.id }) { book ->
-                    Column(
+                    BookRow(
+                        book,
+                        loader,
                         Modifier.animateItem(fadeInSpec = null, placementSpec = tween(DeftMotion.MEDIUM)),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        BookRow(book, loader, size = state.listSize)
-                        HorizontalDivider(color = c.line)
-                    }
+                        size = state.listSize,
+                    )
                 }
             }
     }

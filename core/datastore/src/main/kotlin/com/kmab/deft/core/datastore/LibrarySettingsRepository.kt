@@ -34,6 +34,9 @@ class LibrarySettingsRepository
                     reverseSort = p[REVERSE_SORT] ?: false,
                     gridSize = BookDisplaySize.entries.find { it.name == p[GRID_SIZE] } ?: BookDisplaySize.MEDIUM,
                     listSize = BookDisplaySize.entries.find { it.name == p[LIST_SIZE] } ?: BookDisplaySize.MEDIUM,
+                    formatFilter =
+                        p[FILTER_FORMATS]?.mapNotNull { name -> BookFormat.entries.find { it.name == name } }?.toSet()
+                            ?: BookFormat.entries.toSet(),
                 )
             }
 
@@ -44,6 +47,16 @@ class LibrarySettingsRepository
             store.edit { p ->
                 val current = p[FORMATS] ?: BookFormat.entries.map { it.name }.toSet()
                 p[FORMATS] = if (enabled) current + f.name else current - f.name
+            }
+        }
+
+        suspend fun setFormatFilter(
+            format: BookFormat,
+            enabled: Boolean,
+        ) {
+            store.edit { p ->
+                val current = p[FILTER_FORMATS] ?: BookFormat.entries.map { it.name }.toSet()
+                p[FILTER_FORMATS] = if (enabled) current + format.name else current - format.name
             }
         }
 
@@ -77,6 +90,7 @@ class LibrarySettingsRepository
 
         private companion object {
             val FORMATS = stringSetPreferencesKey("enabled_formats")
+            val FILTER_FORMATS = stringSetPreferencesKey("book_format_filter")
             val MISSING = booleanPreferencesKey("show_missing")
             val SORT = stringPreferencesKey("book_sort")
             val GRID = booleanPreferencesKey("grid_view")

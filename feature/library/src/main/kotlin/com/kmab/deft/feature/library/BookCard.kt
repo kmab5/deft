@@ -43,10 +43,10 @@ fun BookCard(
 ) {
     val c = LocalDeftColors.current
     Column(
-        modifier.semantics(mergeDescendants = true) {
+        modifier.libraryBookSurface(8.dp).semantics(mergeDescendants = true) {
             stateDescription = if (book.lastReadAt == null) "not read" else "previously read"
         },
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         LibraryCover(book, imageLoader, showBadges = size != BookDisplaySize.SMALL)
         if (size == BookDisplaySize.SMALL && (book.missing || book.drmProtected)) {
@@ -56,7 +56,7 @@ fun BookCard(
             }
         }
         Text(
-            book.title,
+            book.displayTitle(),
             color = c.text,
             style = if (size == BookDisplaySize.LARGE) DeftTypography.label else DeftTypography.cardTitle,
             minLines = 2,
@@ -84,7 +84,7 @@ internal fun LibraryCover(
     val root = LocalContext.current.filesDir
     val cover = remember(book.coverPath, root) { privateCover(book.coverPath, root) }
     CoverImage(
-        book.title,
+        book.displayTitle(),
         book.firstAuthor(),
         modifier,
         missing = showBadges && book.missing,
@@ -99,18 +99,22 @@ internal fun LibraryCover(
                     ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        book.title
-                            .trim()
-                            .firstOrNull()
-                            ?.uppercaseChar()
-                            ?.toString() ?: "?",
-                        style = DeftTypography.title,
-                        color = DeftColors.Ink.text,
-                    )
+                    if (book.title.isBlank()) {
+                        Icon(DeftIcons.Books, null, Modifier.size(24.dp), tint = DeftColors.Ink.text)
+                    } else {
+                        Text(
+                            book.title
+                                .trim()
+                                .first()
+                                .uppercaseChar()
+                                .toString(),
+                            style = DeftTypography.title,
+                            color = DeftColors.Ink.text,
+                        )
+                    }
                 }
             } else {
-                GeneratedCover(book.title, book.firstAuthor())
+                GeneratedCover(book.displayTitle(), book.firstAuthor())
             }
             if (cover != null) {
                 AsyncImage(
@@ -138,5 +142,3 @@ internal fun privateCover(
         null
     }
 }
-
-internal fun BookListItem.firstAuthor(): String = authorsDisplay.substringBefore(", ")

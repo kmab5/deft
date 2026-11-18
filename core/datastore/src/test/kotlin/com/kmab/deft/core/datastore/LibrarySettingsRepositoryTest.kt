@@ -11,6 +11,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -40,6 +41,7 @@ class LibrarySettingsRepositoryTest {
                     .enabledFormats.size,
             )
             repository.setFormatEnabled(BookFormat.PDF, false)
+            repository.setFormatFilter(BookFormat.TXT, false)
             repository.setShowMissing(true)
             repository.setSort(BookSort.DATE_ADDED)
             repository.setGridView(false)
@@ -64,11 +66,42 @@ class LibrarySettingsRepositoryTest {
                         reverseSort = true,
                         gridSize = BookDisplaySize.SMALL,
                         listSize = BookDisplaySize.LARGE,
+                        formatFilter = BookFormat.entries.toSet() - BookFormat.TXT,
                     ),
                     reopened.settings.first(),
                 )
             } finally {
                 secondScope.cancel()
+            }
+        }
+
+    @Test fun emptyViewFilterAndSortSurviveReopeningWithoutChangingScannerFormats() =
+        runBlocking {
+            val file = temp.newFolder().resolve("library.preferences_pb")
+            val firstScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            val first = LibrarySettingsRepository(PreferenceDataStoreFactory.create(scope = firstScope) { file })
+            try {
+                kotlinx.coroutines.coroutineScope {
+                    BookFormat.entries.forEach { format ->
+                        launch { first.setFormatFilter(format, false) }
+                    }
+                }
+                first.setSort(BookSort.LAST_READ)
+                first.setReverseSort(true)
+            } finally {
+                firstScope.coroutineContext.job.cancelAndJoin()
+            }
+            val secondScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            try {
+                val reopened =
+                    LibrarySettingsRepository(PreferenceDataStoreFactory.create(scope = secondScope) { file })
+                val saved = reopened.settings.first()
+                assertEquals(emptySet<BookFormat>(), saved.formatFilter)
+                assertEquals(BookFormat.entries.toSet(), saved.enabledFormats)
+                assertEquals(BookSort.LAST_READ, saved.sort)
+                assertEquals(true, saved.reverseSort)
+            } finally {
+                secondScope.coroutineContext.job.cancelAndJoin()
             }
         }
 }

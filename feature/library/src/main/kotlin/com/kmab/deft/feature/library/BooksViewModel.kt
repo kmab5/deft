@@ -1,6 +1,5 @@
 package com.kmab.deft.feature.library
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kmab.deft.core.database.model.BookListItem
@@ -68,14 +67,9 @@ class BooksViewModel
         folders: LibraryFolderRepository,
         private val scheduler: ScanScheduler,
         scans: ScanStatusObserver,
-        private val savedState: SavedStateHandle,
     ) : ViewModel() {
         private val error = MutableStateFlow<String?>(null)
-        private val formats = savedState.getStateFlow(FORMATS_KEY, BookFormat.entries.map { it.name })
-        private val queries =
-            combine(settings.settings, formats) { preferences, names ->
-                BookQuery(preferences, names.mapNotNull { name -> BookFormat.entries.find { it.name == name } }.toSet())
-            }
+        private val queries = settings.settings.map { preferences -> BookQuery(preferences, preferences.formatFilter) }
         private val books =
             queries
                 .flatMapLatest { query ->
@@ -142,10 +136,7 @@ class BooksViewModel
         fun setFormat(
             format: BookFormat,
             enabled: Boolean,
-        ) {
-            val current = formats.value.toSet()
-            savedState[FORMATS_KEY] = (if (enabled) current + format.name else current - format.name).toList()
-        }
+        ) = persist { settings.setFormatFilter(format, enabled) }
 
         fun rescan() {
             try {
@@ -179,7 +170,6 @@ class BooksViewModel
         }
 
         private companion object {
-            const val FORMATS_KEY = "book_format_filter"
             const val STOP_TIMEOUT = 5_000L
         }
     }
