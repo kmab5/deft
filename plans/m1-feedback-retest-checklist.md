@@ -1,5 +1,7 @@
 # M1 feedback retest
 
+This records the first feedback handover. The current revision is covered by the [0.1.1 device checklist](m1-0.1.1-test-checklist.md).
+
 This follows the author's Samsung S25 FE / Android 16 review. The original marks and notes remain in [m1-test-checklist.md](m1-test-checklist.md). [Rendered screens](design/m1-feedback.html) show the revised layouts. The source commit, signed APK hash and automated results are recorded in the handover after verification.
 
 ## Verified handover — 2026-11-18

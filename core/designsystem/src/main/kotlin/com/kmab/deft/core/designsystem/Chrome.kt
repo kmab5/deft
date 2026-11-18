@@ -1,8 +1,15 @@
 package com.kmab.deft.core.designsystem
 
 import android.view.WindowManager
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -29,8 +36,12 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +59,7 @@ fun DeftTopBar(
     title: String,
     modifier: Modifier = Modifier,
     scrolled: Boolean = false,
+    navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val c = LocalDeftColors.current
@@ -56,6 +68,7 @@ fun DeftTopBar(
             Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            navigationIcon?.invoke()
             Text(title, Modifier.weight(1f), color = c.text, style = DeftTypography.headline)
             actions()
         }
@@ -136,6 +149,8 @@ fun DeftSheet(
     ) { Column(Modifier.fillMaxWidth().padding(24.dp), content = content) }
 }
 
+private const val DIALOG_START_SCALE = 0.96f
+
 @Composable
 fun DeftDialog(
     title: String,
@@ -147,37 +162,56 @@ fun DeftDialog(
     modifier: Modifier = Modifier,
 ) {
     val c = LocalDeftColors.current
+    val visibility = remember { MutableTransitionState(false).apply { targetState = true } }
+    var afterExit by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val close: (() -> Unit) -> Unit = { action ->
+        if (afterExit == null) {
+            afterExit = action
+            visibility.targetState = false
+        }
+    }
+    LaunchedEffect(visibility.isIdle, visibility.currentState, afterExit) {
+        if (visibility.isIdle && !visibility.currentState) afterExit?.invoke()
+    }
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { close(onDismiss) },
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect { window?.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND) }
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(c.scrim)
-                .pointerInput(onDismiss) {
-                    detectTapGestures { onDismiss() }
-                }.padding(24.dp),
-            contentAlignment = Alignment.Center,
+        AnimatedVisibility(
+            visibleState = visibility,
+            enter =
+                fadeIn(tween(DeftMotion.SHORT)) + scaleIn(tween(DeftMotion.MEDIUM), initialScale = DIALOG_START_SCALE),
+            exit =
+                fadeOut(tween(DeftMotion.SHORT)) + scaleOut(tween(DeftMotion.SHORT), targetScale = DIALOG_START_SCALE),
         ) {
-            Column(
-                modifier
-                    .widthIn(max = 560.dp)
-                    .fillMaxWidth()
-                    .clip(DeftShapes.card)
-                    .background(c.surface)
-                    .pointerInput(Unit) {
-                        detectTapGestures {}
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(c.scrim)
+                    .pointerInput(onDismiss) {
+                        detectTapGestures { close(onDismiss) }
                     }.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                Text(title, style = DeftTypography.headline, color = c.text)
-                Text(body, style = DeftTypography.body, color = c.text)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    DeftButton(dismissLabel, onDismiss, style = DeftButtonStyle.Text)
-                    DeftButton(confirmLabel, onConfirm)
+                Column(
+                    modifier
+                        .widthIn(max = 560.dp)
+                        .fillMaxWidth()
+                        .clip(DeftShapes.card)
+                        .background(c.surface)
+                        .pointerInput(Unit) {
+                            detectTapGestures {}
+                        }.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(title, style = DeftTypography.headline, color = c.text)
+                    Text(body, style = DeftTypography.body, color = c.text)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        DeftButton(dismissLabel, { close(onDismiss) }, style = DeftButtonStyle.Text)
+                        DeftButton(confirmLabel, { close(onConfirm) })
+                    }
                 }
             }
         }

@@ -24,7 +24,7 @@ Deft is an offline, accountless Android ebook reader with a built-in reading tra
 
 ## Versioning
 
-Tags are `vA.B.C-D`: A major, B feature, C fix, D build (a rebuild of the same A.B.C with only build, CI or packaging changes; resets to 1 when A, B or C changes). Tag **every** merge to `main`: a milestone bumps B (M1 is `v0.1.0-1`), a fix bumps C, a build-only change bumps D. Update `deft.version` in `gradle.properties` in the merge. `versionCode = A*1_000_000 + B*10_000 + C*100 + D`. Every tag publishes a GitHub Release (pre-release while A = 0). M10 ships `v1.0.0-1`.
+Tags are `vA.B.C-D`: A major, B feature, C fix, D build (a rebuild of the same A.B.C with only build, CI or packaging changes; resets to 1 when A, B or C changes). Tag **every** merge to `main`: a milestone starts a new B (M1 starts at `v0.1.0-1`), a fix bumps C, a build-only change bumps D. Increment C for each feature/fix revision handed over within a milestone, including pre-merge device feedback (for example `0.1.1-1`). Update `deft.version` in `gradle.properties` before building it. Name the test APK `deft-A.B.C.apk`, without milestone or feedback suffixes. The eventual merge/tag preserves the latest tested version; never downgrade its version code. `versionCode = A*1_000_000 + B*10_000 + C*100 + D`. Every tag publishes a GitHub Release (pre-release while A = 0). M10 ships `v1.0.0-1`.
 
 ## Guardrails
 

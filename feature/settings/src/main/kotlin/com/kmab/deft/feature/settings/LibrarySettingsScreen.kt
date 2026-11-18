@@ -3,6 +3,8 @@ package com.kmab.deft.feature.settings
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,11 +19,13 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,10 +42,13 @@ import com.kmab.deft.core.datastore.LibrarySettings
 import com.kmab.deft.core.designsystem.DeftButton
 import com.kmab.deft.core.designsystem.DeftButtonStyle
 import com.kmab.deft.core.designsystem.DeftDialog
+import com.kmab.deft.core.designsystem.DeftNoticeKind
 import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTopBar
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
+import com.kmab.deft.core.designsystem.LocalDeftNoticeState
+import com.kmab.deft.core.designsystem.icons.DeftActionIcons
 import com.kmab.deft.core.model.BookFormat
 import java.util.Locale
 
@@ -49,11 +56,21 @@ import java.util.Locale
 fun LibrarySettingsScreen(
     onBack: () -> Unit,
     viewModel: LibrarySettingsViewModel = hiltViewModel(),
+    onScanDetails: () -> Unit = {},
 ) {
     val colors = LocalDeftColors.current
     val folders by viewModel.folders.folders.collectAsState(emptyList())
     val settings by viewModel.settings.settings.collectAsState(LibrarySettings())
     val error by viewModel.error.collectAsState()
+    val notices = LocalDeftNoticeState.current
+    LaunchedEffect(error, notices) {
+        error?.let { message ->
+            if (notices != null) {
+                notices.show(message, DeftNoticeKind.Error)
+                viewModel.dismissError()
+            }
+        }
+    }
     val scan by viewModel.scanStatus.collectAsState(
         com.kmab.deft.library.scanner
             .ScanStatus(),
@@ -71,21 +88,15 @@ fun LibrarySettingsScreen(
             exclusionRootName = null
         }
     Scaffold(containerColor = colors.bg, contentColor = colors.text, topBar = {
-        DeftTopBar("library settings", actions = {
-            DeftButton("back", onBack, style = DeftButtonStyle.Text)
+        DeftTopBar("library settings", navigationIcon = {
+            IconButton(onClick = onBack) { Icon(DeftActionIcons.Back, "back") }
         })
     }) { padding ->
         Column(
             Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            LibraryScanPanel(scan, viewModel::scanNow)
-            error?.let { message ->
-                Column(Modifier.fillMaxWidth().background(colors.surface, DeftShapes.card).padding(16.dp)) {
-                    Text(message, color = MaterialTheme.colorScheme.error, style = DeftTypography.body)
-                    DeftButton("dismiss", viewModel::dismissError, style = DeftButtonStyle.Text)
-                }
-            }
+            LibraryScanPanel(scan, viewModel::scanNow, onScanDetails)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("your folders", style = DeftTypography.title)
                 Text(
@@ -95,18 +106,20 @@ fun LibrarySettingsScreen(
                 )
             }
             if (folders.isEmpty()) Text("Choose a folder to find your books.", style = DeftTypography.body)
-            folders.forEach { folder ->
-                FolderRow(folder, viewModel, { removing = folder }) {
-                    exclusionRootUri = folder.treeUri
-                    exclusionRootName = folder.displayName
-                    picker.launch(Uri.parse(folder.treeUri))
+            Column(Modifier.animateContentSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                folders.forEach { folder ->
+                    FolderRow(folder, viewModel, { removing = folder }) {
+                        exclusionRootUri = folder.treeUri
+                        exclusionRootName = folder.displayName
+                        picker.launch(Uri.parse(folder.treeUri))
+                    }
                 }
             }
             DeftButton("add a folder", {
                 exclusionRootUri = null
                 exclusionRootName = null
                 picker.launch(null)
-            }, style = DeftButtonStyle.Secondary)
+            }, style = DeftButtonStyle.Secondary, icon = DeftActionIcons.FolderPlus)
             HorizontalDivider(color = colors.line)
             FileTypes(settings, viewModel::format)
             HorizontalDivider(color = colors.line)
@@ -138,10 +151,17 @@ private fun FolderRow(
     val colors = LocalDeftColors.current
     val exclusions by viewModel.folders.exclusions(folder.treeUri).collectAsState(emptyList())
     Column(
-        Modifier.fillMaxWidth().background(colors.surface, DeftShapes.card).padding(16.dp),
+        Modifier
+            .fillMaxWidth()
+            .animateContentSize()
+            .background(colors.surface, DeftShapes.card)
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(folder.displayName, style = DeftTypography.title)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(DeftActionIcons.Folder, null, tint = colors.muted)
+            Text(folder.displayName, style = DeftTypography.title)
+        }
         Text(
             if (exclusions.isEmpty()) "All subfolders included" else "${exclusions.size} excluded subfolders",
             style = DeftTypography.body,
@@ -154,12 +174,18 @@ private fun FolderRow(
                     "include",
                     { viewModel.unexclude(folder.treeUri, exclusion.documentId) },
                     style = DeftButtonStyle.Text,
+                    icon = DeftActionIcons.FolderPlus,
                 )
             }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            DeftButton("exclude a subfolder", onExclude, style = DeftButtonStyle.Secondary)
-            DeftButton("remove", onRemove, style = DeftButtonStyle.Text)
+            DeftButton(
+                "exclude a subfolder",
+                onExclude,
+                style = DeftButtonStyle.Secondary,
+                icon = DeftActionIcons.FolderMinus,
+            )
+            DeftButton("remove", onRemove, style = DeftButtonStyle.Text, icon = DeftActionIcons.Trash)
         }
     }
 }
@@ -202,39 +228,31 @@ private fun FileTypes(
 private fun LibraryScanPanel(
     scan: com.kmab.deft.library.scanner.ScanStatus,
     onScan: () -> Unit,
+    onScanDetails: () -> Unit,
 ) {
     val colors = LocalDeftColors.current
-    var details by rememberSaveable { mutableStateOf(false) }
-    Column(
-        Modifier.fillMaxWidth().background(colors.surface, DeftShapes.card).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(if (scan.isScanning) "scanning your folders" else "library scan", style = DeftTypography.title)
-        if (scan.isScanning) {
-            LinearProgressIndicator(Modifier.fillMaxWidth(), color = colors.accent, trackColor = colors.surface2)
-            Text(scan.message ?: "Checking book files…", style = DeftTypography.body, color = colors.muted)
-            ScanNotificationPermission()
-        } else {
-            scan.message?.let { Text(it, style = DeftTypography.body) }
-            scan.report?.let {
-                Text(it.summary(), style = DeftTypography.body)
-                if (it.errors > 0) Text("${it.errors} issues need attention", style = DeftTypography.body)
-                DeftButton(if (details) "hide scan details" else "show scan details", {
-                    details = !details
-                }, style = DeftButtonStyle.Text)
-                if (details) {
-                    it.details().forEach { detail ->
-                        Text(detail, style = DeftTypography.body, color = colors.muted)
-                    }
-                }
+    Column(Modifier.fillMaxWidth().animateContentSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            DeftButton(
+                "rescan now",
+                onScan,
+                enabled = !scan.isScanning,
+                style = DeftButtonStyle.Secondary,
+                icon = DeftActionIcons.Refresh,
+            )
+            if (scan.report != null || (scan.isFinished && scan.workId != null)) {
+                IconButton(
+                    onClick = onScanDetails,
+                ) { Icon(DeftActionIcons.Info, "last scan details", tint = colors.muted) }
             }
-                ?: Text(
-                    "Find new books and check your existing files.",
-                    style = DeftTypography.body,
-                    color = colors.muted,
-                )
         }
-        DeftButton("rescan now", onScan, enabled = !scan.isScanning)
+        AnimatedVisibility(scan.isScanning) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                LinearProgressIndicator(Modifier.fillMaxWidth(), color = colors.accent, trackColor = colors.surface2)
+                Text(scan.message ?: "Checking book files…", style = DeftTypography.body, color = colors.muted)
+                ScanNotificationPermission()
+            }
+        }
     }
 }
 

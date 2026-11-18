@@ -41,7 +41,10 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import com.kmab.deft.core.common.TimeSource
 import com.kmab.deft.core.database.AppDatabase
 import com.kmab.deft.core.datastore.LibrarySettingsRepository
+import com.kmab.deft.core.designsystem.DeftNoticeHost
+import com.kmab.deft.core.designsystem.DeftNoticeState
 import com.kmab.deft.core.designsystem.DeftTheme
+import com.kmab.deft.core.designsystem.LocalDeftNoticeState
 import com.kmab.deft.library.scanner.DocumentEntry
 import com.kmab.deft.library.scanner.DocumentTree
 import com.kmab.deft.library.scanner.FolderAccess
@@ -212,10 +215,30 @@ class LibrarySettingsScreenTest {
 
     @Test fun invalidExclusionReportsErrorAndRemovalUsesRepositoryOutbox() {
         runBlocking { folders.add(Uri.parse("content://test/tree/root")) }
-        compose.setContent { if (renderScreen.value) DeftTheme { LibrarySettingsScreen({}, vm) } }
+        val notices = DeftNoticeState()
+        compose.setContent {
+            if (renderScreen.value) {
+                DeftTheme {
+                    CompositionLocalProvider(LocalDeftNoticeState provides notices) {
+                        Box {
+                            LibrarySettingsScreen({}, vm)
+                            DeftNoticeHost(notices)
+                        }
+                    }
+                }
+            }
+        }
         compose.runOnIdle { vm.exclude("content://test/tree/root", "Books", Uri.parse("content://test/tree/outside")) }
-        compose.waitUntil { vm.error.value != null }
-        assertEquals("Pick a folder inside Books", vm.error.value)
+        compose.waitUntil {
+            compose
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText("Pick a folder inside Books"),
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+        compose.onNodeWithText("Pick a folder inside Books").assertIsDisplayed()
+        compose.runOnIdle { assertEquals(null, vm.error.value) }
         compose.runOnIdle { vm.remove("content://test/tree/root") }
         compose.waitUntil { runBlocking { db.libraryFolderDao().pendingRemovals().isNotEmpty() } }
         assertEquals(listOf("content://test/tree/root"), runBlocking { db.libraryFolderDao().pendingRemovals() })
@@ -229,6 +252,7 @@ class LibrarySettingsScreenTest {
         compose.onAllNodes(isToggleable()).assertCountEquals(9)
         compose.onNodeWithText("remove").performScrollTo().performClick()
         compose.onNodeWithText("cancel").performClick()
+        compose.waitForIdle()
         assertEquals(1, runBlocking { db.libraryFolderDao().getAll().size })
         compose.onNodeWithText("remove").performScrollTo().performClick()
         compose.onNodeWithText("Its books will be marked missing. Their history stays.").assertExists()
@@ -238,6 +262,7 @@ class LibrarySettingsScreenTest {
                     .hasText("remove"),
             )[1]
             .performClick()
+        compose.waitForIdle()
         compose.waitUntil { runBlocking { db.libraryFolderDao().getAll().isEmpty() } }
         manager.cancelAllWork().result.get()
         compose.onNodeWithText("rescan now").performScrollTo().performClick()

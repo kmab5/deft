@@ -96,12 +96,20 @@ class BooksScreenshotTest {
                 )
             }
         }
-        if (sheet != null) compose.onNodeWithText(sheet).performClick()
+        if (sheet != null) {
+            val description =
+                when (sheet) {
+                    "filters" -> "filter books"
+                    "sort" -> "sort books"
+                    else -> "display options"
+                }
+            compose.onNodeWithContentDescription(description).performClick()
+        }
         if (sheet == "display") {
             compose.onNodeWithText("small").assertIsDisplayed()
             compose.onNodeWithText("medium").assertIsDisplayed()
             compose.onNodeWithText("large").assertIsDisplayed()
-            compose.onNodeWithText("done").assertIsDisplayed()
+            compose.onNodeWithContentDescription("close popup").assertIsDisplayed()
         }
         if (layout.statuses) {
             if (layout.grid) {

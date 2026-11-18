@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.progressBarRangeInfo
@@ -152,6 +153,7 @@ fun DeftButton(
     modifier: Modifier = Modifier,
     style: DeftButtonStyle = DeftButtonStyle.Primary,
     enabled: Boolean = true,
+    icon: ImageVector? = null,
 ) {
     val c = LocalDeftColors.current
     Box(
@@ -186,7 +188,10 @@ fun DeftButton(
                 ).padding(horizontal = 16.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text(label, style = DeftTypography.label, color = if (enabled) fg else c.dim)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (icon != null) Icon(icon, null, Modifier.size(20.dp), tint = if (enabled) fg else c.dim)
+                Text(label, style = DeftTypography.label, color = if (enabled) fg else c.dim)
+            }
         }
     }
 }

@@ -2,6 +2,7 @@ package com.kmab.deft.feature.settings
 
 import android.content.Context
 import android.text.format.Formatter
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +25,7 @@ internal data class LibraryStorage(
     val database: Long,
     val covers: Long,
     val cache: Long,
+    val reports: Long,
 ) {
     companion object {
         fun read(context: Context): LibraryStorage =
@@ -31,6 +33,7 @@ internal data class LibraryStorage(
                 database = context.getDatabasePath("deft.db").parentFile?.let(::directoryBytes) ?: 0,
                 covers = directoryBytes(File(context.filesDir, "covers")),
                 cache = directoryBytes(context.cacheDir),
+                reports = directoryBytes(File(context.filesDir, "scan-reports")),
             )
     }
 }
@@ -45,16 +48,20 @@ internal fun LibraryStorageSection(refreshKey: Any?) {
     val storage by produceState<LibraryStorage?>(null, refreshKey) {
         value = withContext(Dispatchers.IO) { LibraryStorage.read(context) }
     }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.animateContentSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("storage on this device", style = DeftTypography.title)
         storage?.let { sizes ->
-            listOf("databases" to sizes.database, "cover thumbnails" to sizes.covers, "temporary cache" to sizes.cache)
-                .forEach { (label, size) ->
-                    Row(Modifier.fillMaxWidth()) {
-                        Text(label, Modifier.weight(1f), style = DeftTypography.body, color = colors.muted)
-                        Text(Formatter.formatShortFileSize(context, size), style = DeftTypography.label)
-                    }
+            listOf(
+                "databases" to sizes.database,
+                "cover thumbnails" to sizes.covers,
+                "scan reports" to sizes.reports,
+                "temporary cache" to sizes.cache,
+            ).forEach { (label, size) ->
+                Row(Modifier.fillMaxWidth()) {
+                    Text(label, Modifier.weight(1f), style = DeftTypography.body, color = colors.muted)
+                    Text(Formatter.formatShortFileSize(context, size), style = DeftTypography.label)
                 }
+            }
         }
         Text(
             "Book files stay in your folders. Deft stores their details and small cover images here.",

@@ -1,5 +1,7 @@
 package com.kmab.deft.feature.library
 
+import android.content.Context
+import android.provider.Settings
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
@@ -9,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.test.core.app.ApplicationProvider
 import com.kmab.deft.core.database.model.BookListItem
 import com.kmab.deft.core.designsystem.DeftTheme
 import com.kmab.deft.core.model.BookDisplaySize
@@ -71,9 +74,9 @@ class BooksScreenTest {
         compose.onNodeWithText("missing", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithText("protected", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithText("A book").assertHasNoClickAction()
-        compose.onNodeWithText("display").performClick()
+        compose.onNodeWithContentDescription("display options").performClick()
         compose.onNodeWithText("list").performClick()
-        compose.onNodeWithText("done").performClick()
+        compose.onNodeWithContentDescription("close popup").performClick()
         compose.onNodeWithTag("book_list").assertIsDisplayed()
         compose.onNodeWithTag("book_grid").assertDoesNotExist()
     }
@@ -105,7 +108,7 @@ class BooksScreenTest {
                 )
             }
         }
-        compose.onNodeWithText("filters").performClick()
+        compose.onNodeWithContentDescription("filter books").performClick()
         compose.onNodeWithText("txt").performClick()
         compose
             .onNodeWithContentDescription("show missing")
@@ -114,12 +117,12 @@ class BooksScreenTest {
             .performClick()
         assertFalse(BookFormat.TXT in state.value.formatFilter)
         assertEquals(true, state.value.showMissing)
-        compose.onNodeWithText("done").performClick()
-        compose.onNodeWithText("sort").performClick()
+        compose.onNodeWithContentDescription("close popup").performClick()
+        compose.onNodeWithContentDescription("sort books").performClick()
         compose.onNodeWithText("author").performClick()
         assertEquals(BookSort.AUTHOR, state.value.sort)
-        compose.onNodeWithText("done").performClick()
-        compose.onNodeWithText("author · a to z").assertIsDisplayed()
+        compose.onNodeWithContentDescription("close popup").performClick()
+        compose.onNodeWithText("author").assertIsDisplayed()
     }
 
     @Test fun displaySizesAndSortDirectionApplyWithoutChangingTheOtherLayoutSize() {
@@ -141,24 +144,65 @@ class BooksScreenTest {
                 )
             }
         }
-        compose.onNodeWithText("display").performClick()
+        compose.onNodeWithContentDescription("display options").performClick()
         compose.onNodeWithText("small").performClick()
         compose.onNodeWithText("list").performClick()
         compose.onNodeWithText("large").performClick()
         assertEquals(BookDisplaySize.SMALL, state.value.gridSize)
         assertEquals(BookDisplaySize.LARGE, state.value.listSize)
-        compose.onNodeWithText("done").performClick()
-        compose.onNodeWithText("sort").performClick()
+        compose.onNodeWithContentDescription("close popup").performClick()
+        compose.onNodeWithContentDescription("sort books").performClick()
         compose.onNodeWithText("last read").performClick()
         compose.onNodeWithText("oldest first").performClick()
         compose.onNodeWithText("Books with no reading history stay at the end.").assertIsDisplayed()
-        compose.onNodeWithText("done").performClick()
+        compose.onNodeWithContentDescription("close popup").performClick()
         assertEquals(BookSort.LAST_READ, state.value.sort)
         assertEquals(true, state.value.reverseSort)
-        compose.onNodeWithText("last read · oldest first").assertIsDisplayed()
+        compose.onNodeWithText("last read").assertIsDisplayed()
     }
 
-    @Test fun interruptedScanMessageTakesPrecedenceOverPreviousSuccessfulReport() {
+    @Test fun runningProgressDisappearsWhenScanningStops() {
+        val state =
+            mutableStateOf(
+                BooksUiState(isLoading = false, isScanning = true, scanMessage = "scanning · 30 files checked"),
+            )
+        compose.setContent { DeftTheme { BooksScreen(state.value, {}, {}, {}, {}, {}, {}, { _, _ -> }) } }
+        compose.onNodeWithText("scanning · 30 files checked").assertIsDisplayed()
+        compose.runOnIdle { state.value = state.value.copy(isScanning = false) }
+        compose.onNodeWithText("scanning · 30 files checked").assertDoesNotExist()
+    }
+
+    @Test fun displayChangesAndPopupCloseWorkWithSystemAnimationsDisabled() {
+        val resolver = ApplicationProvider.getApplicationContext<Context>().contentResolver
+        val original = Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
+        Settings.Global.putFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
+        try {
+            val state = mutableStateOf(BooksUiState(isLoading = false))
+            compose.setContent {
+                DeftTheme {
+                    BooksScreen(
+                        state.value,
+                        {},
+                        {},
+                        {},
+                        { state.value = state.value.copy(gridView = it) },
+                        {},
+                        {},
+                        { _, _ -> },
+                    )
+                }
+            }
+            compose.onNodeWithContentDescription("display options").performClick()
+            compose.onNodeWithText("list").performClick()
+            assertFalse(state.value.gridView)
+            compose.onNodeWithContentDescription("close popup").performClick()
+            compose.onNodeWithTag("books_sheet").assertDoesNotExist()
+        } finally {
+            Settings.Global.putFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, original)
+        }
+    }
+
+    @Test fun completedScansAndErrorsDoNotOccupyTheBooksBody() {
         val previous =
             com.kmab.deft.library.scanner
                 .ScanReport(2, 0, 0, 0, 0, 0, emptyList())
@@ -177,11 +221,33 @@ class BooksScreenTest {
                 )
             }
         }
-        compose.onNodeWithText(message).assertIsDisplayed()
+        compose.onNodeWithText(message).assertDoesNotExist()
         compose.onNodeWithText(previous.summary()).assertDoesNotExist()
     }
 
-    @Test fun unavailableFolderFeedbackLinksToLibrarySettings() {
+    @Test fun cancelledScanStillOffersItsSavedDetails() {
+        var opens = 0
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    BooksUiState(isLoading = false, hasScanDetails = true),
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    { _, _ -> },
+                    onScanDetails = { opens++ },
+                )
+            }
+        }
+        compose.onNodeWithContentDescription("more options").performClick()
+        compose.onNodeWithText("last scan").performClick()
+        assertEquals(1, opens)
+    }
+
+    @Test fun lastScanOverflowOpensDedicatedDetailsWithoutNavigatingSettings() {
         var opens = 0
         val report =
             com.kmab.deft.library.scanner
@@ -196,17 +262,19 @@ class BooksScreenTest {
                         scanMessage = "1 folder unavailable. Check library settings.",
                     ),
                     {},
-                    { opens++ },
+                    {},
                     {},
                     {},
                     {},
                     {},
                     { _, _ -> },
+                    onScanDetails = { opens++ },
                 )
             }
         }
-        compose.onNodeWithText("1 folder unavailable. Check library settings.").assertIsDisplayed()
-        compose.onNodeWithText("library settings").performClick()
+        compose.onNodeWithText("1 folder unavailable. Check library settings.").assertDoesNotExist()
+        compose.onNodeWithContentDescription("more options").performClick()
+        compose.onNodeWithText("last scan").performClick()
         assertEquals(1, opens)
         compose.onNodeWithText("private-uri").assertDoesNotExist()
     }

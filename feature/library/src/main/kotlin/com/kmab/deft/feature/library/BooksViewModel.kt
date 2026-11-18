@@ -44,6 +44,7 @@ data class BooksUiState(
     val reverseSort: Boolean = false,
     val gridSize: BookDisplaySize = BookDisplaySize.MEDIUM,
     val listSize: BookDisplaySize = BookDisplaySize.MEDIUM,
+    val hasScanDetails: Boolean = false,
 )
 
 private data class BookQuery(
@@ -122,6 +123,7 @@ class BooksViewModel
                     result.query.settings.reverseSort,
                     result.query.settings.gridSize,
                     result.query.settings.listSize,
+                    hasScanDetails = scan.report != null || (scan.isFinished && scan.workId != null),
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), BooksUiState())
 
