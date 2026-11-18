@@ -27,6 +27,7 @@ import com.kmab.deft.core.designsystem.DeftNoticeKind
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.LocalDeftNoticeState
 import com.kmab.deft.core.designsystem.rememberDeftNoticeState
+import com.kmab.deft.feature.book.bookGraph
 import com.kmab.deft.feature.library.ScanDetailsSheet
 import com.kmab.deft.feature.library.libraryGraph
 import com.kmab.deft.feature.settings.settingsGraph
@@ -46,6 +47,7 @@ private val NoticeMemorySaver =
 internal fun DeftApp(
     observer: ScanStatusObserver,
     reports: ScanReportStore,
+    onRead: (Long) -> Unit,
 ) {
     val notices = rememberDeftNoticeState()
     val scan by observer.status.collectAsStateWithLifecycle(ScanStatus())
@@ -88,7 +90,8 @@ internal fun DeftApp(
                     }
                 }
                 NavHost(navController, startDestination = "books") {
-                    libraryGraph(navController, onScanDetails = openDetails)
+                    libraryGraph(navController, onScanDetails = openDetails, onRead = onRead)
+                    bookGraph(navController, onRead)
                     settingsGraph(navController, onScanDetails = openDetails)
                 }
                 DeftNoticeHost(notices, Modifier.align(Alignment.BottomCenter), paused = selectedReport != null)

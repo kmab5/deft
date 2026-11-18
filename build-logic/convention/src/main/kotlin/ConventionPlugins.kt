@@ -55,7 +55,7 @@ class DeftAndroidLibraryPlugin : Plugin<Project> {
             quality()
             androidTests()
             extensions.configure(LibraryExtension::class.java) {
-                it.namespace = "com.kmab.deft." + path.drop(1).replace(':', '.')
+                it.namespace = "com.kmab.deft." + path.drop(1).replace(':', '.').replace('-', '_')
                 it.compileSdk = 36
                 it.defaultConfig.minSdk = 26
                 it.compileOptions.sourceCompatibility = JavaVersion.VERSION_17

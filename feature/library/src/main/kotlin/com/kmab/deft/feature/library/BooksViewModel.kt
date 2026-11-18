@@ -45,6 +45,7 @@ data class BooksUiState(
     val gridSize: BookDisplaySize = BookDisplaySize.MEDIUM,
     val listSize: BookDisplaySize = BookDisplaySize.MEDIUM,
     val hasScanDetails: Boolean = false,
+    val continueReading: BookListItem? = null,
 )
 
 private data class BookQuery(
@@ -106,8 +107,20 @@ class BooksViewModel
                         ),
                     )
                 }
+        private val continueReading =
+            repository.observeContinueReading().catch { failure ->
+                if (failure is CancellationException) throw failure
+                error.value = "Couldn't load your last reading position. Open the book to try again."
+                emit(null)
+            }
         val uiState =
-            combine(books, folders.folders, scans.status, error) { result, roots, scan, operationError ->
+            combine(books, folders.folders, scans.status, error, continueReading) {
+                result,
+                roots,
+                scan,
+                operationError,
+                recent,
+                ->
                 BooksUiState(
                     result.books,
                     result.query.settings.gridView,
@@ -124,6 +137,7 @@ class BooksViewModel
                     result.query.settings.gridSize,
                     result.query.settings.listSize,
                     hasScanDetails = scan.report != null || (scan.isFinished && scan.workId != null),
+                    continueReading = recent,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), BooksUiState())
 

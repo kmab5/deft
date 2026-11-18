@@ -3,7 +3,7 @@ package com.kmab.deft.feature.library
 import android.content.Context
 import android.provider.Settings
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.test.assertHasNoClickAction
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -73,7 +73,7 @@ class BooksScreenTest {
         }
         compose.onNodeWithText("missing", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithText("protected", useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithText("A book").assertHasNoClickAction()
+        compose.onNodeWithText("A book").assertHasClickAction()
         compose.onNodeWithContentDescription("display options").performClick()
         compose.onNodeWithText("list").performClick()
         compose.onNodeWithContentDescription("close popup").performClick()
@@ -277,5 +277,45 @@ class BooksScreenTest {
         compose.onNodeWithText("last scan").performClick()
         assertEquals(1, opens)
         compose.onNodeWithText("private-uri").assertDoesNotExist()
+    }
+
+    @Test fun bookDetailsAndContinueUseTheirOwnBookIdentity() {
+        val book =
+            BookListItem(
+                7,
+                "Earthsea",
+                "earthsea",
+                "Ursula K. Le Guin",
+                BookFormat.EPUB,
+                null,
+                Instant.EPOCH,
+                false,
+                false,
+                totalProgression = 0.25,
+            )
+        var detailId = 0L
+        var readId = 0L
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    BooksUiState(books = listOf(book), isLoading = false, continueReading = book),
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    { _, _ -> },
+                    onOpenBook = { detailId = it },
+                    onContinueReading = { readId = it },
+                )
+            }
+        }
+        compose.onNodeWithTag("book_7").performClick()
+        assertEquals(7L, detailId)
+        assertEquals(0L, readId)
+        compose.onNodeWithTag("continue_reading").performClick()
+        assertEquals(7L, readId)
+        compose.onNodeWithText("25%").assertExists()
     }
 }

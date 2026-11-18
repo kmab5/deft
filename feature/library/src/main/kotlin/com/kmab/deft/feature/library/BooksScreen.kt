@@ -74,6 +74,8 @@ fun BooksScreen(
     onGridSizeChange: (BookDisplaySize) -> Unit = {},
     onListSizeChange: (BookDisplaySize) -> Unit = {},
     onScanDetails: () -> Unit = {},
+    onOpenBook: (Long) -> Unit = {},
+    onContinueReading: (Long) -> Unit = {},
 ) {
     val c = LocalDeftColors.current
     var menu by remember { mutableStateOf(false) }
@@ -120,6 +122,9 @@ fun BooksScreen(
                 }
             }
         }
+        AnimatedVisibility(state.continueReading != null) {
+            state.continueReading?.let { book -> ContinueReadingCard(book, loader) { onContinueReading(book.id) } }
+        }
         BooksToolbar(state, onFilters = { sheet = "filters" }, onSort = { sheet = "sort" }, onDisplay = {
             sheet =
                 "display"
@@ -150,6 +155,7 @@ fun BooksScreen(
                     onAddFolder,
                     onRescan,
                     onSettings,
+                    onOpenBook,
                 ) {
                     BookFormat.entries.forEach { onFormatChange(it, true) }
                 }
@@ -170,6 +176,7 @@ private fun BooksCollection(
     onAddFolder: () -> Unit,
     onRescan: () -> Unit,
     onSettings: () -> Unit,
+    onOpenBook: (Long) -> Unit,
     onClear: () -> Unit,
 ) {
     val c = LocalDeftColors.current
@@ -202,6 +209,7 @@ private fun BooksCollection(
                         loader,
                         Modifier.animateItem(fadeInSpec = null, placementSpec = tween(DeftMotion.MEDIUM)),
                         size = state.gridSize,
+                        onClick = { onOpenBook(book.id) },
                     )
                 }
             }
@@ -220,7 +228,7 @@ private fun BooksCollection(
                         Modifier.animateItem(fadeInSpec = null, placementSpec = tween(DeftMotion.MEDIUM)),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        BookRow(book, loader, size = state.listSize)
+                        BookRow(book, loader, size = state.listSize, onClick = { onOpenBook(book.id) })
                         HorizontalDivider(color = c.line)
                     }
                 }

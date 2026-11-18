@@ -57,6 +57,7 @@ fun LibrarySettingsScreen(
     onBack: () -> Unit,
     viewModel: LibrarySettingsViewModel = hiltViewModel(),
     onScanDetails: () -> Unit = {},
+    onIgnoredBooks: () -> Unit = {},
 ) {
     val colors = LocalDeftColors.current
     val folders by viewModel.folders.folders.collectAsState(emptyList())
@@ -123,6 +124,12 @@ fun LibrarySettingsScreen(
             HorizontalDivider(color = colors.line)
             FileTypes(settings, viewModel::format)
             HorizontalDivider(color = colors.line)
+            DeftButton(
+                "ignored books",
+                onIgnoredBooks,
+                style = DeftButtonStyle.Secondary,
+                icon = DeftActionIcons.FolderMinus,
+            )
             LibraryStorageSection(scan.isScanning)
         }
     }

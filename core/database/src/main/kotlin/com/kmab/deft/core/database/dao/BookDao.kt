@@ -9,8 +9,11 @@ import com.kmab.deft.core.database.model.BookListItem
 import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 
 @Dao
+// Book metadata, library visibility, and reading position share one stable identity.
+@Suppress("TooManyFunctions")
 abstract class BookDao {
     @Query("SELECT * FROM books WHERE contentHash = :hash")
     abstract suspend fun findByHash(hash: String): BookEntity?
@@ -18,6 +21,87 @@ abstract class BookDao {
     @Insert abstract suspend fun insert(book: BookEntity): Long
 
     @Update abstract suspend fun update(book: BookEntity)
+
+    @Query("SELECT * FROM books WHERE id = :id")
+    abstract suspend fun getById(id: Long): BookEntity?
+
+    @Query("SELECT * FROM books WHERE id = :id")
+    abstract fun observeById(id: Long): Flow<BookEntity?>
+
+    @Query(
+        "UPDATE books SET currentLocator = :locator, totalProgression = :progression, " +
+            "lastReadAt = MAX(COALESCE(lastReadAt, :at), :at) WHERE id = :id",
+    )
+    abstract suspend fun savePosition(
+        id: Long,
+        locator: String,
+        progression: Double,
+        at: Instant,
+    )
+
+    // Keep open order stable when the wall clock moves backward or two opens share a millisecond.
+    @Query(
+        "UPDATE books SET lastOpenedAt = " +
+            "MAX(:at, COALESCE((SELECT MAX(lastOpenedAt) + 1 FROM books), :at)) WHERE id = :id",
+    )
+    abstract suspend fun recordOpened(
+        id: Long,
+        at: Instant,
+    )
+
+    @Query("UPDATE books SET ignored = :ignored WHERE id = :id")
+    abstract suspend fun setIgnored(
+        id: Long,
+        ignored: Boolean,
+    )
+
+    @Query("DELETE FROM books WHERE id = :id")
+    abstract suspend fun forget(id: Long)
+
+    @Query(
+        """
+ SELECT b.id, COALESCE(b.titleOverride, b.title) AS title, b.sortTitle,
+ COALESCE((SELECT group_concat(name, ', ') FROM (SELECT a.name FROM book_authors ba JOIN authors a ON a.id = ba.authorId WHERE ba.bookId = b.id AND ba.overridden = (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = b.id) ORDER BY ba.position, a.id)), '') AS authorsDisplay,
+ b.format, COALESCE(b.coverOverridePath, b.coverPath) AS coverPath, b.addedAt, b.lastReadAt, b.totalProgression,
+ NOT EXISTS (SELECT 1 FROM book_files f WHERE f.bookId = b.id AND f.missing = 0) AS missing, b.drmProtected
+ FROM books b  WHERE b.ignored = 1 ORDER BY b.sortTitle COLLATE NOCASE, b.id
+    """,
+    )
+    abstract fun observeIgnored(): Flow<List<BookListItem>>
+
+    @Query(
+        """
+ SELECT b.id, COALESCE(b.titleOverride, b.title) AS title, b.sortTitle,
+ COALESCE((SELECT group_concat(name, ', ') FROM (SELECT a.name FROM book_authors ba JOIN authors a ON a.id = ba.authorId WHERE ba.bookId = b.id AND ba.overridden = (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = b.id) ORDER BY ba.position, a.id)), '') AS authorsDisplay,
+ b.format, COALESCE(b.coverOverridePath, b.coverPath) AS coverPath, b.addedAt, b.lastReadAt, b.totalProgression,
+ NOT EXISTS (SELECT 1 FROM book_files f WHERE f.bookId = b.id AND f.missing = 0) AS missing, b.drmProtected
+ FROM books b  WHERE b.ignored = 0 AND b.drmProtected = 0 AND b.format = 'EPUB'
+      AND b.currentLocator IS NOT NULL AND b.lastOpenedAt IS NOT NULL
+      AND EXISTS (SELECT 1 FROM book_files f WHERE f.bookId = b.id AND f.missing = 0)
+      ORDER BY b.lastOpenedAt DESC, b.id DESC LIMIT 1
+    """,
+    )
+    abstract fun observeContinueReading(): Flow<BookListItem?>
+
+    @Query(
+        """
+      SELECT a.name FROM book_authors ba JOIN authors a ON a.id = ba.authorId
+      WHERE ba.bookId = :id AND ba.overridden =
+        (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = :id)
+      ORDER BY ba.position, a.id
+    """,
+    )
+    abstract fun observeAuthorNames(id: Long): Flow<List<String>>
+
+    @Query(
+        """
+      SELECT a.name FROM book_authors ba JOIN authors a ON a.id = ba.authorId
+      WHERE ba.bookId = :id AND ba.overridden =
+        (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = :id)
+      ORDER BY ba.position, a.id
+    """,
+    )
+    abstract suspend fun getAuthorNames(id: Long): List<String>
 
     @Query("SELECT NOT EXISTS (SELECT 1 FROM book_files WHERE bookId = :bookId AND missing = 0)")
     abstract suspend fun isMissing(bookId: Long): Boolean
@@ -34,7 +118,7 @@ abstract class BookDao {
         """
  SELECT b.id, COALESCE(b.titleOverride, b.title) AS title, b.sortTitle,
  COALESCE((SELECT group_concat(name, ', ') FROM (SELECT a.name FROM book_authors ba JOIN authors a ON a.id = ba.authorId WHERE ba.bookId = b.id AND ba.overridden = (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = b.id) ORDER BY ba.position, a.id)), '') AS authorsDisplay,
- b.format, COALESCE(b.coverOverridePath, b.coverPath) AS coverPath, b.addedAt, b.lastReadAt,
+ b.format, COALESCE(b.coverOverridePath, b.coverPath) AS coverPath, b.addedAt, b.lastReadAt, b.totalProgression,
  NOT EXISTS (SELECT 1 FROM book_files f WHERE f.bookId = b.id AND f.missing = 0) AS missing, b.drmProtected
  FROM books b WHERE b.ignored = 0 AND (:allFormats OR b.format IN (:formats))
  AND (:includeMissing OR EXISTS (SELECT 1 FROM book_files f WHERE f.bookId = b.id AND f.missing = 0))

@@ -1,0 +1,222 @@
+[
+  {
+    "family": "Literata",
+    "sources": [
+      {
+        "face": "regular",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/literata/Literata%5Bopsz%2Cwght%5D.ttf",
+        "sha256": "b41138c9373112f32abb589cc22e8674b06ed4048b0c513be922bdd26f274440"
+      },
+      {
+        "face": "italic",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/literata/Literata-Italic%5Bopsz%2Cwght%5D.ttf",
+        "sha256": "d483dfaeba9cbf4ce71d32a52ee65df82f7e35b15fff8d1011cdb242d1fcd465"
+      },
+      {
+        "face": "bold",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/literata/Literata%5Bopsz%2Cwght%5D.ttf",
+        "sha256": "b41138c9373112f32abb589cc22e8674b06ed4048b0c513be922bdd26f274440"
+      }
+    ]
+  },
+  {
+    "family": "Source Serif 4",
+    "sources": [
+      {
+        "face": "regular",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/sourceserif4/SourceSerif4%5Bopsz%2Cwght%5D.ttf",
+        "sha256": "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b"
+      },
+      {
+        "face": "italic",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/sourceserif4/SourceSerif4-Italic%5Bopsz%2Cwght%5D.ttf",
+        "sha256": "15fbc7e4679489a501998c3669272637a6646388ef7e4bd77eebb5bf967a1f42"
+      },
+      {
+        "face": "bold",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/sourceserif4/SourceSerif4%5Bopsz%2Cwght%5D.ttf",
+        "sha256": "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b"
+      }
+    ]
+  },
+  {
+    "family": "PT Serif",
+    "sources": [
+      {
+        "face": "regular",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/ptserif/PT_Serif-Web-Regular.ttf",
+        "sha256": "a4951fade06ff8f09b7673aa81ffb65a8cd409e24d3289a6dc670bc4dda2557a"
+      },
+      {
+        "face": "italic",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/ptserif/PT_Serif-Web-Italic.ttf",
+        "sha256": "f57e95ff9dc85691a3b2e193f2028db36f6663939a46c0fc4f286d618b80b7ce"
+      },
+      {
+        "face": "bold",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/ptserif/PT_Serif-Web-Bold.ttf",
+        "sha256": "038ba7336bd7ea14f12ad155bed51a4345cac5153275d521dec3ba04021c526e"
+      }
+    ]
+  },
+  {
+    "family": "EB Garamond",
+    "sources": [
+      {
+        "face": "regular",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/ebgaramond/EBGaramond%5Bwght%5D.ttf",
+        "sha256": "ef9512f92f6d579e5dc75af59a5a4b1b8b47d2eda89e00b954d44520e5369027"
+      },
+      {
+        "face": "italic",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/ebgaramond/EBGaramond-Italic%5Bwght%5D.ttf",
+        "sha256": "bba2c4499c93c9612b90b9825d32b07da52fce2fe57562a1eb6b833553f93c4e"
+      },
+      {
+        "face": "bold",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/ebgaramond/EBGaramond%5Bwght%5D.ttf",
+        "sha256": "ef9512f92f6d579e5dc75af59a5a4b1b8b47d2eda89e00b954d44520e5369027"
+      }
+    ]
+  },
+  {
+    "family": "Crimson Pro",
+    "sources": [
+      {
+        "face": "regular",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/crimsonpro/CrimsonPro%5Bwght%5D.ttf",
+        "sha256": "16aa9fb7300a93637da51fac03a071b2ff08b6bbf65f99c794c25f040b58af6a"
+      },
+      {
+        "face": "italic",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/crimsonpro/CrimsonPro-Italic%5Bwght%5D.ttf",
+        "sha256": "a74dc11dcf2fbb1452064e42395a40a907ca630b49cff86012223785e52b2559"
+      },
+      {
+        "face": "bold",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/crimsonpro/CrimsonPro%5Bwght%5D.ttf",
+        "sha256": "16aa9fb7300a93637da51fac03a071b2ff08b6bbf65f99c794c25f040b58af6a"
+      }
+    ]
+  },
+  {
+    "family": "Bitter",
+    "sources": [
+      {
+        "face": "regular",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/bitter/Bitter%5Bwght%5D.ttf",
+        "sha256": "ef2b9a711fb02f1e5823b34da1b7450e0fc76793b7d733a8b41006e24916d4a7"
+      },
+      {
+        "face": "italic",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/bitter/Bitter-Italic%5Bwght%5D.ttf",
+        "sha256": "5e6e0af503171c9d7b4be7a22c16f474d7a638cf83a80051d825bcc58d664bc3"
+      },
+      {
+        "face": "bold",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/bitter/Bitter%5Bwght%5D.ttf",
+        "sha256": "ef2b9a711fb02f1e5823b34da1b7450e0fc76793b7d733a8b41006e24916d4a7"
+      }
+    ]
+  },
+  {
+    "family": "Lato",
+    "sources": [
+      {
+        "face": "regular",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/lato/Lato-Regular.ttf",
+        "sha256": "d636e4683231f931eda222d588e944d082bfd3bdba02f928bee461c0f185b251"
+      },
+      {
+        "face": "italic",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/lato/Lato-Italic.ttf",
+        "sha256": "e399c44efe1387100531d26c7e4800c5d12251b890d6654a3098c7c679cb1786"
+      },
+      {
+        "face": "bold",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/lato/Lato-Bold.ttf",
+        "sha256": "8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1"
+      }
+    ]
+  },
+  {
+    "family": "Open Sans",
+    "sources": [
+      {
+        "face": "regular",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/opensans/OpenSans%5Bwdth%2Cwght%5D.ttf",
+        "sha256": "36643644f318a812aab2d2ed3bb98f8cf0872527f835fe9398d95fe6b9adb878"
+      },
+      {
+        "face": "italic",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/opensans/OpenSans-Italic%5Bwdth%2Cwght%5D.ttf",
+        "sha256": "fe269381e992f32e135801740998544d6235061e37c93ec067ad2be3edd5b17b"
+      },
+      {
+        "face": "bold",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/opensans/OpenSans%5Bwdth%2Cwght%5D.ttf",
+        "sha256": "36643644f318a812aab2d2ed3bb98f8cf0872527f835fe9398d95fe6b9adb878"
+      }
+    ]
+  },
+  {
+    "family": "Inter",
+    "sources": [
+      {
+        "face": "regular",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf",
+        "sha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031"
+      },
+      {
+        "face": "italic",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/inter/Inter-Italic%5Bopsz%2Cwght%5D.ttf",
+        "sha256": "acd98e64795781b2058f07b18475e0ecee2a0fe2b42a49e2f9e37d0d6bf66ce6"
+      },
+      {
+        "face": "bold",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf",
+        "sha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031"
+      }
+    ]
+  },
+  {
+    "family": "Atkinson Hyperlegible",
+    "sources": [
+      {
+        "face": "regular",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/atkinsonhyperlegible/AtkinsonHyperlegible-Regular.ttf",
+        "sha256": "7fb917c89019896d0b52ee84b7cbb3304c18cb90b19a62f5e32712bd23e97669"
+      },
+      {
+        "face": "italic",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/atkinsonhyperlegible/AtkinsonHyperlegible-Italic.ttf",
+        "sha256": "021beda4d3c6edfc78872e436d74009f9a1bcb294331908fe5747c61d3dcc514"
+      },
+      {
+        "face": "bold",
+        "url": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/atkinsonhyperlegible/AtkinsonHyperlegible-Bold.ttf",
+        "sha256": "5a3b0c8cc8ca545155150b4512a1fa248298df121c50d6557e651e61fbdab92f"
+      }
+    ]
+  },
+  {
+    "family": "OpenDyslexic",
+    "sources": [
+      {
+        "face": "regular",
+        "url": "https://raw.githubusercontent.com/antijingoist/opendyslexic/1824da5c0e41dc3e13ffc7f3a636dcaf695d61b7/compiled/OpenDyslexic-Regular.otf",
+        "sha256": "32f5840fb2bf844bdabafe372591ddfb9286e98117f5b21950aaf54ea856919a"
+      },
+      {
+        "face": "italic",
+        "url": "https://raw.githubusercontent.com/antijingoist/opendyslexic/1824da5c0e41dc3e13ffc7f3a636dcaf695d61b7/compiled/OpenDyslexic-Italic.otf",
+        "sha256": "dfa0185bb0d47cb76cb5d082531822d0dca03152f5b6ec6c9f6e3f8d00b71782"
+      },
+      {
+        "face": "bold",
+        "url": "https://raw.githubusercontent.com/antijingoist/opendyslexic/1824da5c0e41dc3e13ffc7f3a636dcaf695d61b7/compiled/OpenDyslexic-Bold.otf",
+        "sha256": "5d690ea4c87ccb0d5d5d81487826a395e9b20a6c1d606f1f262c060d2bef4f03"
+      }
+    ]
+  }
+]

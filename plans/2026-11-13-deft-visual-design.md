@@ -289,6 +289,8 @@ Grouped list, lowercase group headers in `monoSmall` `muted`: library · reader 
 
 **settings → reader** holds every reader setting from the in-book sheet (§11.8), in the same three groups (text · theme · page), plus the ones that only make sense app-wide: imported fonts (add and remove), custom themes (create, edit, delete), the default fit mode and dark inversion for PDF, DjVu and CBZ, and the default brightness. Reader settings are global (spec §10.1), so the in-book sheet and this screen edit the **same values**: a change in either place shows in the other. The in-book sheet is the quick path; settings is the complete one.
 
+**M2 implementation boundary:** Settings now opens a category chooser with Library and Reader. Library includes Ignored books. Book details show metadata, Read/Continue, saved percentage and files, with Ignore/Un-ignore and confirmed Forget in the action menu. The Continue card and reader display real progress only; estimated time, reading states and statistics arrive with tracking. Reader chrome has back, contents, bookmark and one settings button; search, highlighting and notes arrive in M5. Contents contains the TOC and editable bookmarks. Reader bars, sheets and notices follow its selected theme. The eleven bundled font families include regular, italic and bold in WOFF2, plus tiny native subsets for actual font-name previews; their combined size is 1,703,528 bytes. No font face was dropped. Fixed-layout settings appear with their later format milestone.
+
 ## 12. Voice and copy
 
 Follow kmab's writing style (github.com/kmab5/kmab-brand, `brand-kit/08_WRITING`). The rules that matter for UI:

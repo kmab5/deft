@@ -6,6 +6,8 @@
 
 **Rule for every milestone:** it ends with an installable app that is better than the previous milestone's, all tests green, CI green, and the design doc updated if a decision changed (add a row to the design doc's Decision log, §20).
 
+**Current author-directed handover:** M2 stacks on the unmerged M1 feedback branch so the author can test both together. Run all local checks and the whole-change audit, push the branch, and hand over without waiting for GitHub CI. Neither milestone is accepted or merged until the combined device checklist passes.
+
 ## Branching, handover, tagging
 1. Work on `feat/mN-<name>` (fixes: `fix/<topic>`), branched from `main`. Push the branch so CI runs.
 2. When the milestone's acceptance criteria pass, build a signed, R8-minified release APK (`./gradlew assembleRelease`) using the persistent Deft release key and write `plans/mN-test-checklist.md`: the roadmap acceptance criteria plus anything risky the milestone touched, as tickable device steps, ending with a **"how does it look"** section for every screen or animation the milestone touched (visual feedback happens here, not at separate checkpoints). Give the author the APK path and the checklist in chat. Visual feedback updates the visual design doc + preview and is logged in §20.

@@ -27,6 +27,24 @@ object DeftActionIcons {
             )
         }.build()
 
+    val More =
+        icon("More") {
+            moveTo(11f, 4f)
+            lineTo(13f, 4f)
+            lineTo(13f, 6f)
+            lineTo(11f, 6f)
+            close()
+            moveTo(11f, 11f)
+            lineTo(13f, 11f)
+            lineTo(13f, 13f)
+            lineTo(11f, 13f)
+            close()
+            moveTo(11f, 18f)
+            lineTo(13f, 18f)
+            lineTo(13f, 20f)
+            lineTo(11f, 20f)
+            close()
+        }
     val Back =
         icon("Back") {
             moveTo(20f, 12f)

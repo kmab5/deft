@@ -1,5 +1,6 @@
 package com.kmab.deft.feature.library
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -25,13 +28,18 @@ fun BookRow(
     imageLoader: ImageLoader,
     modifier: Modifier = Modifier,
     size: BookDisplaySize = BookDisplaySize.MEDIUM,
+    onClick: (() -> Unit)? = null,
 ) {
     val c = LocalDeftColors.current
     Row(
-        modifier.fillMaxWidth().semantics(mergeDescendants = true) {
-            stateDescription =
-                if (book.lastReadAt == null) "not read" else "previously read"
-        },
+        modifier
+            .fillMaxWidth()
+            .testTag("book_${book.id}")
+            .then(if (onClick == null) Modifier else Modifier.clickable(role = Role.Button, onClick = onClick))
+            .semantics(mergeDescendants = true) {
+                stateDescription =
+                    if (book.lastReadAt == null) "not read" else "previously read"
+            },
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

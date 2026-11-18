@@ -1,6 +1,7 @@
 package com.kmab.deft.feature.library
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -40,12 +43,23 @@ fun BookCard(
     imageLoader: ImageLoader,
     modifier: Modifier = Modifier,
     size: BookDisplaySize = BookDisplaySize.MEDIUM,
+    onClick: (() -> Unit)? = null,
 ) {
     val c = LocalDeftColors.current
     Column(
-        modifier.semantics(mergeDescendants = true) {
-            stateDescription = if (book.lastReadAt == null) "not read" else "previously read"
-        },
+        modifier
+            .testTag("book_${book.id}")
+            .then(
+                if (onClick ==
+                    null
+                ) {
+                    Modifier
+                } else {
+                    Modifier.clickable(role = Role.Button, onClick = onClick)
+                },
+            ).semantics(mergeDescendants = true) {
+                stateDescription = if (book.lastReadAt == null) "not read" else "previously read"
+            },
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         LibraryCover(book, imageLoader, showBadges = size != BookDisplaySize.SMALL)
