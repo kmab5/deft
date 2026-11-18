@@ -98,7 +98,7 @@ Offered, in this order: **original** (the book's own fonts, i.e. publisher defau
 
 - **Corners:** 2dp covers; 4dp chips, inputs, buttons, small badges; 8dp cards, sheets, dialogs. **No pill shapes** anywhere (buttons included).
 - **Spacing:** 4dp base. Screen gutter 16dp; grid gap 12dp; section gap 24dp.
-- **Elevation:** flat. Separate surfaces with a 1dp `line` or a `surface` step, never with drop shadows. The only shadow in the app is the lifted cover in a celebration (§8).
+- **Elevation:** mostly flat. The author's 2026-11-18 device feedback explicitly gives library book cards a subtle 1dp lift plus a 1dp `line` border, 8dp corners and 8–12dp inner padding. Other settings surfaces use borders/tonal separation. Celebration covers retain their expressive lift (§8).
 - **Touch targets:** ≥ 48dp, even where the drawn element is smaller.
 
 ## 5. Iconography
@@ -205,6 +205,20 @@ Nothing else vibrates.
 
 ## 11. Screens
 
+### M1 device feedback revision — 2026-11-18
+
+The second Samsung S25 FE review overrides the earlier M1 layouts below. Keep the paper/ink palette and bundled typefaces. Restore a flat toolbar: filter icon/current filter at the left, current sort/direction beside it, then the display icon. No separate sorting caption. Filters use checkbox rows, sorting uses radio rows and a direction control, and display uses adjacent icon-led grid/list choices with a three-step size slider. Each layout remembers its size. Popups fit their contents, open fully, scroll when necessary and close with an accessible X. Live changes need no Done button.
+
+Book titles have up to two lines. Author names use the UI face rather than monospaced telemetry. Cover sizes and gutters adapt to the selected density; remove empty progress tracks for unread books. Coverless list thumbnails use a stable tinted initial instead of squeezing the full title into the thumbnail. List status labels sit beside metadata; narrow grid covers use accessible status icons below the image. Focused sheets open fully and scroll when necessary. Reading history remains absent until the reader is implemented.
+
+M1 Settings opens directly to Library settings; restore its category chooser when another real section exists. A compact icon-led rescan action comes first, followed by folder cards with visible **exclude a subfolder** and **remove** actions, two-column file-type controls, and a database/thumbnail/cache storage breakdown. Exclusions are never hidden behind tapping a folder name.
+
+Only running scans occupy inline progress space. New scan results appear in custom bottom notices for about six seconds, extended by Android accessibility preferences; pressing/focusing a notice pauses expiry and then restarts its reading time. Errors share this stackable, dismissible notice queue instead of appearing in the page body. Notices rise and fade, stack movement animates, and historic results do not replay after launch. The action opens a dedicated scan-details popup with named added/updated/restored, skipped/unchanged/duplicate and error/fallback records, relative paths and reasons. The Books overflow retains access to the last report. Detailed records are bounded and any omission is stated.
+
+Animate popup entry and exit, confirmation dialogs, notices, explicit grid/list/size changes, reordering, selection colors and changing folder/exclusion layouts. Keep stable book keys and avoid an entrance animation for every scanned book. Compose motion respects Android animation scaling, including animations disabled. Meaningful outline icons accompany actions; decorative icons have no duplicate spoken label and icon-only controls have accessible names.
+
+Both launcher foreground layers scale the mark to 70% around its centre, leaving more breathing room inside the adaptive icon. Device retesting covers font scaling and TalkBack; unavailable Android 8/9 hardware is recorded as unverified.
+
 The sketches show layout only; the preview shows the look. Labels are lowercase.
 
 ### 11.1 books
@@ -310,3 +324,7 @@ Follow kmab's writing style (github.com/kmab5/kmab-brand, `brand-kit/08_WRITING`
 - `core/designsystem` holds everything here as Compose code: `DeftColors` (light/dark), `DeftReaderThemes`, `DeftTypography`, `DeftShapes`, `DeftMotion`, `DeftIcons`, and components (`StateChip`, `CoverImage`, `GeneratedCover`, `StateBar`, `SegmentedProgress`, `RatingBar`, `StatTile`, `PersonalBestStrip`, `DeftBottomBar`).
 - Celebrations live in `feature/celebrate` (`CelebrationHost` overlay in `app`, fed by a `CelebrationEvents` flow from tracking and stats).
 - Screenshot tests (Roborazzi or Paparazzi; Paparazzi needs no device) for every component in both themes, plus `ContrastTest` and the font-size budget check. Update the goldens whenever the author's visual feedback changes something.
+
+### M1 final device-feedback layout revision (2026-11-18)
+
+Library grid/list books are contained cards with subtle lift and padded metadata; grid minimum width grows with system font scale so large text uses fewer, wider columns; empty titles/authors display `<no-title>` / `<no-author>`. Settings uses 16dp gutters, distinct scan/folders/file-types/storage groups, a contained scan-status panel, aligned controls and adaptive rows at large system text. The scanner and library-view format selections remain independent. Reader settings and book detail are revised in M2; source renders in `plans/design/m1-feedback.html` are the foundation reference.

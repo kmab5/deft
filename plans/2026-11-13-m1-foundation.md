@@ -48,12 +48,12 @@
 
 - [ ] **Step 1:** Create the root Gradle files, version catalog, and convention plugins. Declare modules in `settings.gradle.kts`: `:app`, `:core:model`, `:core:common`, `:core:database`, `:core:datastore`, `:core:designsystem`, `:format:epub`, `:library:scanner`, `:feature:library`, `:feature:settings`. Create empty modules as needed so the build configures.
 - [ ] **Step 2:** `DeftTheme` from `plans/2026-11-13-deft-visual-design.md`: `DeftColors` ink/paper exactly per its §2.2 (no dynamic colour), `DeftTypography` per §3.1 with Space Grotesk and Space Mono bundled as subset `res/font` resources (§3; reader fonts arrive in M2), `DeftShapes` per §4, `DeftMotion` tokens per §9. Test: `ContrastTest` asserts every text/background pair in §2.2 ≥ 4.5:1 and every state colour ≥ 3:1 on `bg` in both themes.
-- [ ] **Step 2b:** App icon: adaptive + monochrome layers using mark (b), colourway 1 unless the author has picked, per visual design §6.
+- [ ] **Step 2b:** App icon: adaptive + monochrome layers using the final mark (b), off-white strokes and purple ribbon on ink, per visual design §6.
 - [ ] **Step 3:** `MainActivity` shows `DeftTheme { Text("Deft") }` inside the NavHost placeholder.
 - [ ] **Step 4:** Write `SmokeTest` (Robolectric): launching `MainActivity` doesn't crash and displays "Deft".
 - [ ] **Step 5:** Run `./gradlew :app:testDebugUnitTest`. Expected: PASS.
 - [ ] **Step 6:** Configure ktlint and detekt in convention plugins, wired into `check`. Run `./gradlew check`. Expected: BUILD SUCCESSFUL.
-- [ ] **Step 7:** `ci.yml`: on push to any branch, run on `ubuntu-latest` with JDK 17: `./gradlew check assembleDebug assembleRelease` (release unsigned until M10 adds signing + the tag-triggered GitHub Release job). Cache Gradle.
+- [ ] **Step 7:** `ci.yml`: on push to any branch, run on `ubuntu-latest` with JDK 17: `./gradlew check assembleDebug assembleRelease` (release signed using secrets when available; untrusted CI uses a separate ephemeral CI-only key, never distributed as an author handover; M10 adds the tag-triggered GitHub Release job). Cache Gradle.
 - [ ] **Step 7b:** Versioning: `app/build.gradle.kts` reads `deft.version=A.B.C-D` from `gradle.properties` (start at `0.1.0-1`), sets `versionName = "A.B.C"` and `versionCode = A*1_000_000 + B*10_000 + C*100 + D`; a `VersionTest` in `build-logic` asserts `0.1.0-1 → 10001` and `1.2.3-4 → 1020304`, and rejects D outside 1..99.
 - [ ] **Step 8:** Commit `build: scaffold multi-module project, theme and CI`.
 
@@ -296,12 +296,12 @@ Screen content (spec §6.1, §14): "Folders" list with display names and a remov
 - Consumes: `BookRepository.observeBooks`, `LibrarySettingsRepository`, `ScanScheduler`.
 - Produces: `data class BooksUiState(val books: List<BookListItem>, val gridView: Boolean, val sort: BookSort, val showMissing: Boolean, val formatFilter: Set<BookFormat>, val isScanning: Boolean, val hasFolders: Boolean)`; route `"books"`.
 
-Screen (spec §14; M1 subset): top bar "Deft" with sort menu (Title / Author / Date added), grid/list toggle, overflow (Show missing toggle, Settings). Format filter chips. `LazyVerticalGrid` (adaptive min 110 dp) or `LazyColumn`, keyed by book id. Card: cover via Coil from `coverPath` (placeholder: title on a tinted block), title, first author; badges "File missing" and "Protected". Pull-to-refresh → `scanNow()`. Empty states: no folders → "Add a folder to build your library" button to `settings/library`; folders but no books → "No books found in your folders" + Rescan. Books are not clickable in M1 (the reader and book page arrive in M2).
+Screen (spec §14; M1 subset): top bar "books" with count and settings overflow; one filter-and-sort sheet containing format filters, title/author/date-added sorting and show-missing toggle, plus grid/list control, per visual §11.1. No persistent chip row. Use the lowercase copy deck in visual §12. `LazyVerticalGrid` (adaptive min 110 dp) or `LazyColumn`, keyed by book id. Card: cover via Coil from `coverPath` (placeholder: title on a tinted block), title, first author; badges "File missing" and "Protected". Pull-to-refresh → `scanNow()`. Empty states: no folders → "Add a folder to build your library" button to `settings/library`; folders but no books → "No books found in your folders" + Rescan. Books are not clickable in M1 (the reader and book page arrive in M2).
 
 - [ ] **Step 1: Failing tests:** ViewModel combines settings + books (sort change re-queries; `showMissing` toggles inclusion; `hasFolders=false` when folder list empty). Compose: empty-state button navigates to `settings/library`; a missing book shows "File missing"; switching to list view shows rows.
 - [ ] **Step 2:** Run `./gradlew :feature:library:testDebugUnitTest` → FAIL.
 - [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run → PASS. Then `./gradlew installDebug`, add a folder with a few EPUBs on a device/emulator, and verify the M1 acceptance list in the roadmap by hand.
+- [ ] **Step 4:** Run → PASS. Then install the signed, minified release APK, add a folder with a few EPUBs on a device/emulator, and verify the M1 acceptance list in the roadmap by hand.
 - [ ] **Step 5:** Commit `feat(library): Books screen with grid/list, sort, filters and empty states`.
 
 ### Task 11: Network isolation guard
@@ -324,3 +324,21 @@ Screen (spec §14; M1 subset): top bar "Deft" with sort menu (Title / Author / D
 - `./gradlew check assembleRelease` passes locally and in CI.
 - The roadmap's M1 acceptance list is verified on a device or emulator.
 - The design doc's Decision log records any decision that changed during M1.
+
+## Implementation amendments (2026-11-15)
+
+These amendments supersede older wording above and implement the author's approved requirements.
+
+- Task 1 includes persistent release signing from a local ignored `keystore.properties` or CI environment variables. Generate the key once in the user's private `.deft/signing` directory; never overwrite an existing key, print passwords, or commit private signing material. Supply a repeatable generation/setup script and signing documentation. All author handovers use this key, stable application ID, and nondecreasing versionCode.
+- Enable `isMinifyEnabled = true` and `isShrinkResources = true` for release, using the optimized default ProGuard rules and only necessary targeted rules. Verify the actual APK certificate, absence of INTERNET, and presence of R8 mapping output. CI test keys must never become distributed releases.
+- Task 1 implements all core components, icons, motion/shape tokens and reader-theme colours from visual §2–§7 and §9. Add component screenshot tests in both themes. App font assets are bundled; reader font assets and their 3 MB assertion arrive with M2.
+- Contrast assertions cover semantic foreground/background uses: normal enabled text ≥4.5:1, meaningful bars/icons ≥3:1. Disabled text and decorative outlines are not body text. Any token change needed for enabled text is recorded in §20.
+- Task 9 and Task 10 follow the visual copy deck and final calm Books layout. Only M1 functionality is exposed; no fake later-milestone actions.
+- Scanner correctness includes interrupted/failed directory enumeration: never mark unseen files missing after an incomplete root scan; cancellation propagates. Removed-root work must survive subsequent manual scan requests. Validate exclusion ancestry through SAF document relationships rather than URI string prefixes.
+- The milestone handover is `app/build/outputs/apk/release/app-release.apk` plus `plans/m1-test-checklist.md`, including an update-install check and visual review. Run `./gradlew check assembleRelease`, inspect the signature and R8 output, and push the feature branch for CI. Do not merge until the author confirms the checklist passed.
+- Task 4 reconciles missing files atomically using a temporary seen-URI table or a mark-then-restore transaction; never apply independent chunked `NOT IN` updates. Assert all 1,999 seen files stay present in the 2,000-file test.
+- Tasks 7–8 reject overlapping selected roots (same tree, ancestor or descendant), explaining that subfolders are already included. Use provider document relationships, not URI string prefixes; test both parent-first and child-first selection. Existing files remain associated with exactly one selected root.
+- Task 7 classifies moved-file reattachments after root reconciliation, testing both root traversal orders. Preserve the Book ID and report one reattachment regardless of which root is scanned first.
+- Task 5 parses EPUBs regardless of ZIP entry order, with bounded temporary seekable storage if required; test OPF-before-container, cover-before-OPF, nested OPF-relative cover paths and malformed archives. Temporary content is app-private and cleaned up; original files remain read-only.
+- Tasks 8–9 assign folder-removal scheduling solely to `LibraryFolderRepository`; the ViewModel calls `remove` once. Persist removed-root intent until a successful reconciliation so cancellation or replacement work cannot lose it.
+- Task 6 propagates cancellation; metadata fallback catches expected metadata/read failures rather than all throwables.
