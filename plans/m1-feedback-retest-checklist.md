@@ -2,6 +2,19 @@
 
 This follows the author's Samsung S25 FE / Android 16 review. The original marks and notes remain in [m1-test-checklist.md](m1-test-checklist.md). [Rendered screens](design/m1-feedback.html) show the revised layouts. The source commit, signed APK hash and automated results are recorded in the handover after verification.
 
+## Verified handover — 2026-11-18
+
+- Tested source commit: `c9dccb768706743af803b843d784e819410b2942`.
+- Release APK: `app/build/outputs/apk/release/deft-0.1.0-m1-feedback-c9dccb76.apk` (1,828,412 bytes).
+- Pending M1 version: `0.1.0-1`; Android version name `0.1.0`, version code `10001`; app ID `com.kmab.deft`.
+- APK SHA-256: `f90c2c74e5cc8621671e9e8fd281cdfa1e6abf9ad1817806c330d52a718f146e`.
+- Certificate SHA-256: `adea6ec2edf4e9e2d809ed06300729e35ca156c06072736717b4a27449233e50` — unchanged from the previous handover.
+- `ktlintFormat check` and final `check assembleRelease` passed. Recorded results: 282 JVM/Robolectric test executions, zero failures/errors; four Python release-tooling tests passed.
+- Signed release verification passed: configured persistent certificate, expected identity/version, no INTERNET permission and R8 mapping. R8 minification and resource shrinking are enabled.
+- Whole-change audit findings were fixed and re-reviewed. Paper/ink phone renders, including 150% system font scaling, were inspected. The 1,500-EPUB resume and 5,000-unchanged-file regressions passed.
+- No Android device was connected. Physical update-install, background scanning, TalkBack and Android 8/9 acceptance are not claimed passed.
+- Feature branch is pushed for CI; CI completion is not a handover gate. Merge/tag await the author's device acceptance.
+
 ## What changed for each feedback point
 
 | Feedback | Response |
