@@ -14,4 +14,5 @@ data class LibrarySettings(
     val reverseSort: Boolean = false,
     val gridSize: BookDisplaySize = BookDisplaySize.MEDIUM,
     val listSize: BookDisplaySize = BookDisplaySize.MEDIUM,
+    val formatFilter: Set<BookFormat> = BookFormat.entries.toSet(),
 )

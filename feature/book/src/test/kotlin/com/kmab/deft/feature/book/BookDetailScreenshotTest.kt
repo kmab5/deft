@@ -1,6 +1,8 @@
 package com.kmab.deft.feature.book
 
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.RoborazziOptions
@@ -35,6 +37,10 @@ class BookDetailScreenshotTest {
 
     @Test fun inkLargeText() = render(true, 1.5f, "ink-large")
 
+    @Test
+    @Config(qualifiers = "w852dp-h393dp-420dpi")
+    fun paperLandscape() = render(false, 1f, "paper-landscape")
+
     private fun render(
         dark: Boolean,
         fontScale: Float,
@@ -51,6 +57,10 @@ class BookDetailScreenshotTest {
                 addedAt = Instant.EPOCH,
                 currentLocator = "{\"href\":\"chapter.xhtml\"}",
                 totalProgression = 0.28,
+                description = "A young wizard begins a journey through the islands of Earthsea.",
+                publisher = "Parnassus Press",
+                publishedDate = "1968",
+                language = "en",
             )
         val file =
             BookFileEntity(
@@ -70,6 +80,9 @@ class BookDetailScreenshotTest {
                 darkTheme = dark,
             ) { BookDetailScreen(BookDetailState(details, false), {}, {}, {}, {}) }
         }
+        compose.onNodeWithText("A Wizard of Earthsea").assertIsDisplayed()
+        compose.onNodeWithText("Ursula K. Le Guin").assertIsDisplayed()
+        compose.onNodeWithText("continue").assertIsDisplayed()
         val output = File("build/reports/screenshots/book-$name.png").also { it.parentFile?.mkdirs() }
         compose.onRoot().captureRoboImage(
             output.path,

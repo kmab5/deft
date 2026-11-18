@@ -99,3 +99,8 @@ Files: feature/book new module; feature/library cards/screen/viewmodel/navigatio
 - [x] Run final `check assembleRelease`; verify actual APK certificate, identity/versionCode20001, no INTERNET, R8 mapping and resource shrinking. Reuse persistent key. Run release-tooling tests and inspect paper/ink/reader settings renders.
 - [x] Create `plans/m2-test-checklist.md`: upgrade/M1 regressions, every reader control, font/theme management, EPUB edge cases, navigation/bookmarks/restore/lifecycle, ignored/forget/history, privacy, accessibility and a final how-does-it-look section. Clearly distinguish automated checks from device-only checks.
 - [x] Hand over `app/build/outputs/apk/release/deft-0.2.0.apk`, checklist, source/hash/certificate evidence. Push branch without waiting for GitHub CI. No merge/tag before the author's combined acceptance.
+
+
+## Device-feedback recovery —0.2.1
+
+The original 0.2.0 local checks missed a real integration failure: the bundled catalog's publisher-original entry has no font faces and Readium rejected its registration before any EPUB opened. Recovery is tracked in `2026-11-18-m1-polish-m2-recovery.md`. M1 was subsequently authorized, verified, merged and pushed as `v0.1.2-1`; M2 integrates it and remains pending device acceptance. The 0.2.1 patch adds actual-catalog and real-EPUB navigator attachment coverage alongside redesigned reader settings and book details. Original 0.2.0 evidence remains historical; use the current patch evidence and updated `m2-test-checklist.md` for handover.

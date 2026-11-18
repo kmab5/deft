@@ -2,6 +2,7 @@ package com.kmab.deft.feature.book
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -84,6 +85,40 @@ class BookDetailTest {
         compose.onNodeWithText("forget").performClick()
         compose.waitForIdle()
         assertEquals(1, forgotten)
+    }
+
+    @Test fun missingMetadataHasExplicitReadableLabels() {
+        val details = fixture().let { it.copy(book = it.book.copy(title = " "), authorsDisplay = "\t") }
+        compose.setContent { DeftTheme { BookDetailScreen(BookDetailState(details, false), {}, {}, {}, {}) } }
+        compose.onNodeWithText("<no-title>").assertIsDisplayed()
+        compose.onNodeWithText("<no-author>").assertIsDisplayed()
+        compose.onNodeWithText("read").assertIsDisplayed()
+        assertEquals(" ", details.book.title)
+        assertEquals("\t", details.authorsDisplay)
+    }
+
+    @Test fun editionMetadataHasLabelsAndDescriptionStaysReadable() {
+        val details =
+            fixture().let {
+                it.copy(
+                    book =
+                        it.book.copy(
+                            description = "<p>A journey through the islands of Earthsea.</p>",
+                            publisher = "Parnassus Press",
+                            publishedDate = "1968",
+                            language = "en",
+                            isbn13 = "9780547773742",
+                        ),
+                )
+            }
+        compose.setContent { DeftTheme { BookDetailScreen(BookDetailState(details, false), {}, {}, {}, {}) } }
+        compose.onNodeWithText("A journey through the islands of Earthsea.").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("publisher").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Parnassus Press").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("published").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("1968").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("isbn").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("9780547773742").performScrollTo().assertIsDisplayed()
     }
 
     @Test fun missingBookKeepsItsDetailAndHasAnHonestReadBlock() {

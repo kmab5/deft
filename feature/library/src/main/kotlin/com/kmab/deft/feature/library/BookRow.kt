@@ -1,6 +1,5 @@
 package com.kmab.deft.feature.library
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,10 +33,9 @@ fun BookRow(
         modifier
             .fillMaxWidth()
             .testTag("book_${book.id}")
-            .then(if (onClick == null) Modifier else Modifier.clickable(role = Role.Button, onClick = onClick))
+            .libraryBookSurface(12.dp, onClick)
             .semantics(mergeDescendants = true) {
-                stateDescription =
-                    if (book.lastReadAt == null) "not read" else "previously read"
+                stateDescription = if (book.lastReadAt == null) "not read" else "previously read"
             },
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -52,14 +49,14 @@ fun BookRow(
         )
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                book.title,
+                book.displayTitle(),
                 color = c.text,
                 style = if (size == BookDisplaySize.LARGE) DeftTypography.title else DeftTypography.label,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                book.authorsDisplay,
+                book.displayAuthors(),
                 color = c.muted,
                 style = DeftTypography.cardTitle,
                 maxLines = 1,

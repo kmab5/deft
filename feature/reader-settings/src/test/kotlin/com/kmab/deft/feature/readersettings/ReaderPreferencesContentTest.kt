@@ -1,13 +1,20 @@
 package com.kmab.deft.feature.readersettings
 
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertHeightIsEqualTo
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.unit.dp
 import com.kmab.deft.core.designsystem.DeftTheme
 import com.kmab.deft.core.model.PageAnimation
 import com.kmab.deft.core.model.ReaderAlignment
@@ -129,5 +136,34 @@ class ReaderPreferencesContentTest {
                 state.value,
             )
         }
+    }
+
+    @Test
+    @Config(qualifiers = "w320dp-h640dp")
+    fun quickPanelStaysBoundedAndTabsStayReachableAtLargeText() {
+        RuntimeEnvironment.setFontScale(1.5f)
+        val state = mutableStateOf(ReaderPreferences())
+        compose.setContent {
+            DeftTheme {
+                ReaderPreferencesContent(
+                    state.value,
+                    emptyList(),
+                    ReaderFontCatalog.bundled,
+                    { state.value = it(state.value).normalized() },
+                    {},
+                    {},
+                    {},
+                    Modifier.height(480.dp).testTag("quick-reader-settings"),
+                )
+            }
+        }
+        compose.onNodeWithText("hyphenation").performScrollTo().performClick()
+        compose.onNodeWithText("text", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("quick-reader-settings").assertHeightIsEqualTo(480.dp)
+        compose.runOnIdle { assertEquals(false, state.value.hyphenation) }
+        compose.onNodeWithText("page", useUnmergedTree = true).performClick()
+        compose.onNodeWithText("keep screen on").performScrollTo().performClick()
+        compose.onNodeWithText("page", useUnmergedTree = true).assertIsDisplayed()
+        compose.runOnIdle { assertEquals(false, state.value.keepScreenOn) }
     }
 }

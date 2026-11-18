@@ -98,7 +98,7 @@ Offered, in this order: **original** (the book's own fonts, i.e. publisher defau
 
 - **Corners:** 2dp covers; 4dp chips, inputs, buttons, small badges; 8dp cards, sheets, dialogs. **No pill shapes** anywhere (buttons included).
 - **Spacing:** 4dp base. Screen gutter 16dp; grid gap 12dp; section gap 24dp.
-- **Elevation:** flat. Separate surfaces with a 1dp `line` or a `surface` step, never with drop shadows. The only shadow in the app is the lifted cover in a celebration (§8).
+- **Elevation:** mostly flat. The author's 2026-11-18 device feedback explicitly gives library book cards a subtle 1dp lift plus a 1dp `line` border, 8dp corners and 8–12dp inner padding. Other settings surfaces use borders/tonal separation. Celebration covers retain their expressive lift (§8).
 - **Touch targets:** ≥ 48dp, even where the drawn element is smaller.
 
 ## 5. Iconography
@@ -326,3 +326,16 @@ Follow kmab's writing style (github.com/kmab5/kmab-brand, `brand-kit/08_WRITING`
 - `core/designsystem` holds everything here as Compose code: `DeftColors` (light/dark), `DeftReaderThemes`, `DeftTypography`, `DeftShapes`, `DeftMotion`, `DeftIcons`, and components (`StateChip`, `CoverImage`, `GeneratedCover`, `StateBar`, `SegmentedProgress`, `RatingBar`, `StatTile`, `PersonalBestStrip`, `DeftBottomBar`).
 - Celebrations live in `feature/celebrate` (`CelebrationHost` overlay in `app`, fed by a `CelebrationEvents` flow from tracking and stats).
 - Screenshot tests (Roborazzi or Paparazzi; Paparazzi needs no device) for every component in both themes, plus `ContrastTest` and the font-size budget check. Update the goldens whenever the author's visual feedback changes something.
+
+### M1 final device-feedback layout revision (2026-11-18)
+
+Library grid/list books are contained cards with subtle lift and padded metadata; grid minimum width grows with system font scale so large text uses fewer, wider columns; empty titles/authors display `<no-title>` / `<no-author>`. Settings uses 16dp gutters, distinct scan/folders/file-types/storage groups, a contained scan-status panel, aligned controls and adaptive rows at large system text. The scanner and library-view format selections remain independent. Reader settings and book detail are revised in M2; source renders in `plans/design/m1-feedback.html` are the foundation reference.
+
+
+### M2 reader and book-detail revision (2026-11-18)
+
+Book detail has a responsive primary surface: cover and identity side by side, Read/Continue nearby, and truthful saved progress. Description remains readable prose; edition metadata has explicit labels; files occupy a separate outlined group. Narrow or very large text layouts adapt rather than squeeze controls.
+
+Reader settings retains text/theme/page tabs. Typography and paragraph controls use compact aligned groups, visible numeric values and equal-width choices. Appearance shows real theme swatches and separates system day/night selection from custom theme management and brightness. Page behavior and reading toggles form distinct groups. The reader quick panel is bounded and scrolls internally. Settings categories and ignored books share the same spacing, grouping and surfaces as the library settings. All existing controls and destructive confirmations remain available.
+
+The revised screen reference is `plans/design/m2-feedback.html`, using rendered Compose output from the local verification pass.

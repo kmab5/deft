@@ -22,6 +22,7 @@ import com.kmab.deft.core.designsystem.DeftDialog
 import com.kmab.deft.core.designsystem.DeftNoticeHost
 import com.kmab.deft.core.designsystem.DeftNoticeKind
 import com.kmab.deft.core.designsystem.DeftTopBar
+import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
 import com.kmab.deft.core.designsystem.rememberDeftNoticeState
 import com.kmab.deft.core.model.ReaderFont
@@ -29,7 +30,8 @@ import com.kmab.deft.core.model.ReaderTheme
 
 @Composable
 fun ReaderSettingsScreen(onBack: () -> Unit) {
-    Scaffold(topBar = {
+    val colors = LocalDeftColors.current
+    Scaffold(containerColor = colors.bg, contentColor = colors.text, topBar = {
         DeftTopBar("reader", navigationIcon = {
             IconButton(onClick = onBack) { Icon(DeftActionIcons.Back, "back") }
         })

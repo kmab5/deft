@@ -41,20 +41,16 @@ internal fun ContinueReadingCard(
         Modifier
             .fillMaxWidth()
             .testTag("continue_reading")
-            .padding(horizontal = 20.dp, vertical = 8.dp)
-            .clip(
-                DeftShapes.card,
-            ).background(colors.surface)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(12.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .libraryBookSurface(12.dp, onClick),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        LibraryCover(book, loader, Modifier.width(48.dp), showBadges = false)
+        LibraryCover(book, loader, Modifier.width(48.dp), showBadges = false, compactPlaceholder = true)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("continue reading", style = DeftTypography.mono, color = colors.accentText)
             Text(
-                book.title,
+                book.displayTitle(),
                 style = DeftTypography.label,
                 color = colors.text,
                 maxLines = 2,

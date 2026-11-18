@@ -81,6 +81,34 @@ class BooksScreenTest {
         compose.onNodeWithTag("book_grid").assertDoesNotExist()
     }
 
+    @Test fun missingMetadataRemainsReadableInGridAndList() {
+        val book = BookListItem(1, "  ", "", "\t", BookFormat.EPUB, null, Instant.EPOCH, false, false)
+        val state = mutableStateOf(BooksUiState(books = listOf(book), isLoading = false, hasFolders = true))
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    state.value,
+                    {},
+                    {},
+                    {},
+                    { state.value = state.value.copy(gridView = it) },
+                    {},
+                    {},
+                    { _, _ -> },
+                )
+            }
+        }
+        compose.onNodeWithText("<no-title>").assertIsDisplayed()
+        compose.onNodeWithText("<no-author>").assertIsDisplayed()
+        compose.onNodeWithContentDescription("display options").performClick()
+        compose.onNodeWithText("list").performClick()
+        compose.onNodeWithContentDescription("close popup").performClick()
+        compose.onNodeWithText("<no-title>").assertIsDisplayed()
+        compose.onNodeWithText("<no-author>").assertIsDisplayed()
+        assertEquals("  ", book.title)
+        assertEquals("\t", book.authorsDisplay)
+    }
+
     @Test fun focusedSheetsApplyFormatsSortAndMissingLive() {
         val state = mutableStateOf(BooksUiState(isLoading = false, hasFolders = true))
         compose.setContent {

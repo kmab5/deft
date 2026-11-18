@@ -6,7 +6,7 @@
 
 **Rule for every milestone:** it ends with an installable app that is better than the previous milestone's, all tests green, CI green, and the design doc updated if a decision changed (add a row to the design doc's Decision log, §20).
 
-**Current author-directed handover:** M2 stacks on the unmerged M1 feedback branch so the author can test both together. Run all local checks and the whole-change audit, push the branch, and hand over without waiting for GitHub CI. Neither milestone is accepted or merged until the combined device checklist passes.
+**Current author-directed handover:** M1 was merged and pushed as `v0.1.2-1` (`e75050a`) after the author authorized the final fixes and local verification. M2 integrates that foundation and is being repaired as `0.2.1-1`; it remains unmerged until its device checklist passes. Push and hand over after local checks/audit without waiting for GitHub CI.
 
 ## Branching, handover, tagging
 1. Work on `feat/mN-<name>` (fixes: `fix/<topic>`), branched from `main`. Push the branch so CI runs.

@@ -1,19 +1,22 @@
 package com.kmab.deft.feature.settings
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +33,7 @@ import com.kmab.deft.core.database.model.BookListItem
 import com.kmab.deft.core.designsystem.DeftButton
 import com.kmab.deft.core.designsystem.DeftButtonStyle
 import com.kmab.deft.core.designsystem.DeftNoticeKind
+import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTopBar
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
@@ -69,7 +73,11 @@ internal fun IgnoredBooksContent(
             IconButton(onBack) { Icon(DeftActionIcons.Back, "back", tint = colors.text) }
         })
     }) { padding ->
-        LazyColumn(Modifier.padding(padding).padding(horizontal = 20.dp)) {
+        LazyColumn(
+            Modifier.padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             item {
                 Text(
                     "These books stay out of your library. Their positions and bookmarks are kept.",
@@ -81,31 +89,42 @@ internal fun IgnoredBooksContent(
                 if (books?.isEmpty() == true) Text("no ignored books", style = DeftTypography.title)
             }
             items(books.orEmpty(), key = { it.id }) { book ->
-                Column(Modifier.animateItem().animateContentSize()) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Column(
+                Surface(
+                    modifier = Modifier.animateItem().animateContentSize(),
+                    color = colors.surface,
+                    shape = DeftShapes.card,
+                    border = BorderStroke(1.dp, colors.line),
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
                             Modifier
-                                .weight(1f)
-                                .clickable(role = Role.Button) { onOpenBook(book.id) }
-                                .padding(vertical = 12.dp),
+                                .fillMaxWidth()
+                                .heightIn(min = 48.dp)
+                                .clickable(role = Role.Button) { onOpenBook(book.id) },
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            Text(book.title, style = DeftTypography.title)
-                            Text(book.authorsDisplay, style = DeftTypography.body, color = colors.muted)
-                            if (book.missing) Text("file missing", style = DeftTypography.mono, color = colors.muted)
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(book.title.ifBlank { "<no-title>" }, style = DeftTypography.title)
+                                Text(
+                                    book.authorsDisplay.ifBlank { "<no-author>" },
+                                    style = DeftTypography.body,
+                                    color = colors.muted,
+                                )
+                                if (book.missing) {
+                                    Text("file missing", style = DeftTypography.mono, color = colors.muted)
+                                }
+                            }
+                            Icon(DeftActionIcons.ChevronRight, null, tint = colors.muted)
                         }
                         DeftButton(
                             "un-ignore",
                             { onRestore(book.id) },
-                            Modifier.semantics { contentDescription = "un-ignore ${book.title}" },
+                            Modifier.align(Alignment.End).semantics { contentDescription = "un-ignore ${book.title}" },
                             style = DeftButtonStyle.Text,
                             icon = DeftActionIcons.Check,
                         )
                     }
-                    HorizontalDivider(color = colors.line)
                 }
             }
         }

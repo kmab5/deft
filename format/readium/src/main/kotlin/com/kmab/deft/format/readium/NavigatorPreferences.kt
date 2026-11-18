@@ -53,7 +53,8 @@ fun navigatorConfiguration(
                 linkColor = CssColor.Int(parseColor(theme.accent)),
                 visitedColor = CssColor.Int(parseColor(theme.accent)),
             )
-        fonts.forEach { font ->
+        // Publisher-original has no custom faces; Readium rejects empty family declarations.
+        fonts.filter { it.faces.isNotEmpty() }.forEach { font ->
             addFontFamilyDeclaration(FontFamily(font.id)) {
                 font.faces.forEachIndexed { index, face ->
                     addFontFace {

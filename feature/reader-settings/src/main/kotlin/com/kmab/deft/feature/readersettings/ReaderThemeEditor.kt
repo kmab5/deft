@@ -1,6 +1,7 @@
 package com.kmab.deft.feature.readersettings
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,7 +32,9 @@ import androidx.compose.ui.window.Dialog
 import com.kmab.deft.core.designsystem.DeftButton
 import com.kmab.deft.core.designsystem.DeftNoticeHost
 import com.kmab.deft.core.designsystem.DeftNoticeKind
+import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTypography
+import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
 import com.kmab.deft.core.designsystem.rememberDeftNoticeState
 import com.kmab.deft.core.model.ReaderTheme
@@ -56,7 +59,11 @@ internal fun ReaderThemeEditor(
     val scope = rememberCoroutineScope()
     val theme = ReaderTheme(id, name.trim(), background, text, accent)
     Dialog(onDismissRequest = { if (!saving) onDismiss() }) {
-        Surface {
+        Surface(
+            shape = DeftShapes.card,
+            color = LocalDeftColors.current.surface,
+            border = BorderStroke(1.dp, LocalDeftColors.current.line),
+        ) {
             Box(Modifier.fillMaxWidth().imePadding()) {
                 Column(
                     Modifier

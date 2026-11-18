@@ -9,7 +9,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -136,7 +135,6 @@ class BooksViewModelTest {
                 folders,
                 scheduler,
                 ScanStatusObserver(manager),
-                SavedStateHandle(),
             )
         models.put("books", vm)
         compose.setContent {
@@ -240,6 +238,27 @@ class BooksViewModelTest {
             compose.waitUntil { latest.books.isEmpty() && latest.formatFilter.isEmpty() }
             assertEquals(BookFormat.entries.toSet(), settings.settings.first().enabledFormats)
             assertTrue(manager.getWorkInfosForUniqueWork(ScanScheduler.WORK_NAME).get().isEmpty())
+        }
+
+    @Test fun freshViewModelRestoresLastFilterAndSort() =
+        runBlocking {
+            add("Alpha", "Writer", BookFormat.EPUB)
+            add("Zulu", "Writer", BookFormat.EPUB)
+            add("Text", "Writer", BookFormat.TXT)
+            val original = observe()
+            original.setFormat(BookFormat.TXT, false)
+            original.setSort(BookSort.TITLE)
+            original.setReverseSort(true)
+            compose.waitUntil { latest.books.map { it.title } == listOf("Zulu", "Alpha") }
+            compose.runOnIdle { models.clear() }
+            val recreated =
+                BooksViewModel(BookRepository(db), settings, folders, scheduler, ScanStatusObserver(manager))
+            models.put("recreated", recreated)
+            val restored = recreated.uiState.first { !it.isLoading }
+            assertEquals(BookSort.TITLE, restored.sort)
+            assertTrue(restored.reverseSort)
+            assertFalse(BookFormat.TXT in restored.formatFilter)
+            assertEquals(listOf("Zulu", "Alpha"), restored.books.map { it.title })
         }
 
     @Test fun failedPreferenceWriteRetainsPersistedValueAndReportsError() {

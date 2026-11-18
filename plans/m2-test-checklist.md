@@ -1,12 +1,12 @@
 # M2 — EPUB reader + M1 feedback test checklist
 
-Install `app/build/outputs/apk/release/deft-0.2.0.apk` over the existing Deft installation. Keep app data. This combines M2 with the pending M1 feedback changes; neither milestone is merged until you approve this checklist. Tick only steps actually tested, and put observations/screenshots under the relevant section or in `plans/feedback/`.
+Install `app/build/outputs/apk/release/deft-0.2.1.apk` over the existing Deft installation. Keep app data. This includes the final M1 fixes already merged into main. M2 remains unmerged until you approve this checklist. Tick only steps actually tested, and put observations/screenshots under the relevant section or in `plans/feedback/`.
 
 Suggested samples: two ordinary EPUBs with several chapters, one illustrated EPUB, a long chapter, non-Latin text, a protected EPUB if available, a damaged copy, one valid TTF/OTF and one invalid font file. Use disposable copies for missing/changed/forget checks. PDF and other formats are scanned/listed, but reading them belongs to later milestones.
 
 ## Install and preserved data
 
-- [ ] Android offers an update without asking to uninstall. Installed version is **0.2.0**. Existing folders, exclusions, books, covers and library preferences survive.
+- [ ] Android offers an update without asking to uninstall. Installed version is **0.2.1**. Existing folders, exclusions, books, covers and library preferences survive.
 - [ ] Existing large library opens normally. No repeated duplicate import or blank/reset library appears after the database upgrade.
 - [ ] Launch offline/in airplane mode. Scan, book details, reader, settings and font import work without internet or an account.
 
@@ -103,7 +103,7 @@ Suggested samples: two ordinary EPUBs with several chapters, one illustrated EPU
 - [ ] Try EPUB external links/remote images while offline. No browser/network prompt opens; local content continues working. Deft never asks for internet access or modifies source EPUBs.
 - [ ] Check the Samsung S25 FE/Android 16. If Android 8/9 hardware is available, repeat opening, turning, font import and restore there; otherwise mark that compatibility check unverified.
 
-## Automated handover evidence
+## Previous 0.2.0 handover evidence (superseded by the crash report)
 
 - Source commit: `f9b59581284cddc7d47e9f80e53194f0d1ad1e67` on `feat/m2-epub-reader`, including the pending M1 feedback changes. Version **0.2.0**, internal **0.2.0-1**, versionCode **20001**.
 - `./gradlew check assembleRelease` passed locally on 2026-11-18: **449 test executions, 0 failures, 0 errors, 0 skipped**, across JVM and Android debug/release variants. Includes Room migration chains, reader persistence, offline EPUB policy/opening, font/theme management, Compose behavior and existing scanner regressions. ktlint, detekt, Android lint, network isolation and font budgets passed.
@@ -126,3 +126,25 @@ Suggested samples: two ordinary EPUBs with several chapters, one illustrated EPU
 - [ ] Text/theme/page tabs, font choices, custom-theme editor, contents and bookmark controls have useful spacing without excessive blank space.
 - [ ] Page turns, chrome, sheets, notices, theme changes, list updates and screen transitions feel smooth. Record any abrupt change, flicker, clipped label or confusing icon with its steps/screenshot.
 - [ ] Overall feedback: note preferred defaults, remaining problems and any new ideas here. Confirm explicitly when the combined M1/M2 checklist is accepted.
+
+
+## 0.2.1 recovery — retest first
+
+The previous 0.2.0 reader crashed because the publisher-original font was passed to Readium as an empty custom font family. This patch skips that registration while keeping original publisher typography selectable. Prior checklist results and feedback remain above.
+
+- [ ] Install 0.2.1 over 0.2.0 without uninstalling. Existing library, folders and preferences survive.
+- [ ] Open each of the two EPUBs that crashed before. Both reach readable pages; turn several pages, go back, reopen and verify position restore.
+- [ ] In reader settings, select original, several bundled fonts and an imported font. Reopen both books with each selection; none crashes or shows a blank reader.
+- [ ] Set library format filters and reversed sort; navigate away, force-stop/reopen. Choices and results persist. Deselect all filters and repeat; scanning file types remain unchanged.
+- [ ] Scan status/progress stays inside its settings card. Folder actions, exclusions, file types and storage rows align at normal and 150% text.
+- [ ] Grid/list books have padding, rounded borders and subtle lift. Blank metadata reads `<no-title>` / `<no-author>`; every part of a card opens the right book.
+- [ ] Book detail has a clear cover/identity, Read or Continue action, actual saved progress and separate description/edition/file groups. Verify long titles, absent metadata, missing and protected books.
+- [ ] Reader settings typography, appearance and page controls are grouped, aligned and understandable. Try every existing control, font import/removal and custom theme create/edit/delete.
+- [ ] Quick settings stays within the reader screen and scrolls. At 150% text, narrow width and landscape, labels/values/actions remain readable and reachable with no clipping or overlapping.
+- [ ] Settings category and ignored-books pages match the grouped layout. Ignore/un-ignore preserves history; Forget still requires confirmation.
+
+Local `check assembleRelease` passed on2026-11-18:489 test executions, zero failures/errors/skips. Lint, ktlint, detekt and network isolation passed; four release-tooling Python tests also passed. The actual bundled-catalog regression failed before the fix and passed afterward. A real two-chapter EPUB was parsed by the offline engine and attached to an actual Readium navigator in both debug/release tests.
+
+One whole-change audit found no remaining actionable regressions. Normal/150% paper/ink reader settings, book details, landscape book detail, settings chooser and ignored-book renders were inspected. References: `plans/design/m2-feedback.html`.
+
+These device steps remain unverified until the author tests them. Robolectric attachment does not establish actual Chromium page rendering or phone lifecycle behavior. M1 is merged/pushed as `v0.1.2-1`; M2 stays on its feature branch pending acceptance. GitHub CI is not awaited.

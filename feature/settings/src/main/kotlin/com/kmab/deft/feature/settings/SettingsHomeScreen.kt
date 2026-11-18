@@ -1,5 +1,6 @@
 package com.kmab.deft.feature.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,10 +8,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTopBar
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
@@ -36,10 +41,19 @@ fun SettingsHomeScreen(
             IconButton(onBack) { Icon(DeftActionIcons.Back, "back", tint = colors.text) }
         })
     }) { padding ->
-        Column(Modifier.padding(padding).padding(horizontal = 20.dp)) {
-            SettingsCategory("library", "Folders, file types and ignored books.", DeftActionIcons.Folder, onLibrary)
-            HorizontalDivider(color = colors.line)
-            SettingsCategory("reader", "Text, themes and page controls.", DeftIcons.Books, onReader)
+        Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(16.dp)) {
+            Surface(shape = DeftShapes.card, color = colors.surface, border = BorderStroke(1.dp, colors.line)) {
+                Column {
+                    SettingsCategory(
+                        "library",
+                        "Folders, file types and ignored books.",
+                        DeftActionIcons.Folder,
+                        onLibrary,
+                    )
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = colors.line)
+                    SettingsCategory("reader", "Text, themes and page controls.", DeftIcons.Books, onReader)
+                }
+            }
         }
     }
 }
@@ -57,7 +71,7 @@ private fun SettingsCategory(
             .fillMaxWidth()
             .heightIn(min = 72.dp)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 16.dp),
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
