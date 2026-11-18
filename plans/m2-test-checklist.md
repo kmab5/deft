@@ -143,8 +143,20 @@ The previous 0.2.0 reader crashed because the publisher-original font was passed
 - [ ] Quick settings stays within the reader screen and scrolls. At 150% text, narrow width and landscape, labels/values/actions remain readable and reachable with no clipping or overlapping.
 - [ ] Settings category and ignored-books pages match the grouped layout. Ignore/un-ignore preserves history; Forget still requires confirmation.
 
-Local `check assembleRelease` passed on2026-11-18:489 test executions, zero failures/errors/skips. Lint, ktlint, detekt and network isolation passed; four release-tooling Python tests also passed. The actual bundled-catalog regression failed before the fix and passed afterward. A real two-chapter EPUB was parsed by the offline engine and attached to an actual Readium navigator in both debug/release tests.
+Local `check assembleRelease` passed on 2026-11-18: 489 test executions, zero failures/errors/skips. Lint, ktlint, detekt and network isolation passed; four release-tooling Python tests also passed. The actual bundled-catalog regression failed before the fix and passed afterward. A real two-chapter EPUB was parsed by the offline engine and attached to an actual Readium navigator in both debug/release tests.
 
 One whole-change audit found no remaining actionable regressions. Normal/150% paper/ink reader settings, book details, landscape book detail, settings chooser and ignored-book renders were inspected. References: `plans/design/m2-feedback.html`.
 
 These device steps remain unverified until the author tests them. Robolectric attachment does not establish actual Chromium page rendering or phone lifecycle behavior. M1 is merged/pushed as `v0.1.2-1`; M2 stays on its feature branch pending acceptance. GitHub CI is not awaited.
+
+
+## Verified 0.2.1 release
+
+- Source commit: `63122dd5d9b76567149b10dd64482876237cbc4f`; embedded APK revision checked against it.
+- Version: **0.2.1**, internal **0.2.1-1**, versionCode **20101**. Install over 0.2.0 with app data preserved.
+- APK: `app/build/outputs/apk/release/deft-0.2.1.apk`, **5,826,189 bytes**.
+- APK SHA-256: `1439d362f15f03d661e0a9f630318ed81ef1c4417d757f167ec44b3ac0954166`.
+- Persistent certificate SHA-256: `adea6ec2edf4e9e2d809ed06300729e35ca156c06072736717b4a27449233e50`. The existing key was reused; no credentials are committed.
+- Release verifier confirmed application ID/version, matching certificate, no INTERNET permission and R8 mapping. R8 minification and resource shrinking remain enabled.
+- `check assembleRelease` passed; the source-stamped `:app:assembleRelease` then passed with no application source changes. Logs: `.superpowers/m2-verified-check-release.log` and `.superpowers/m2-0.2.1-stamped-release.log`.
+- Matching APK/mapping/hash evidence is archived locally in `.superpowers/releases/0.2.1/` for future crash retracing.
