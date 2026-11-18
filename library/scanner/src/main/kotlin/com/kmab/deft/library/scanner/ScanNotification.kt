@@ -24,7 +24,7 @@ internal class ScanNotification(
                 .Builder(context, CHANNEL)
                 .setSmallIcon(R.drawable.ic_scan_notification)
                 .setContentTitle("scanning your library")
-                .setContentText("$processedFiles files checked · you can leave Deft")
+                .setContentText("${checkedFiles(processedFiles)} · you can leave Deft")
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setProgress(0, 0, true)

@@ -93,6 +93,8 @@ class LibraryScanner(
         private val incomplete = mutableListOf<String>()
         private val details = linkedSetOf<String>()
         private val observedBooks = mutableSetOf<Long>()
+        private val namedDetails = ScanDetailRecorder()
+        private val candidateEntries = mutableMapOf<Long, MutableList<DocumentEntry>>()
         private var processed = 0
         private var skipped = 0
         private var duplicates = 0
@@ -137,15 +139,24 @@ class LibraryScanner(
                         processed++
                     } else {
                         skipped++
+                        val reason =
+                            if (format ==
+                                null
+                            ) {
+                                "Unsupported file type"
+                            } else {
+                                "${format.name} is disabled in library settings"
+                            }
+                        namedDetails.file(entry, ScanDetailOutcome.SKIPPED, reason)
                     }
-                    onProgress(ScanProgress(processed, skipped))
+                    onProgress(ScanProgress(processed, skipped, namedDetails.drain(), snapshotReport()))
                 }
             } catch (_: IOException) {
-                recordError(root, "Folder listing incomplete. Check access and rescan.")
+                recordError("Library folder", "Folder listing incomplete. Check access and rescan.")
                 incomplete += root
                 complete = false
             } catch (_: SecurityException) {
-                recordError(root, "Folder access was revoked. Select the folder again.")
+                recordError("Library folder", "Folder access was revoked. Select the folder again.")
                 incomplete += root
                 complete = false
             }
@@ -167,13 +178,7 @@ class LibraryScanner(
             currentCoroutineContext().ensureActive()
             val existing = existingFiles[entry.uri]
             if (existing != null && fingerprintMatches(existing, entry)) {
-                if (existing.missing || existing.rootUri != entry.rootUri ||
-                    existing.displayPath != entry.displayPath
-                ) {
-                    db.withTransaction { saveFile(existing, entry, existing.bookId) }
-                }
-                if (existing.missing) candidates.merge(existing.bookId, 1, Int::plus) else unchanged++
-                if (!observedBooks.add(existing.bookId)) duplicates++
+                useUnchanged(existing, entry)
                 return true
             }
             return try {
@@ -182,12 +187,39 @@ class LibraryScanner(
             } catch (_: IOException) {
                 failed++
                 recordError(entry.displayPath, "File could not be read. Check access and rescan.")
+                namedDetails.file(entry, ScanDetailOutcome.ERROR, "File could not be read. Check access and rescan.")
                 existing?.missing == false
             } catch (_: SecurityException) {
                 failed++
                 recordError(entry.displayPath, "Permission to read this file was revoked.")
+                namedDetails.file(entry, ScanDetailOutcome.ERROR, "Permission to read this file was revoked.")
                 existing?.missing == false
             }
+        }
+
+        private suspend fun useUnchanged(
+            existing: BookFileEntity,
+            entry: DocumentEntry,
+        ) {
+            if (existing.missing || existing.rootUri != entry.rootUri || existing.displayPath != entry.displayPath) {
+                db.withTransaction { saveFile(existing, entry, existing.bookId) }
+            }
+            if (existing.missing) candidates.merge(existing.bookId, 1, Int::plus) else unchanged++
+            val duplicate = !observedBooks.add(existing.bookId)
+            if (duplicate) duplicates++
+            val outcome =
+                when {
+                    existing.missing -> ScanDetailOutcome.RESTORED
+                    duplicate -> ScanDetailOutcome.DUPLICATE
+                    else -> ScanDetailOutcome.UNCHANGED
+                }
+            val reason =
+                when (outcome) {
+                    ScanDetailOutcome.RESTORED -> "Existing book restored with its history"
+                    ScanDetailOutcome.DUPLICATE -> "Same content as another book file"
+                    else -> "Already indexed; content unchanged"
+                }
+            namedDetails.file(entry, outcome, reason)
         }
 
         private suspend fun indexFile(
@@ -212,6 +244,8 @@ class LibraryScanner(
                 else -> candidates.merge(bookId, 1, Int::plus)
             }
             if (!observedBooks.add(bookId)) duplicates++
+            namedDetails.indexed(entry, changed = existing != null, newBook = known == null)
+            if (known != null && existing == null) candidateEntries.getOrPut(bookId) { mutableListOf() }.add(entry)
         }
 
         private suspend fun createBook(
@@ -224,12 +258,14 @@ class LibraryScanner(
             if (metadataError != null) {
                 fallbacks++
                 recordError(entry.displayPath, "Using filename details: $metadataError")
+                namedDetails.file(entry, ScanDetailOutcome.FALLBACK, "Using filename details: $metadataError")
             }
             val cover =
                 try {
                     metadata.coverImage?.let { coverStore.save(hash, it) }
                 } catch (_: IOException) {
                     recordError(entry.displayPath, "Cover could not be saved; book is included.")
+                    namedDetails.file(entry, ScanDetailOutcome.ERROR, "Cover could not be saved; book is included.")
                     null
                 }
             val title = metadata.title ?: entry.name
@@ -280,28 +316,53 @@ class LibraryScanner(
                 if (movedOrRestored) {
                     reattached++
                     unchanged += count - 1
+                    candidateEntries[id].orEmpty().forEach {
+                        namedDetails.file(it, ScanDetailOutcome.RESTORED, "Existing book restored with its history")
+                    }
                 } else {
                     unchanged += count
                 }
             }
-            return ScanReport(
-                added,
-                updated,
-                unchanged,
-                reattached,
-                presentBefore.keys.count { it !in after },
-                errors,
-                unavailable,
-                processed,
-                skipped,
-                duplicates,
-                fallbacks,
-                failed,
-                incomplete,
-                details.toList(),
-                needsContinuation,
-            )
+            val folderNames = db.libraryFolderDao().getAll().associate { it.treeUri to it.displayName }
+            (unavailable + incomplete).distinct().forEach { root ->
+                val reason =
+                    if (root in
+                        unavailable
+                    ) {
+                        "Folder unavailable. Grant access again."
+                    } else {
+                        "Folder listing incomplete; unseen books kept present."
+                    }
+                namedDetails.folder(root, folderNames[root] ?: "Library folder", reason)
+            }
+            val report = snapshotReport(reattached, presentBefore.keys.count { it !in after }, complete = true)
+            onProgress(ScanProgress(processed, skipped, namedDetails.drain(), report))
+            return report
         }
+
+        private fun snapshotReport(
+            reattached: Int = 0,
+            markedMissing: Int = 0,
+            complete: Boolean = false,
+        ) = ScanReport(
+            added,
+            updated,
+            unchanged,
+            reattached,
+            markedMissing,
+            errors,
+            unavailable,
+            processed,
+            skipped,
+            duplicates,
+            fallbacks,
+            failed,
+            incomplete,
+            details.toList(),
+            needsContinuation,
+            scanDetails = if (complete) namedDetails.snapshot() else ScanDetails(),
+            interrupted = !complete,
+        )
     }
 
     private class ScanBudgetReached : RuntimeException()

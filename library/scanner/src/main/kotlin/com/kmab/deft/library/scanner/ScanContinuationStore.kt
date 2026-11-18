@@ -52,10 +52,6 @@ internal class ScanContinuationStore(
         if (!saved) throw IOException("Cannot save scan continuation")
     }
 
-    fun clear() {
-        preferences.edit().clear().apply()
-    }
-
     private companion object {
         const val MAX_ERROR_DETAILS = 8
     }

@@ -134,6 +134,27 @@ class LibraryScannerTest {
             assertEquals(1, report.failedFiles)
             assertTrue(report.errorDetails.any { "unreadable" in it })
             assertTrue(report.summary().contains("4 files checked"))
+            assertTrue(
+                report.scanDetails.entries.any { it.name == "one.epub" && it.outcome == ScanDetailOutcome.ADDED },
+            )
+            assertTrue(
+                report.scanDetails.entries.any {
+                    it.name == "cover.jpg" &&
+                        it.outcome == ScanDetailOutcome.SKIPPED
+                },
+            )
+            assertTrue(
+                report.scanDetails.entries.any {
+                    it.name == "unreadable.epub" &&
+                        it.outcome == ScanDetailOutcome.ERROR
+                },
+            )
+            assertTrue(
+                report.scanDetails.entries.any {
+                    it.name == "malformed.epub" &&
+                        it.outcome == ScanDetailOutcome.FALLBACK
+                },
+            )
         }
 
     @Test fun newEpubIsAdded() =

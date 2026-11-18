@@ -187,7 +187,104 @@ class ScanIntegrationTest {
             val result = worker.doWork()
             assertTrue(result is ListenableWorker.Result.Success)
             assertEquals(1, (result as ListenableWorker.Result.Success).outputData.getInt("added", -1))
+            assertTrue(result.outputData.getLong("completedAtMillis", 0L) > 0)
+            val details = ScanReportStore(context).load(result.outputData.getString("reportId")!!)!!
+            assertEquals("Book.txt", details.entries.single().name)
+            assertEquals(ScanDetailOutcome.ADDED, details.entries.single().outcome)
             assertEquals(now, settings.settings.first().lastScanAt)
+        }
+
+    @Test fun workerCancellationKeepsNamedDetailsAndTotalsAcrossSameIdResume() =
+        runBlocking {
+            db.libraryFolderDao().insert(LibraryFolderEntity("root", "Books", now))
+            tree.cancelAfterFile = true
+            val factory =
+                object : WorkerFactory() {
+                    override fun createWorker(
+                        appContext: Context,
+                        workerClassName: String,
+                        workerParameters: WorkerParameters,
+                    ): ListenableWorker = ScanWorker(appContext, workerParameters, runner)
+                }
+            val worker =
+                TestListenableWorkerBuilder
+                    .from(
+                        context,
+                        ScanWorker::class.java,
+                    ).setWorkerFactory(factory)
+                    .build()
+            try {
+                worker.doWork()
+                error("Expected cancellation")
+            } catch (_: CancellationException) {
+            }
+            assertEquals(1, db.bookFileDao().getAll().size)
+            val details = ScanReportStore(context).load(worker.id.toString())!!
+            assertEquals("Book.txt", details.entries.single().name)
+            assertNull(settings.settings.first().lastScanAt)
+            tree.cancelAfterFile = false
+            db.libraryFolderDao().insert(LibraryFolderEntity("second", "Second", now))
+            repeat(2) {
+                val resumed =
+                    TestListenableWorkerBuilder
+                        .from(context, ScanWorker::class.java)
+                        .setWorkerFactory(factory)
+                        .setId(worker.id)
+                        .build()
+                val result = resumed.doWork() as ListenableWorker.Result.Success
+                assertEquals(2, result.outputData.getInt("added", -1))
+                val saved = ScanReportStore(context).load(worker.id.toString())!!
+                assertEquals(2, saved.entries.size)
+                assertTrue(saved.entries.all { it.outcome == ScanDetailOutcome.ADDED })
+            }
+        }
+
+    @Test fun workerFailurePublishesOnlyItsOwnInterruptedSummaryAndNamedDiagnostic() =
+        runBlocking {
+            db.libraryFolderDao().insert(LibraryFolderEntity("one", "One", now))
+            db.libraryFolderDao().insert(LibraryFolderEntity("two", "Two", now))
+            tree.relationshipFailure = java.io.IOException("Provider relationship unavailable")
+            val factory =
+                object : WorkerFactory() {
+                    override fun createWorker(
+                        appContext: Context,
+                        workerClassName: String,
+                        workerParameters: WorkerParameters,
+                    ): ListenableWorker = ScanWorker(appContext, workerParameters, runner)
+                }
+            val worker =
+                TestListenableWorkerBuilder
+                    .from(
+                        context,
+                        ScanWorker::class.java,
+                    ).setWorkerFactory(factory)
+                    .build()
+            val result = worker.doWork() as ListenableWorker.Result.Failure
+            val status =
+                scanStatus(
+                    listOf(
+                        androidx.work.WorkInfo(
+                            id = worker.id,
+                            state = androidx.work.WorkInfo.State.FAILED,
+                            tags = emptySet(),
+                            outputData = result.outputData,
+                        ),
+                    ),
+                    ScanReport(99, 0, 0, 0, 0, 0, emptyList()),
+                )
+            assertEquals(0, status.report!!.added)
+            assertTrue(status.report!!.interrupted)
+            assertTrue(status.completedAtMillis != null)
+            assertEquals(worker.id.toString(), status.report!!.reportId)
+            assertEquals(
+                ScanDetailOutcome.ERROR,
+                ScanReportStore(context)
+                    .load(status.report!!.reportId!!)!!
+                    .entries
+                    .single()
+                    .outcome,
+            )
+            assertNull(settings.settings.first().lastScanAt)
         }
 
     @Test fun canceledScanRetainsRemovalAcrossReplacementAndRunnerRecreation() =
@@ -323,6 +420,8 @@ private class WaitingWorker(
 
 private class BackgroundTree : DocumentTree {
     var cancelWalk = false
+    var cancelAfterFile = false
+    var relationshipFailure: java.io.IOException? = null
     var parent: Pair<String, String>? = null
     var gate: (suspend () -> Unit)? = null
 
@@ -331,7 +430,10 @@ private class BackgroundTree : DocumentTree {
     override suspend fun isChild(
         parentRootUri: String,
         childRootUri: String,
-    ) = parentRootUri == childRootUri || parent == parentRootUri to childRootUri
+    ): Boolean {
+        relationshipFailure?.let { throw it }
+        return parentRootUri == childRootUri || parent == parentRootUri to childRootUri
+    }
 
     override fun walk(
         rootUri: String,
@@ -340,6 +442,7 @@ private class BackgroundTree : DocumentTree {
         gate?.invoke()
         if (cancelWalk) throw CancellationException("interrupted")
         emit(DocumentEntry("$rootUri/book.txt", rootUri, "Books/Book.txt", "Book.txt", 1, 1))
+        if (cancelAfterFile) throw CancellationException("interrupted after indexing")
     }
 
     override fun open(uri: String) = ByteArrayInputStream(uri.substringBefore('/').toByteArray())

@@ -13,6 +13,10 @@ data class ScanStatus(
     val report: ScanReport? = null,
     val message: String? = null,
     val progress: ScanProgress? = null,
+    val initialized: Boolean = false,
+    val workId: String? = null,
+    val isFinished: Boolean = false,
+    val completedAtMillis: Long? = null,
 )
 
 @Singleton
@@ -31,7 +35,9 @@ internal fun scanStatus(
     work: List<WorkInfo>,
     previous: ScanReport?,
 ): ScanStatus {
-    val current = work.firstOrNull { !it.state.isFinished } ?: work.lastOrNull() ?: return ScanStatus(report = previous)
+    val current =
+        work.firstOrNull { !it.state.isFinished } ?: work.lastOrNull()
+            ?: return ScanStatus(report = previous, initialized = true)
     val report = completedReport(current)
     val progress =
         if (current.state == WorkInfo.State.RUNNING) {
@@ -44,11 +50,17 @@ internal fun scanStatus(
         report.takeIf { current.state.isFinished },
         scanMessage(current, report),
         progress,
+        initialized = true,
+        workId = current.id.toString(),
+        isFinished = current.state.isFinished,
+        completedAtMillis = current.outputData.getLong("completedAtMillis", 0L).takeIf { it > 0 },
     )
 }
 
 private fun completedReport(current: WorkInfo): ScanReport? =
-    if (current.state == WorkInfo.State.SUCCEEDED && "added" in current.outputData.keyValueMap) {
+    if (current.state in setOf(WorkInfo.State.SUCCEEDED, WorkInfo.State.FAILED) &&
+        "added" in current.outputData.keyValueMap
+    ) {
         current.outputData.let { data ->
             ScanReport(
                 data.getInt("added", 0),
@@ -67,6 +79,8 @@ private fun completedReport(current: WorkInfo): ScanReport? =
                 errorDetails = data.getStringArray("errorDetails")?.toList().orEmpty(),
                 unavailableRootCount = data.getInt("unavailableRootCount", 0),
                 incompleteRootCount = data.getInt("incompleteRootCount", 0),
+                reportId = data.getString("reportId"),
+                interrupted = data.getBoolean("interrupted", false),
             )
         }
     } else {
@@ -78,7 +92,7 @@ private fun scanMessage(
     report: ScanReport?,
 ): String? =
     when (current.state) {
-        WorkInfo.State.RUNNING -> "scanning · ${current.progress.getInt("processedFiles", 0)} files checked"
+        WorkInfo.State.RUNNING -> "scanning · ${checkedFiles(current.progress.getInt("processedFiles", 0))}"
         WorkInfo.State.ENQUEUED ->
             if (current.runAttemptCount >
                 0

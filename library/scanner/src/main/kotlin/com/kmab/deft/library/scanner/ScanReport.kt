@@ -23,20 +23,27 @@ data class ScanReport(
     val needsContinuation: Boolean = false,
     val unavailableRootCount: Int = unavailableRoots.size,
     val incompleteRootCount: Int = incompleteRoots.size,
+    val reportId: String? = null,
+    val scanDetails: ScanDetails = ScanDetails(),
+    val interrupted: Boolean = false,
 ) {
     fun summary(): String {
         val outcome =
-            if (needsContinuation) {
+            if (interrupted) {
+                "scan incomplete"
+            } else if (needsContinuation) {
                 "scan continuing"
             } else if (isPartial) {
                 "scan incomplete"
             } else {
                 "scan complete"
             }
-        return "$outcome · $processedFiles files checked · $added books added"
+        val books = if (added == 1) "book" else "books"
+        return "$outcome · ${checkedFiles(processedFiles)} · $added $books added"
     }
 
-    val isPartial: Boolean get() = unavailableRoots.isNotEmpty() || incompleteRoots.isNotEmpty() || failedFiles > 0
+    val isPartial: Boolean get() = interrupted || hasUnavailableSources || failedFiles > 0
+    private val hasUnavailableSources: Boolean get() = unavailableRoots.isNotEmpty() || incompleteRoots.isNotEmpty()
 
     fun details(): List<String> =
         buildList {
@@ -60,4 +67,8 @@ data class ScanReport(
 data class ScanProgress(
     val processedFiles: Int = 0,
     val skippedFiles: Int = 0,
+    val scanDetails: ScanDetails = ScanDetails(),
+    val snapshot: ScanReport? = null,
 )
+
+internal fun checkedFiles(count: Int): String = "$count ${if (count == 1) "file" else "files"} checked"

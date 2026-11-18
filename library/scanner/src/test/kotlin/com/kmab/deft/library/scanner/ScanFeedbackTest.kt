@@ -23,6 +23,30 @@ import java.util.UUID
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class ScanFeedbackTest {
+    @Test fun oneFileSummaryUsesSingularNouns() {
+        val summary = report().copy(added = 1, processedFiles = 1).summary()
+        assertEquals("scan complete · 1 file checked · 1 book added", summary)
+    }
+
+    @Test fun observerIdentifiesInitializationWorkAndFreshTerminalResults() {
+        assertFalse(ScanStatus().initialized)
+        assertTrue(scanStatus(emptyList(), null).initialized)
+        val id = UUID.randomUUID()
+        val current =
+            WorkInfo(
+                id = id,
+                state = WorkInfo.State.SUCCEEDED,
+                tags = emptySet(),
+                outputData = report().copy(reportId = id.toString()).toWorkData(completedAtMillis = 123456L),
+            )
+        val status = scanStatus(listOf(current), null)
+        assertTrue(status.initialized)
+        assertTrue(status.isFinished)
+        assertEquals(id.toString(), status.workId)
+        assertEquals(123456L, status.completedAtMillis)
+        assertEquals(id.toString(), status.report!!.reportId)
+    }
+
     @Test fun failedOrCancelledScanDoesNotPresentAnOldSuccessfulReport() {
         for (state in listOf(WorkInfo.State.FAILED, WorkInfo.State.CANCELLED)) {
             val work =
