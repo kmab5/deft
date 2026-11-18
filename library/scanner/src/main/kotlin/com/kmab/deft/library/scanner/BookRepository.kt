@@ -13,5 +13,6 @@ class BookRepository
             includeMissing: Boolean,
             formats: Set<BookFormat>,
             sort: BookSort,
-        ) = db.bookDao().observeList(includeMissing, formats, sort)
+            reverseSort: Boolean = false,
+        ) = db.bookDao().observeList(includeMissing, formats, sort, reverseSort)
     }

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.kmab.deft.core.database.model.BookListItem
 import com.kmab.deft.core.datastore.LibrarySettings
 import com.kmab.deft.core.datastore.LibrarySettingsRepository
+import com.kmab.deft.core.model.BookDisplaySize
 import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
 import com.kmab.deft.library.scanner.BookRepository
@@ -40,6 +41,9 @@ data class BooksUiState(
     val scanReport: ScanReport? = null,
     val scanMessage: String? = null,
     val error: String? = null,
+    val reverseSort: Boolean = false,
+    val gridSize: BookDisplaySize = BookDisplaySize.MEDIUM,
+    val listSize: BookDisplaySize = BookDisplaySize.MEDIUM,
 )
 
 private data class BookQuery(
@@ -80,7 +84,12 @@ class BooksViewModel
                                 emptyList(),
                             )
                         } else {
-                            repository.observeBooks(query.settings.showMissing, query.formats, query.settings.sort)
+                            repository.observeBooks(
+                                query.settings.showMissing,
+                                query.formats,
+                                query.settings.sort,
+                                query.settings.reverseSort,
+                            )
                         }
                     list.map { BookResult(query, it) }.catch { failure ->
                         if (failure is CancellationException) throw failure
@@ -110,10 +119,19 @@ class BooksViewModel
                     scan.report,
                     scan.message,
                     operationError ?: result.error,
+                    result.query.settings.reverseSort,
+                    result.query.settings.gridSize,
+                    result.query.settings.listSize,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), BooksUiState())
 
         fun setGridView(value: Boolean) = persist { settings.setGridView(value) }
+
+        fun setReverseSort(value: Boolean) = persist { settings.setReverseSort(value) }
+
+        fun setGridSize(value: BookDisplaySize) = persist { settings.setGridSize(value) }
+
+        fun setListSize(value: BookDisplaySize) = persist { settings.setListSize(value) }
 
         fun setSort(value: BookSort) = persist { settings.setSort(value) }
 

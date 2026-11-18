@@ -27,6 +27,20 @@ internal object LibraryIcons {
             )
         }.build()
 
+    val Missing =
+        icon("missing file") {
+            moveTo(6f, 3f)
+            lineTo(15f, 3f)
+            lineTo(19f, 7f)
+            lineTo(19f, 21f)
+            lineTo(6f, 21f)
+            close()
+            moveTo(10f, 11f)
+            lineTo(15f, 16f)
+            moveTo(15f, 11f)
+            lineTo(10f, 16f)
+        }
+
     val More =
         icon("more") {
             moveTo(12f, 5f)

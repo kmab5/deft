@@ -29,6 +29,7 @@ import com.kmab.deft.core.database.entity.BookEntity
 import com.kmab.deft.core.database.entity.BookFileEntity
 import com.kmab.deft.core.database.entity.LibraryFolderEntity
 import com.kmab.deft.core.datastore.LibrarySettingsRepository
+import com.kmab.deft.core.model.BookDisplaySize
 import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
 import com.kmab.deft.library.scanner.BookRepository
@@ -208,6 +209,11 @@ class BooksViewModelTest {
             compose.waitUntil { latest.hasFolders }
             vm.setSort(BookSort.AUTHOR)
             compose.waitUntil { latest.books.firstOrNull()?.title == "Zulu" }
+            vm.setReverseSort(true)
+            compose.waitUntil { latest.books.firstOrNull()?.title == "Alpha" }
+            vm.setGridSize(BookDisplaySize.SMALL)
+            vm.setListSize(BookDisplaySize.LARGE)
+            compose.waitUntil { latest.gridSize == BookDisplaySize.SMALL && latest.listSize == BookDisplaySize.LARGE }
             vm.setShowMissing(true)
             compose.waitUntil { latest.books.size == 3 }
             vm.setGridView(false)
@@ -215,6 +221,9 @@ class BooksViewModelTest {
             val saved = settings.settings.first()
             assertEquals(BookSort.AUTHOR, saved.sort)
             assertTrue(saved.showMissing)
+            assertTrue(saved.reverseSort)
+            assertEquals(BookDisplaySize.SMALL, saved.gridSize)
+            assertEquals(BookDisplaySize.LARGE, saved.listSize)
             assertFalse(saved.gridView)
         }
 
@@ -276,7 +285,7 @@ class BooksViewModelTest {
             ),
         )
         assertEquals(listOf("root"), report.unavailableRoots)
-        assertEquals("1 folder unavailable. Check library settings.", latest.scanMessage)
+        assertEquals(report.summary(), latest.scanMessage)
     }
 
     @Test fun cancelledScanDoesNotSpinForever() {

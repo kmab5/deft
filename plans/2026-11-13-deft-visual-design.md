@@ -205,6 +205,16 @@ Nothing else vibrates.
 
 ## 11. Screens
 
+### M1 device feedback revision — 2026-11-18
+
+The Samsung S25 FE review overrides the earlier M1 layouts below. Keep the paper/ink palette and bundled typefaces, but use compact, labelled **filters**, **sort**, and **display** controls opening focused sheets. Formats and sort choices wrap naturally rather than occupying a widely spaced panel. Sort has explicit direction choices and a last-read explanation. Display offers grid/list and small/medium/large; each layout remembers its size.
+
+Book titles have up to two lines. Author names use the UI face rather than monospaced telemetry. Cover sizes and gutters adapt to the selected density; remove empty progress tracks for unread books. Coverless list thumbnails use a stable tinted initial instead of squeezing the full title into the thumbnail. List status labels sit beside metadata; narrow grid covers use accessible status icons below the image. Focused sheets open fully and scroll when necessary. Reading history remains absent until the reader is implemented.
+
+M1 Settings opens directly to Library settings. A scan card comes first, followed by folder cards with visible **exclude a subfolder** and **remove** actions, compact two-column file-type controls, and a database/thumbnail/cache storage breakdown. Exclusions are never hidden behind tapping a folder name. Scan results distinguish checked files, added Books, duplicate files, skipped file types, filename fallback, unreadable files and unavailable/incomplete folders. Running scans do not display a stale completed summary.
+
+Both launcher foreground layers scale the mark to 70% around its centre, leaving more breathing room inside the adaptive icon. Device retesting covers font scaling and TalkBack; unavailable Android 8/9 hardware is recorded as unverified.
+
 The sketches show layout only; the preview shows the look. Labels are lowercase.
 
 ### 11.1 books

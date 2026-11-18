@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import com.kmab.deft.core.model.BookDisplaySize
 import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
 import kotlinx.coroutines.flow.map
@@ -30,6 +31,9 @@ class LibrarySettingsRepository
                     sort = BookSort.entries.find { it.name == p[SORT] } ?: BookSort.TITLE,
                     gridView = p[GRID] ?: true,
                     lastScanAt = p[LAST_SCAN]?.let(Instant::ofEpochMilli),
+                    reverseSort = p[REVERSE_SORT] ?: false,
+                    gridSize = BookDisplaySize.entries.find { it.name == p[GRID_SIZE] } ?: BookDisplaySize.MEDIUM,
+                    listSize = BookDisplaySize.entries.find { it.name == p[LIST_SIZE] } ?: BookDisplaySize.MEDIUM,
                 )
             }
 
@@ -55,6 +59,18 @@ class LibrarySettingsRepository
             store.edit { it[GRID] = value }
         }
 
+        suspend fun setReverseSort(value: Boolean) {
+            store.edit { it[REVERSE_SORT] = value }
+        }
+
+        suspend fun setGridSize(value: BookDisplaySize) {
+            store.edit { it[GRID_SIZE] = value.name }
+        }
+
+        suspend fun setListSize(value: BookDisplaySize) {
+            store.edit { it[LIST_SIZE] = value.name }
+        }
+
         suspend fun setLastScanAt(value: Instant) {
             store.edit { it[LAST_SCAN] = value.toEpochMilli() }
         }
@@ -64,6 +80,9 @@ class LibrarySettingsRepository
             val MISSING = booleanPreferencesKey("show_missing")
             val SORT = stringPreferencesKey("book_sort")
             val GRID = booleanPreferencesKey("grid_view")
+            val REVERSE_SORT = booleanPreferencesKey("book_sort_reversed")
+            val GRID_SIZE = stringPreferencesKey("book_grid_size")
+            val LIST_SIZE = stringPreferencesKey("book_list_size")
             val LAST_SCAN = longPreferencesKey("last_scan_at")
         }
     }

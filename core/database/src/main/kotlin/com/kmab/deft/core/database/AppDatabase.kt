@@ -27,7 +27,7 @@ import com.kmab.deft.core.database.entity.PendingRootRemovalEntity
         ExcludedFolderEntity::class,
         PendingRootRemovalEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

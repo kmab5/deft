@@ -4,6 +4,8 @@ plugins {
     id("deft.android.hilt")
 }
 dependencies {
+    testImplementation("io.github.takahirom.roborazzi:roborazzi:1.59.0")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:1.59.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     implementation(project(":core:model"))
     implementation(project(":core:designsystem"))

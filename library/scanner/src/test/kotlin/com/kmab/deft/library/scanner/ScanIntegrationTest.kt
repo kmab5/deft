@@ -77,6 +77,7 @@ class ScanIntegrationTest {
         )
     private val runner by lazy { ScanRunner(db, scanner, settings, time, coordination, access) }
     private lateinit var manager: WorkManager
+    private val requestedForegroundModes = mutableListOf<Boolean>()
     private val scheduler by lazy { ScanScheduler(manager, settings, time, db) }
     private val folders by lazy { LibraryFolderRepository(db, tree, access, scheduler, time, coordination) }
 
@@ -87,7 +88,11 @@ class ScanIntegrationTest {
                     appContext: Context,
                     workerClassName: String,
                     workerParameters: WorkerParameters,
-                ): ListenableWorker = WaitingWorker(appContext, workerParameters)
+                ): ListenableWorker {
+                    requestedForegroundModes +=
+                        workerParameters.inputData.getBoolean(ScanScheduler.USER_INITIATED, false)
+                    return WaitingWorker(appContext, workerParameters)
+                }
             }
         WorkManagerTestInitHelper.initializeTestWorkManager(
             context,
@@ -140,9 +145,11 @@ class ScanIntegrationTest {
             settings.setLastScanAt(now.minusSeconds(7 * 3600))
             scheduler.scanOnStartIfStale()
             val first = requests().single().id
+            assertFalse(requestedForegroundModes.last())
             scheduler.scanOnStartIfStale()
             assertEquals(first, requests().single().id)
             scheduler.scanNow()
+            assertTrue(requestedForegroundModes.last())
             assertTrue(requests().none { it.id == first && !it.state.isFinished })
             assertTrue(requests().any { it.id != first && !it.state.isFinished })
             assertEquals(1, requests().count { !it.state.isFinished })
@@ -275,9 +282,14 @@ class ScanIntegrationTest {
                 try {
                     folders.add(Uri.parse(second))
                     error("Expected overlap rejection")
-                } catch (
-                    _: IllegalArgumentException,
-                ) {
+                } catch (failure: IllegalArgumentException) {
+                    if (second == "parent") {
+                        assertTrue(failure.message.orEmpty().contains("Remove Books"))
+                        assertTrue(failure.message.orEmpty().contains("then add the parent"))
+                        assertTrue(failure.message.orEmpty().contains("exclusions again"))
+                    } else {
+                        assertTrue(failure.message.orEmpty().contains("already included inside Books"))
+                    }
                 }
                 assertFalse(access.hasRead(Uri.parse(second)))
                 folders.remove(first)

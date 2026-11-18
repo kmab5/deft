@@ -1,6 +1,7 @@
 package com.kmab.deft.core.datastore
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import com.kmab.deft.core.model.BookDisplaySize
 import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
 import kotlinx.coroutines.CoroutineScope
@@ -43,6 +44,9 @@ class LibrarySettingsRepositoryTest {
             repository.setSort(BookSort.DATE_ADDED)
             repository.setGridView(false)
             repository.setLastScanAt(Instant.EPOCH)
+            repository.setReverseSort(true)
+            repository.setGridSize(BookDisplaySize.SMALL)
+            repository.setListSize(BookDisplaySize.LARGE)
             scope.coroutineContext.job.cancelAndJoin()
             val secondScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             try {
@@ -57,6 +61,9 @@ class LibrarySettingsRepositoryTest {
                         BookSort.DATE_ADDED,
                         false,
                         Instant.EPOCH,
+                        reverseSort = true,
+                        gridSize = BookDisplaySize.SMALL,
+                        listSize = BookDisplaySize.LARGE,
                     ),
                     reopened.settings.first(),
                 )

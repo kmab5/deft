@@ -20,7 +20,10 @@ class ScanRunner
         private val coordination: ScanCoordination,
         private val access: FolderAccess,
     ) {
-        suspend fun run(): ScanReport =
+        suspend fun run(
+            onProgress: suspend (ScanProgress) -> Unit = {},
+            shouldYield: () -> Boolean = { false },
+        ): ScanReport =
             coordination.mutex.withLock {
                 val dao = db.libraryFolderDao()
                 val selected = dao.getAll().map { it.treeUri }
@@ -32,9 +35,18 @@ class ScanRunner
                         // Already revoked by the provider; reconciliation only touches app-owned rows.
                     }
                 }
-                val report = scanner.scan(selected, settings.settings.first().enabledFormats, removed)
-                settings.setLastScanAt(time.now())
-                dao.acknowledgeRemovals(removed)
+                val report =
+                    scanner.scan(
+                        selected,
+                        settings.settings.first().enabledFormats,
+                        removed,
+                        onProgress,
+                        shouldYield,
+                    )
+                if (!report.needsContinuation) {
+                    settings.setLastScanAt(time.now())
+                    dao.acknowledgeRemovals(removed)
+                }
                 report
             }
     }

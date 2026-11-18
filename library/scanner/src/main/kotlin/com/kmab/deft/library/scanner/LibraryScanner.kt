@@ -35,14 +35,21 @@ class LibraryScanner(
         roots: List<String>,
         formats: Set<BookFormat>,
         removedRoots: List<String> = emptyList(),
+        onProgress: suspend (ScanProgress) -> Unit = {},
+        shouldYield: () -> Boolean = { false },
     ): ScanReport =
         mutex.withLock {
             withContext(Dispatchers.IO) {
                 val selected = roots.distinct()
                 val accessible = selected.filter { isAccessible(it) }
                 validateRoots(accessible)
-                val session = ScanSession(files.getAll(), formats, selected - accessible.toSet())
-                accessible.forEach { session.scanRoot(it) }
+                val session =
+                    ScanSession(files.getAll(), formats, selected - accessible.toSet(), onProgress, shouldYield)
+                try {
+                    accessible.forEach { session.scanRoot(it) }
+                } catch (_: ScanBudgetReached) {
+                    session.needsContinuation = true
+                }
                 session.finish(removedRoots.distinct().filterNot { it in selected })
             }
         }
@@ -71,7 +78,10 @@ class LibraryScanner(
         before: List<BookFileEntity>,
         private val formats: Set<BookFormat>,
         unavailableRoots: List<String>,
+        private val onProgress: suspend (ScanProgress) -> Unit,
+        private val shouldYield: () -> Boolean,
     ) {
+        private val existingFiles = before.associateBy { it.uri }
         private val presentBefore = before.filterNot { it.missing }.groupBy { it.bookId }
         private val candidates = mutableMapOf<Long, Int>()
         private val created = mutableSetOf<Long>()
@@ -80,18 +90,29 @@ class LibraryScanner(
         private var unchanged = 0
         private var errors = 0
         private val unavailable = unavailableRoots.toMutableList()
+        private val incomplete = mutableListOf<String>()
+        private val details = linkedSetOf<String>()
+        private val observedBooks = mutableSetOf<Long>()
+        private var processed = 0
+        private var skipped = 0
+        private var duplicates = 0
+        private var fallbacks = 0
+        private var failed = 0
+        var needsContinuation = false
+
+        private fun recordError(
+            path: String,
+            reason: String,
+        ) {
+            errors++
+            if (details.size < MAX_ERROR_DETAILS) {
+                details += "${path.take(MAX_ERROR_PATH_CHARS)}: ${reason.take(MAX_ERROR_REASON_CHARS)}"
+            }
+        }
 
         suspend fun scanRoot(root: String) {
             currentCoroutineContext().ensureActive()
-            val accessible =
-                try {
-                    tree.isAccessible(root)
-                } catch (_: IOException) {
-                    false
-                } catch (_: SecurityException) {
-                    false
-                }
-            if (!accessible) {
+            if (!isAccessible(root)) {
                 unavailable += root
                 return
             }
@@ -103,45 +124,68 @@ class LibraryScanner(
                     .map { it.documentId }
                     .toSet()
             val seen = mutableSetOf<String>()
+            val enumerated = mutableSetOf<String>()
             var complete = true
             try {
                 tree.walk(root, exclusions).collect { entry ->
+                    if (shouldYield()) throw ScanBudgetReached()
                     require(entry.rootUri == root) { "Document entry belongs to another root" }
+                    if (!enumerated.add(entry.uri)) return@collect
                     val format = BookFormat.fromFileName(entry.name)
                     if (format != null && format in formats) {
                         if (scanEntry(entry, format)) seen += entry.uri
+                        processed++
+                    } else {
+                        skipped++
                     }
+                    onProgress(ScanProgress(processed, skipped))
                 }
             } catch (_: IOException) {
-                errors++
+                recordError(root, "Folder listing incomplete. Check access and rescan.")
+                incomplete += root
                 complete = false
             } catch (_: SecurityException) {
-                errors++
+                recordError(root, "Folder access was revoked. Select the folder again.")
+                incomplete += root
                 complete = false
             }
             currentCoroutineContext().ensureActive()
-            if (complete) files.markMissingUnderRootsExcept(listOf(root), seen)
+            if (complete && hasUnseenFiles(root, seen)) {
+                files.markMissingUnderRootsExcept(listOf(root), seen)
+            }
         }
+
+        private fun hasUnseenFiles(
+            root: String,
+            seen: Set<String>,
+        ): Boolean = existingFiles.values.any { it.rootUri == root && !it.missing && it.uri !in seen }
 
         private suspend fun scanEntry(
             entry: DocumentEntry,
             format: BookFormat,
         ): Boolean {
             currentCoroutineContext().ensureActive()
-            val existing = files.findByUri(entry.uri)
+            val existing = existingFiles[entry.uri]
             if (existing != null && fingerprintMatches(existing, entry)) {
-                db.withTransaction { saveFile(existing, entry, existing.bookId) }
+                if (existing.missing || existing.rootUri != entry.rootUri ||
+                    existing.displayPath != entry.displayPath
+                ) {
+                    db.withTransaction { saveFile(existing, entry, existing.bookId) }
+                }
                 if (existing.missing) candidates.merge(existing.bookId, 1, Int::plus) else unchanged++
+                if (!observedBooks.add(existing.bookId)) duplicates++
                 return true
             }
             return try {
                 indexFile(entry, format, existing)
                 true
             } catch (_: IOException) {
-                errors++
+                failed++
+                recordError(entry.displayPath, "File could not be read. Check access and rescan.")
                 existing?.missing == false
             } catch (_: SecurityException) {
-                errors++
+                failed++
+                recordError(entry.displayPath, "Permission to read this file was revoked.")
                 existing?.missing == false
             }
         }
@@ -167,6 +211,7 @@ class LibraryScanner(
                 bookId in created -> unchanged++
                 else -> candidates.merge(bookId, 1, Int::plus)
             }
+            if (!observedBooks.add(bookId)) duplicates++
         }
 
         private suspend fun createBook(
@@ -176,12 +221,15 @@ class LibraryScanner(
             existing: BookFileEntity?,
         ): Long {
             val (metadata, metadataError) = tree.open(entry.uri).use { registry.extract(format, it, entry.name) }
-            if (metadataError != null) errors++
+            if (metadataError != null) {
+                fallbacks++
+                recordError(entry.displayPath, "Using filename details: $metadataError")
+            }
             val cover =
                 try {
                     metadata.coverImage?.let { coverStore.save(hash, it) }
                 } catch (_: IOException) {
-                    errors++
+                    recordError(entry.displayPath, "Cover could not be saved; book is included.")
                     null
                 }
             val title = metadata.title ?: entry.name
@@ -218,9 +266,11 @@ class LibraryScanner(
 
         suspend fun finish(removedRoots: List<String>): ScanReport {
             currentCoroutineContext().ensureActive()
-            db.withTransaction {
-                removedRoots.forEach { files.markMissingForRoot(it) }
-                files.pruneMissingWherePresentCopyExists()
+            if (!needsContinuation) {
+                db.withTransaction {
+                    removedRoots.forEach { files.markMissingForRoot(it) }
+                    files.pruneMissingWherePresentCopyExists()
+                }
             }
             val after = files.getAll().filterNot { it.missing }.groupBy { it.bookId }
             var reattached = 0
@@ -242,8 +292,24 @@ class LibraryScanner(
                 presentBefore.keys.count { it !in after },
                 errors,
                 unavailable,
+                processed,
+                skipped,
+                duplicates,
+                fallbacks,
+                failed,
+                incomplete,
+                details.toList(),
+                needsContinuation,
             )
         }
+    }
+
+    private class ScanBudgetReached : RuntimeException()
+
+    private companion object {
+        const val MAX_ERROR_DETAILS = 8
+        const val MAX_ERROR_PATH_CHARS = 120
+        const val MAX_ERROR_REASON_CHARS = 160
     }
 
     private fun fingerprintMatches(

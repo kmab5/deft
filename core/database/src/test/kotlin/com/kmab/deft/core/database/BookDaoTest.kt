@@ -71,6 +71,75 @@ class BookDaoTest {
         sort: BookSort = BookSort.TITLE,
     ) = db.bookDao().observeList(missing, emptySet(), sort).first()
 
+    @Test fun lastReadSortKeepsUnreadLastInBothDirectionsWithStableTies() =
+        runBlocking {
+            val fixtures =
+                listOf(
+                    "Unread Z" to null,
+                    "Recent" to 20L,
+                    "Same B" to 10L,
+                    "Same A" to 10L,
+                    "Unread A" to null,
+                )
+            fixtures.forEach { (title, readAt) ->
+                val id =
+                    db.bookDao().insert(
+                        BookEntity(
+                            contentHash = title,
+                            format = BookFormat.EPUB,
+                            title = title,
+                            sortTitle = title,
+                            addedAt = Instant.EPOCH,
+                            lastReadAt = readAt?.let(Instant::ofEpochSecond),
+                        ),
+                    )
+                file(id, title)
+            }
+
+            fun expected(reverse: Boolean) =
+                if (reverse) {
+                    listOf("Same A", "Same B", "Recent", "Unread A", "Unread Z")
+                } else {
+                    listOf("Recent", "Same A", "Same B", "Unread A", "Unread Z")
+                }
+            listOf(false, true).forEach { reverse ->
+                val books = db.bookDao().observeList(false, emptySet(), BookSort.LAST_READ, reverse).first()
+                assertEquals(expected(reverse), books.map { it.title })
+                assertNull(books.last().lastReadAt)
+            }
+        }
+
+    @Test fun inverseSortingReversesPrimaryFieldAndPreservesTitleFallback() =
+        runBlocking {
+            listOf("A", "B", "C").forEachIndexed { index, title ->
+                val id =
+                    db.bookDao().insert(
+                        BookEntity(
+                            contentHash = title,
+                            format = BookFormat.EPUB,
+                            title = title,
+                            sortTitle = title,
+                            addedAt = Instant.ofEpochSecond(if (index == 0) 1 else 2),
+                        ),
+                    )
+                file(id, title)
+                db.authorDao().setBookAuthors(id, listOf(if (index == 0) "Zebra" else "Alpha"))
+            }
+
+            suspend fun titles(
+                sort: BookSort,
+                reverse: Boolean,
+            ) = db
+                .bookDao()
+                .observeList(false, emptySet(), sort, reverse)
+                .first()
+                .map { it.title }
+            assertEquals(listOf("C", "B", "A"), titles(BookSort.TITLE, true))
+            assertEquals(listOf("A", "B", "C"), titles(BookSort.AUTHOR, true))
+            assertEquals(listOf("B", "C", "A"), titles(BookSort.DATE_ADDED, false))
+            assertEquals(listOf("A", "B", "C"), titles(BookSort.DATE_ADDED, true))
+        }
+
     @Test fun deletingBookFileKeepsBook() =
         runBlocking {
             val id = book()

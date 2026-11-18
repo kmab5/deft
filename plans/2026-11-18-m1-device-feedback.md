@@ -8,26 +8,36 @@
 
 ## 1. Large libraries and scan feedback
 
-- [ ] Reproduce large initial imports and interruption with scanner regression tests; inspect provider traversal and metadata processing costs.
-- [ ] Fix demonstrated bottlenecks/failures and make long scans resumable or safely scheduled; preserve incomplete-root missing-file safeguards.
-- [ ] Expose processed counts and meaningful completed/partial/error summaries, including why file and Book counts differ.
-- [ ] Measure storage components and avoid redundant cover caching or unnecessary database churn.
+- [x] Reproduce large initial imports and interruption with scanner regression tests; inspect provider traversal and metadata processing costs.
+- [x] Fix demonstrated bottlenecks/failures and make long scans resumable or safely scheduled; preserve incomplete-root missing-file safeguards.
+- [x] Expose processed counts and meaningful completed/partial/error summaries, including why file and Book counts differ.
+- [x] Show separate storage components and avoid redundant cover caching or unnecessary database churn; the author confirmed total storage is acceptable.
 
 ## 2. Books controls and presentation
 
-- [ ] Add persisted small/medium/large display sizes for grid and list, reverse sorting and last-read sorting; null last-read values remain unread with deterministic ordering.
-- [ ] Add any required Room migration and migration tests; preserve existing data and preferences.
-- [ ] Redesign compact, clearly labelled filter/sort/display controls, readable two-line titles and balanced cover spacing. Keep the established paper/ink palette and typography.
+- [x] Add persisted small/medium/large display sizes for grid and list, reverse sorting and last-read sorting; null last-read values remain unread with deterministic ordering.
+- [x] Add any required Room migration and migration tests; preserve existing data and preferences.
+- [x] Redesign compact, clearly labelled filter/sort/display controls, readable two-line titles and balanced cover spacing. Keep the established paper/ink palette and typography.
 
 ## 3. Settings, folders and icon
 
-- [ ] Remove the empty intermediate Settings page in M1. Present scan information near the top, then clear folder cards and compact file-type controls.
-- [ ] Make excluded folders and the exclude action visible, retain picker state across recreation and improve overlap explanations with corrective instructions.
-- [ ] Add launcher foreground and monochrome mark padding without changing identity.
+- [x] Remove the empty intermediate Settings page in M1. Present scan information near the top, then clear folder cards and compact file-type controls.
+- [x] Make excluded folders and the exclude action visible, retain picker state across recreation and improve overlap explanations with corrective instructions.
+- [x] Add launcher foreground and monochrome mark padding without changing identity.
 
 ## 4. Verification and handover
 
-- [ ] Record visual/behavior decisions in the spec and visual reference.
-- [ ] Run targeted regressions followed by `check assembleRelease`, audit the complete changes, and verify the persistent signing certificate and R8 output.
-- [ ] Preserve original feedback and supply a fresh retest checklist with each feedback item's disposition. Android 8/9 device checks remain skipped, not claimed passed; reader functionality remains M2.
-- [ ] Hand over the signed release APK with an update-compatible version and local verification evidence. Push without waiting for CI; do not merge or tag.
+- [x] Record visual/behavior decisions in the spec and visual reference.
+- [x] Run targeted regressions followed by `check assembleRelease`, audit the complete changes, and verify the persistent signing certificate and R8 output.
+- [x] Preserve original feedback and supply a fresh retest checklist with each feedback item's disposition. Android 8/9 device checks remain skipped, not claimed passed; reader functionality remains M2.
+- [x] Hand over the signed release APK with an update-compatible version and local verification evidence. Push without waiting for CI; do not merge or tag.
+
+## Combined audit and verification
+
+The whole-change audit found two issues: repeated four-minute retries could stall on slow providers, and status labels could clip on small covers. Manual foreground execution with finite fallback retries resolves the first; list labels beside metadata and compact grid status icons resolve the second. Scoped re-review found no remaining blocking defect.
+
+The final `ktlintFormat check` pass succeeded with 282 recorded JVM/Robolectric test executions and zero failures/errors. Four Python release-tooling tests also passed. Phone-size captures were visually inspected in paper/ink, including real 150% system font scaling. The 1,500-EPUB interrupted-import regression and 5,000-unchanged-file regression passed. These are automated checks, not physical Samsung performance measurements.
+
+The author clarified that about 80 MB for 1,400 Books is acceptable. Thumbnail quality remains unchanged. PDF scanning was disabled in the supplied screenshots; settings now makes disabled file types explicit. Home/screen-off continuation, actual update installation and TalkBack remain device acceptance checks.
+
+`check assembleRelease` also passed on the frozen final sources. The release verifier confirmed the persistent signing identity, application/version, no INTERNET permission and R8 mapping. Release metadata is in the feedback retest checklist. The branch is handed over for acceptance, not merged or tagged.

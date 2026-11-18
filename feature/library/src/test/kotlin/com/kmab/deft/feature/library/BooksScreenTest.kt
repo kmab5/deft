@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.kmab.deft.core.database.model.BookListItem
 import com.kmab.deft.core.designsystem.DeftTheme
+import com.kmab.deft.core.model.BookDisplaySize
 import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
 import org.junit.Assert.assertEquals
@@ -70,12 +71,14 @@ class BooksScreenTest {
         compose.onNodeWithText("missing", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithText("protected", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithText("A book").assertHasNoClickAction()
-        compose.onNodeWithContentDescription("switch to list view").performClick()
+        compose.onNodeWithText("display").performClick()
+        compose.onNodeWithText("list").performClick()
+        compose.onNodeWithText("done").performClick()
         compose.onNodeWithTag("book_list").assertIsDisplayed()
         compose.onNodeWithTag("book_grid").assertDoesNotExist()
     }
 
-    @Test fun oneSheetAppliesFormatsSortAndMissingLive() {
+    @Test fun focusedSheetsApplyFormatsSortAndMissingLive() {
         val state = mutableStateOf(BooksUiState(isLoading = false, hasFolders = true))
         compose.setContent {
             DeftTheme {
@@ -102,19 +105,80 @@ class BooksScreenTest {
                 )
             }
         }
-        compose.onNodeWithText("all books").performClick()
+        compose.onNodeWithText("filters").performClick()
         compose.onNodeWithText("txt").performClick()
-        compose.onNodeWithText("author").performClick()
         compose
-            .onNodeWithText("show missing")
+            .onNodeWithContentDescription("show missing")
             .performScrollTo()
             .assertIsDisplayed()
             .performClick()
         assertFalse(BookFormat.TXT in state.value.formatFilter)
-        assertEquals(BookSort.AUTHOR, state.value.sort)
         assertEquals(true, state.value.showMissing)
         compose.onNodeWithText("done").performClick()
-        compose.onNodeWithText("author ▾").assertIsDisplayed()
+        compose.onNodeWithText("sort").performClick()
+        compose.onNodeWithText("author").performClick()
+        assertEquals(BookSort.AUTHOR, state.value.sort)
+        compose.onNodeWithText("done").performClick()
+        compose.onNodeWithText("author · a to z").assertIsDisplayed()
+    }
+
+    @Test fun displaySizesAndSortDirectionApplyWithoutChangingTheOtherLayoutSize() {
+        val state = mutableStateOf(BooksUiState(isLoading = false))
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    state.value,
+                    {},
+                    {},
+                    {},
+                    { state.value = state.value.copy(gridView = it) },
+                    { state.value = state.value.copy(sort = it) },
+                    {},
+                    { _, _ -> },
+                    { state.value = state.value.copy(reverseSort = it) },
+                    { state.value = state.value.copy(gridSize = it) },
+                    { state.value = state.value.copy(listSize = it) },
+                )
+            }
+        }
+        compose.onNodeWithText("display").performClick()
+        compose.onNodeWithText("small").performClick()
+        compose.onNodeWithText("list").performClick()
+        compose.onNodeWithText("large").performClick()
+        assertEquals(BookDisplaySize.SMALL, state.value.gridSize)
+        assertEquals(BookDisplaySize.LARGE, state.value.listSize)
+        compose.onNodeWithText("done").performClick()
+        compose.onNodeWithText("sort").performClick()
+        compose.onNodeWithText("last read").performClick()
+        compose.onNodeWithText("oldest first").performClick()
+        compose.onNodeWithText("Books with no reading history stay at the end.").assertIsDisplayed()
+        compose.onNodeWithText("done").performClick()
+        assertEquals(BookSort.LAST_READ, state.value.sort)
+        assertEquals(true, state.value.reverseSort)
+        compose.onNodeWithText("last read · oldest first").assertIsDisplayed()
+    }
+
+    @Test fun interruptedScanMessageTakesPrecedenceOverPreviousSuccessfulReport() {
+        val previous =
+            com.kmab.deft.library.scanner
+                .ScanReport(2, 0, 0, 0, 0, 0, emptyList())
+        val message = "Scan stopped by Android. Try rescan."
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    BooksUiState(isLoading = false, hasFolders = true, scanReport = previous, scanMessage = message),
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    { _, _ -> },
+                )
+            }
+        }
+        compose.onNodeWithText(message).assertIsDisplayed()
+        compose.onNodeWithText(previous.summary()).assertDoesNotExist()
     }
 
     @Test fun unavailableFolderFeedbackLinksToLibrarySettings() {

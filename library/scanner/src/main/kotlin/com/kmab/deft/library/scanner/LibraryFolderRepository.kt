@@ -32,8 +32,18 @@ class LibraryFolderRepository
                 coordination.mutex.withLock {
                     val root = treeUri.toString()
                     for (selected in dao.getAll()) {
-                        require(!tree.isChild(selected.treeUri, root) && !tree.isChild(root, selected.treeUri)) {
-                            "Subfolders are already included; select non-overlapping folders"
+                        require(root != selected.treeUri) {
+                            "${selected.displayName} is already selected. Its subfolders are included automatically."
+                        }
+                        require(!tree.isChild(selected.treeUri, root)) {
+                            "This folder is already included inside ${selected.displayName}. " +
+                                "Manage its excluded subfolders below."
+                        }
+                        require(!tree.isChild(root, selected.treeUri)) {
+                            "This parent folder contains the selected folder ${selected.displayName}. " +
+                                "Remove ${selected.displayName} and any other selected subfolders from Deft, " +
+                                "then add the parent folder again. Files and reading history stay safe. " +
+                                "Set up any subfolder exclusions again on the parent."
                         }
                     }
                     val existingGrant = access.hasRead(treeUri)

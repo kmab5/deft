@@ -6,12 +6,18 @@ import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.result.ActivityResultRegistry
 import androidx.activity.result.ActivityResultRegistryOwner
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -28,6 +34,10 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
+import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
+import com.github.takahirom.roborazzi.RoborazziOptions
+import com.github.takahirom.roborazzi.RoborazziTaskType
+import com.github.takahirom.roborazzi.captureRoboImage
 import com.kmab.deft.core.common.TimeSource
 import com.kmab.deft.core.database.AppDatabase
 import com.kmab.deft.core.datastore.LibrarySettingsRepository
@@ -63,8 +73,11 @@ import org.junit.rules.ExternalResource
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -133,9 +146,57 @@ class LibrarySettingsScreenTest {
         WorkManagerTestInitHelper.closeWorkDatabase()
         runBlocking { scope.coroutineContext[Job]?.cancelAndJoin() }
         db.close()
+        RuntimeEnvironment.setFontScale(1f)
     }
 
     private fun requests() = manager.getWorkInfosForUniqueWork(ScanScheduler.WORK_NAME).get()
+
+    @OptIn(ExperimentalRoborazziApi::class)
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(sdk = [36], qualifiers = "w411dp-h891dp-mdpi")
+    @Test
+    fun folderActionsAreVisibleWithoutDiscoveringAnAccordion() {
+        runBlocking { folders.add(Uri.parse("content://test/tree/root")) }
+        manager.cancelAllWork().result.get()
+        compose.setContent {
+            if (renderScreen.value) {
+                DeftTheme(true) {
+                    Box(Modifier.fillMaxSize().testTag("settings-screen")) { LibrarySettingsScreen({}, vm) }
+                }
+            }
+        }
+        compose.onNodeWithText("exclude a subfolder").assertIsDisplayed()
+        compose.onNodeWithText("All subfolders included").assertIsDisplayed()
+        val output = File("build/reports/screenshots/settings-ink.png").apply { parentFile?.mkdirs() }
+        compose.onNodeWithTag("settings-screen").captureRoboImage(
+            filePath = output.path,
+            roborazziOptions = RoborazziOptions(taskType = RoborazziTaskType.Record),
+        )
+    }
+
+    @OptIn(ExperimentalRoborazziApi::class)
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(sdk = [36], qualifiers = "w411dp-h891dp-mdpi")
+    @Test
+    fun paperSettingsRemainReachableAtLargeSystemFontSize() {
+        RuntimeEnvironment.setFontScale(1.5f)
+        runBlocking { folders.add(Uri.parse("content://test/tree/root")) }
+        manager.cancelAllWork().result.get()
+        compose.setContent {
+            if (renderScreen.value) {
+                DeftTheme(false) {
+                    Box(Modifier.fillMaxSize().testTag("settings-screen")) { LibrarySettingsScreen({}, vm) }
+                }
+            }
+        }
+        compose.onNodeWithText("exclude a subfolder").performScrollTo().assertIsDisplayed()
+        val output = File("build/reports/screenshots/settings-paper-large-text.png").apply { parentFile?.mkdirs() }
+        compose.onNodeWithTag("settings-screen").captureRoboImage(
+            filePath = output.path,
+            roborazziOptions = RoborazziOptions(taskType = RoborazziTaskType.Record),
+        )
+        compose.onNodeWithText("storage on this device").performScrollTo().assertIsDisplayed()
+    }
 
     @Test fun formatPersistsAndSchedules() {
         compose.setContent { if (renderScreen.value) DeftTheme { LibrarySettingsScreen({}, vm) } }
@@ -166,10 +227,10 @@ class LibrarySettingsScreenTest {
         manager.cancelAllWork().result.get()
         compose.setContent { if (renderScreen.value) DeftTheme { LibrarySettingsScreen({}, vm) } }
         compose.onAllNodes(isToggleable()).assertCountEquals(9)
-        compose.onNodeWithText("remove").performClick()
+        compose.onNodeWithText("remove").performScrollTo().performClick()
         compose.onNodeWithText("cancel").performClick()
         assertEquals(1, runBlocking { db.libraryFolderDao().getAll().size })
-        compose.onNodeWithText("remove").performClick()
+        compose.onNodeWithText("remove").performScrollTo().performClick()
         compose.onNodeWithText("Its books will be marked missing. Their history stays.").assertExists()
         compose
             .onAllNodes(
@@ -218,8 +279,7 @@ class LibrarySettingsScreenTest {
                 ).fetchSemanticsNodes()
                 .isNotEmpty()
         }
-        compose.onNodeWithText("Books").performClick()
-        compose.onNodeWithText("exclude a subfolder").performClick()
+        compose.onNodeWithText("exclude a subfolder").performScrollTo().performClick()
         restoration.emulateSavedInstanceStateRestore()
         compose.runOnUiThread { registry.dispatchResult(launchedRequestCode, Uri.parse(child)) }
         compose.waitUntil { runBlocking { folders.exclusions(root).first().isNotEmpty() } }

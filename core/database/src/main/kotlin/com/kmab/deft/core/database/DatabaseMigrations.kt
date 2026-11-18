@@ -13,4 +13,13 @@ object DatabaseMigrations {
                 )
             }
         }
+
+    // Literal schema versions keep the upgrade path readable beside its migration.
+    @Suppress("MagicNumber")
+    val FROM_2_TO_3 =
+        object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE books ADD COLUMN lastReadAt INTEGER")
+            }
+        }
 }

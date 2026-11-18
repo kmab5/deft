@@ -68,6 +68,74 @@ class LibraryScannerTest {
 
     @After fun close() = db.close()
 
+    @Test fun initialImportOf1500EpubsResumesAfterBudgetWithoutLosingBooks() =
+        runBlocking {
+            repeat(1500) { n ->
+                tree.put("initial$n", bytes = TestEpubBuilder().title("Book $n").build())
+            }
+            var progress = ScanProgress()
+            val partial =
+                scanner.scan(
+                    listOf("R"),
+                    setOf(BookFormat.EPUB),
+                    onProgress = { progress = it },
+                    shouldYield = { progress.processedFiles >= 500 },
+                )
+            assertTrue(partial.needsContinuation)
+            assertEquals(500, partial.added)
+            assertEquals(500, books(false).size)
+            tree.opens = 0
+            val complete = scan()
+            assertFalse(complete.needsContinuation)
+            assertEquals(1000, complete.added)
+            assertEquals(1500, complete.processedFiles)
+            assertEquals(1500, books(false).size)
+            assertEquals(2000, tree.opens)
+        }
+
+    @Test fun budgetYieldPreservesUnseenExistingFiles() =
+        runBlocking {
+            tree.put("one")
+            tree.put("two")
+            scan()
+            tree.files.remove("two")
+            val report = scanner.scan(listOf("R"), setOf(BookFormat.EPUB), shouldYield = { true })
+            assertTrue(report.needsContinuation)
+            assertEquals(2, books(false).size)
+        }
+
+    @Test fun unchangedScanDoesNotRewriteFileRows() =
+        runBlocking {
+            tree.put("one")
+            scan()
+            db.openHelper.writableDatabase.execSQL(
+                "CREATE TRIGGER reject_rewrite BEFORE UPDATE ON book_files " +
+                    "WHEN NEW.missing = OLD.missing BEGIN SELECT RAISE(ABORT, 'redundant write'); END",
+            )
+            assertEquals(1, scan().unchanged)
+        }
+
+    @Test fun reportExplainsSkippedDuplicateFallbackAndUnreadableFiles() =
+        runBlocking {
+            val epub = TestEpubBuilder().title("Shared").build()
+            tree.put("one", bytes = epub)
+            tree.put("duplicate", bytes = epub)
+            tree.put("malformed")
+            tree.put("unreadable")
+            tree.failOpen += "unreadable"
+            tree.put("image")
+            val image = tree.files.getValue("image")
+            tree.files["image"] = image.first.copy(name = "cover.jpg") to image.second
+            val report = scan()
+            assertEquals(4, report.processedFiles)
+            assertEquals(1, report.skippedFiles)
+            assertEquals(1, report.duplicateFiles)
+            assertEquals(1, report.metadataFallbacks)
+            assertEquals(1, report.failedFiles)
+            assertTrue(report.errorDetails.any { "unreadable" in it })
+            assertTrue(report.summary().contains("4 files checked"))
+        }
+
     @Test fun newEpubIsAdded() =
         runBlocking {
             tree.put(

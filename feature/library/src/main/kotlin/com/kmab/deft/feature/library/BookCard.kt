@@ -4,13 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -23,9 +24,13 @@ import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import com.kmab.deft.core.database.model.BookListItem
 import com.kmab.deft.core.designsystem.CoverImage
+import com.kmab.deft.core.designsystem.DeftColors
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.GeneratedCover
 import com.kmab.deft.core.designsystem.LocalDeftColors
+import com.kmab.deft.core.designsystem.Palette
+import com.kmab.deft.core.designsystem.icons.DeftIcons
+import com.kmab.deft.core.model.BookDisplaySize
 import java.io.File
 import java.nio.file.InvalidPathException
 
@@ -34,27 +39,34 @@ fun BookCard(
     book: BookListItem,
     imageLoader: ImageLoader,
     modifier: Modifier = Modifier,
+    size: BookDisplaySize = BookDisplaySize.MEDIUM,
 ) {
     val c = LocalDeftColors.current
     Column(
         modifier.semantics(mergeDescendants = true) {
-            stateDescription = "not read"
+            stateDescription = if (book.lastReadAt == null) "not read" else "previously read"
         },
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        LibraryCover(book, imageLoader)
-        Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
+        LibraryCover(book, imageLoader, showBadges = size != BookDisplaySize.SMALL)
+        if (size == BookDisplaySize.SMALL && (book.missing || book.drmProtected)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (book.missing) Icon(LibraryIcons.Missing, "missing", Modifier.size(16.dp), tint = c.muted)
+                if (book.drmProtected) Icon(DeftIcons.Lock, "protected", Modifier.size(16.dp), tint = c.muted)
+            }
+        }
         Text(
             book.title,
             color = c.text,
-            style = DeftTypography.cardTitle,
-            maxLines = 1,
+            style = if (size == BookDisplaySize.LARGE) DeftTypography.label else DeftTypography.cardTitle,
+            minLines = 2,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
             book.firstAuthor(),
             color = c.muted,
-            style = DeftTypography.monoSmall,
+            style = DeftTypography.cardTitle,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -66,12 +78,40 @@ internal fun LibraryCover(
     book: BookListItem,
     imageLoader: ImageLoader,
     modifier: Modifier = Modifier,
+    showBadges: Boolean = true,
+    compactPlaceholder: Boolean = false,
 ) {
     val root = LocalContext.current.filesDir
     val cover = remember(book.coverPath, root) { privateCover(book.coverPath, root) }
-    CoverImage(book.title, book.firstAuthor(), modifier, missing = book.missing, isProtected = book.drmProtected) {
+    CoverImage(
+        book.title,
+        book.firstAuthor(),
+        modifier,
+        missing = showBadges && book.missing,
+        isProtected =
+            showBadges && book.drmProtected,
+    ) {
         Box(Modifier.fillMaxSize().clearAndSetSemantics { }) {
-            GeneratedCover(book.title, book.firstAuthor())
+            if (compactPlaceholder) {
+                Box(
+                    Modifier.fillMaxSize().background(
+                        Palette.coverTints[Math.floorMod(book.title.hashCode(), Palette.coverTints.size)],
+                    ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        book.title
+                            .trim()
+                            .firstOrNull()
+                            ?.uppercaseChar()
+                            ?.toString() ?: "?",
+                        style = DeftTypography.title,
+                        color = DeftColors.Ink.text,
+                    )
+                }
+            } else {
+                GeneratedCover(book.title, book.firstAuthor())
+            }
             if (cover != null) {
                 AsyncImage(
                     model = cover,

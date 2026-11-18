@@ -30,4 +30,5 @@ data class BookEntity(
     val metadataError: String? = null,
     val addedAt: Instant,
     val lastOpenedAt: Instant? = null,
+    val lastReadAt: Instant? = null,
 )

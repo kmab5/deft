@@ -1,5 +1,6 @@
 package com.kmab.deft.core.datastore
 
+import com.kmab.deft.core.model.BookDisplaySize
 import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
 import java.time.Instant
@@ -10,4 +11,7 @@ data class LibrarySettings(
     val sort: BookSort = BookSort.TITLE,
     val gridView: Boolean = true,
     val lastScanAt: Instant? = null,
+    val reverseSort: Boolean = false,
+    val gridSize: BookDisplaySize = BookDisplaySize.MEDIUM,
+    val listSize: BookDisplaySize = BookDisplaySize.MEDIUM,
 )

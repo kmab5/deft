@@ -21,7 +21,7 @@ object DatabaseModule {
                 context,
                 AppDatabase::class.java,
                 "deft.db",
-            ).addMigrations(DatabaseMigrations.FROM_1_TO_2)
+            ).addMigrations(DatabaseMigrations.FROM_1_TO_2, DatabaseMigrations.FROM_2_TO_3)
             .build()
 
     @Provides fun books(db: AppDatabase) = db.bookDao()

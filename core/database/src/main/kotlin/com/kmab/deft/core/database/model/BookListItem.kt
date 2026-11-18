@@ -13,4 +13,5 @@ data class BookListItem(
     val addedAt: Instant,
     val missing: Boolean,
     val drmProtected: Boolean,
+    val lastReadAt: Instant? = null,
 )

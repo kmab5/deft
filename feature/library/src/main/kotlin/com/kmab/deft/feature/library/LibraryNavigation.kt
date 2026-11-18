@@ -20,6 +20,9 @@ fun NavGraphBuilder.libraryGraph(navController: NavController) {
             viewModel::setSort,
             viewModel::setShowMissing,
             viewModel::setFormat,
+            viewModel::setReverseSort,
+            viewModel::setGridSize,
+            viewModel::setListSize,
         )
     }
 }

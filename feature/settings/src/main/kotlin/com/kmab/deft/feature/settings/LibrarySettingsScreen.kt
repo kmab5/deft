@@ -3,7 +3,11 @@ package com.kmab.deft.feature.settings
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -34,6 +38,7 @@ import com.kmab.deft.core.datastore.LibrarySettings
 import com.kmab.deft.core.designsystem.DeftButton
 import com.kmab.deft.core.designsystem.DeftButtonStyle
 import com.kmab.deft.core.designsystem.DeftDialog
+import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTopBar
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
@@ -66,13 +71,30 @@ fun LibrarySettingsScreen(
             exclusionRootName = null
         }
     Scaffold(containerColor = colors.bg, contentColor = colors.text, topBar = {
-        DeftTopBar("library", actions = {
+        DeftTopBar("library settings", actions = {
             DeftButton("back", onBack, style = DeftButtonStyle.Text)
         })
     }) { padding ->
-        Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(20.dp)) {
-            Text("folders", style = DeftTypography.monoSmall, color = colors.muted)
-            if (folders.isEmpty()) Text("Choose a folder to find your books.", Modifier.padding(vertical = 12.dp))
+        Column(
+            Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            LibraryScanPanel(scan, viewModel::scanNow)
+            error?.let { message ->
+                Column(Modifier.fillMaxWidth().background(colors.surface, DeftShapes.card).padding(16.dp)) {
+                    Text(message, color = MaterialTheme.colorScheme.error, style = DeftTypography.body)
+                    DeftButton("dismiss", viewModel::dismissError, style = DeftButtonStyle.Text)
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("your folders", style = DeftTypography.title)
+                Text(
+                    "Subfolders are included. Exclude any you don't want to scan.",
+                    style = DeftTypography.body,
+                    color = colors.muted,
+                )
+            }
+            if (folders.isEmpty()) Text("Choose a folder to find your books.", style = DeftTypography.body)
             folders.forEach { folder ->
                 FolderRow(folder, viewModel, { removing = folder }) {
                     exclusionRootUri = folder.treeUri
@@ -84,33 +106,11 @@ fun LibrarySettingsScreen(
                 exclusionRootUri = null
                 exclusionRootName = null
                 picker.launch(null)
-            }, style = DeftButtonStyle.Text)
-            HorizontalDivider(color = colors.line, modifier = Modifier.padding(vertical = 16.dp))
-            Text("file types", style = DeftTypography.monoSmall, color = colors.muted)
-            BookFormat.entries.forEach { format ->
-                Row(
-                    Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(
-                        value = format in settings.enabledFormats,
-                        role = Role.Checkbox,
-                        onValueChange = { viewModel.format(format, it) },
-                    ),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Checkbox(
-                        checked = format in settings.enabledFormats,
-                        onCheckedChange = null,
-                    )
-                    Text(formatLabel(format), Modifier.padding(start = 12.dp))
-                }
-            }
-            DeftButton("rescan now", { viewModel.scanNow() }, enabled = !scan.isScanning)
-            if (scan.isScanning) LinearProgressIndicator(Modifier.fillMaxWidth())
-            scan.message?.let { Text(it) }
-            scan.report?.let { Text("added ${it.added} · missing ${it.markedMissing} · ${it.errors} errors") }
-            error?.let { message ->
-                Text(message, color = MaterialTheme.colorScheme.error)
-                DeftButton("dismiss", viewModel::dismissError, style = DeftButtonStyle.Text)
-            }
+            }, style = DeftButtonStyle.Secondary)
+            HorizontalDivider(color = colors.line)
+            FileTypes(settings, viewModel::format)
+            HorizontalDivider(color = colors.line)
+            LibraryStorageSection(scan.isScanning)
         }
     }
     removing?.let { folder ->
@@ -128,22 +128,28 @@ fun LibrarySettingsScreen(
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 private fun FolderRow(
     folder: LibraryFolderEntity,
     viewModel: LibrarySettingsViewModel,
     onRemove: () -> Unit,
     onExclude: () -> Unit,
 ) {
-    var expanded by remember(folder.treeUri) { mutableStateOf(false) }
+    val colors = LocalDeftColors.current
     val exclusions by viewModel.folders.exclusions(folder.treeUri).collectAsState(emptyList())
-    Row(Modifier.fillMaxWidth()) {
-        DeftButton(folder.displayName, { expanded = !expanded }, Modifier.weight(1f), style = DeftButtonStyle.Text)
-        DeftButton("remove", onRemove, style = DeftButtonStyle.Text)
-    }
-    if (expanded) {
+    Column(
+        Modifier.fillMaxWidth().background(colors.surface, DeftShapes.card).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(folder.displayName, style = DeftTypography.title)
+        Text(
+            if (exclusions.isEmpty()) "All subfolders included" else "${exclusions.size} excluded subfolders",
+            style = DeftTypography.body,
+            color = colors.muted,
+        )
         exclusions.forEach { exclusion ->
             Row(Modifier.fillMaxWidth()) {
-                Text(exclusion.displayPath, Modifier.weight(1f).padding(12.dp))
+                Text(exclusion.displayPath, Modifier.weight(1f).padding(vertical = 12.dp), style = DeftTypography.body)
                 DeftButton(
                     "include",
                     { viewModel.unexclude(folder.treeUri, exclusion.documentId) },
@@ -151,7 +157,84 @@ private fun FolderRow(
                 )
             }
         }
-        DeftButton("exclude a subfolder", onExclude, style = DeftButtonStyle.Text)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            DeftButton("exclude a subfolder", onExclude, style = DeftButtonStyle.Secondary)
+            DeftButton("remove", onRemove, style = DeftButtonStyle.Text)
+        }
+    }
+}
+
+@Composable
+private fun FileTypes(
+    settings: LibrarySettings,
+    onFormat: (BookFormat, Boolean) -> Unit,
+) {
+    val colors = LocalDeftColors.current
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("file types", style = DeftTypography.title)
+        Text(
+            "${settings.enabledFormats.size} of ${BookFormat.entries.size} types enabled. " +
+                "Unchecked types are not scanned.",
+            style = DeftTypography.body,
+            color = colors.muted,
+        )
+        BookFormat.entries.chunked(2).forEach { formats ->
+            Row(Modifier.fillMaxWidth()) {
+                formats.forEach { format ->
+                    Row(
+                        Modifier.weight(1f).heightIn(min = 48.dp).toggleable(
+                            value = format in settings.enabledFormats,
+                            role = Role.Checkbox,
+                            onValueChange = { onFormat(format, it) },
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = format in settings.enabledFormats, onCheckedChange = null)
+                        Text(formatLabel(format), Modifier.padding(start = 8.dp), style = DeftTypography.body)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryScanPanel(
+    scan: com.kmab.deft.library.scanner.ScanStatus,
+    onScan: () -> Unit,
+) {
+    val colors = LocalDeftColors.current
+    var details by rememberSaveable { mutableStateOf(false) }
+    Column(
+        Modifier.fillMaxWidth().background(colors.surface, DeftShapes.card).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(if (scan.isScanning) "scanning your folders" else "library scan", style = DeftTypography.title)
+        if (scan.isScanning) {
+            LinearProgressIndicator(Modifier.fillMaxWidth(), color = colors.accent, trackColor = colors.surface2)
+            Text(scan.message ?: "Checking book files…", style = DeftTypography.body, color = colors.muted)
+            ScanNotificationPermission()
+        } else {
+            scan.message?.let { Text(it, style = DeftTypography.body) }
+            scan.report?.let {
+                Text(it.summary(), style = DeftTypography.body)
+                if (it.errors > 0) Text("${it.errors} issues need attention", style = DeftTypography.body)
+                DeftButton(if (details) "hide scan details" else "show scan details", {
+                    details = !details
+                }, style = DeftButtonStyle.Text)
+                if (details) {
+                    it.details().forEach { detail ->
+                        Text(detail, style = DeftTypography.body, color = colors.muted)
+                    }
+                }
+            }
+                ?: Text(
+                    "Find new books and check your existing files.",
+                    style = DeftTypography.body,
+                    color = colors.muted,
+                )
+        }
+        DeftButton("rescan now", onScan, enabled = !scan.isScanning)
     }
 }
 

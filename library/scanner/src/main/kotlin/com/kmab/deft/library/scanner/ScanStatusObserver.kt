@@ -12,6 +12,7 @@ data class ScanStatus(
     val isScanning: Boolean = false,
     val report: ScanReport? = null,
     val message: String? = null,
+    val progress: ScanProgress? = null,
 )
 
 @Singleton
@@ -31,8 +32,19 @@ internal fun scanStatus(
     previous: ScanReport?,
 ): ScanStatus {
     val current = work.firstOrNull { !it.state.isFinished } ?: work.lastOrNull() ?: return ScanStatus(report = previous)
-    val report = completedReport(current) ?: previous
-    return ScanStatus(!current.state.isFinished, report, scanMessage(current, report))
+    val report = completedReport(current)
+    val progress =
+        if (current.state == WorkInfo.State.RUNNING) {
+            ScanProgress(current.progress.getInt("processedFiles", 0), current.progress.getInt("skippedFiles", 0))
+        } else {
+            null
+        }
+    return ScanStatus(
+        !current.state.isFinished,
+        report.takeIf { current.state.isFinished },
+        scanMessage(current, report),
+        progress,
+    )
 }
 
 private fun completedReport(current: WorkInfo): ScanReport? =
@@ -46,6 +58,15 @@ private fun completedReport(current: WorkInfo): ScanReport? =
                 data.getInt("markedMissing", 0),
                 data.getInt("errors", 0),
                 data.getStringArray("unavailableRoots")?.toList().orEmpty(),
+                processedFiles = data.getInt("processedFiles", 0),
+                skippedFiles = data.getInt("skippedFiles", 0),
+                duplicateFiles = data.getInt("duplicateFiles", 0),
+                metadataFallbacks = data.getInt("metadataFallbacks", 0),
+                failedFiles = data.getInt("failedFiles", 0),
+                incompleteRoots = data.getStringArray("incompleteRoots")?.toList().orEmpty(),
+                errorDetails = data.getStringArray("errorDetails")?.toList().orEmpty(),
+                unavailableRootCount = data.getInt("unavailableRootCount", 0),
+                incompleteRootCount = data.getInt("incompleteRootCount", 0),
             )
         }
     } else {
@@ -57,20 +78,17 @@ private fun scanMessage(
     report: ScanReport?,
 ): String? =
     when (current.state) {
-        WorkInfo.State.RUNNING -> "Scanning folders."
+        WorkInfo.State.RUNNING -> "scanning · ${current.progress.getInt("processedFiles", 0)} files checked"
         WorkInfo.State.ENQUEUED ->
             if (current.runAttemptCount >
                 0
             ) {
-                "Scan interrupted. Retrying."
+                "scan continuing shortly · imported books are saved"
             } else {
-                "Scan queued."
+                "scan queued"
             }
-        WorkInfo.State.BLOCKED -> "Scan is waiting."
-        WorkInfo.State.FAILED -> "Scan failed. Try rescan."
-        WorkInfo.State.CANCELLED -> "Scan cancelled. Try rescan."
-        WorkInfo.State.SUCCEEDED ->
-            report?.unavailableRoots?.size?.takeIf { it > 0 }?.let { count ->
-                "$count ${if (count == 1) "folder" else "folders"} unavailable. Check library settings."
-            }
+        WorkInfo.State.BLOCKED -> "scan is waiting"
+        WorkInfo.State.FAILED -> current.outputData.getString("failure") ?: "scan failed · try rescan"
+        WorkInfo.State.CANCELLED -> "scan cancelled · imported books are saved"
+        WorkInfo.State.SUCCEEDED -> report?.takeIf { it.isPartial }?.summary()
     }
