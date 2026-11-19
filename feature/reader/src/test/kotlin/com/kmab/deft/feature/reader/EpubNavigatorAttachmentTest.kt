@@ -1,4 +1,5 @@
 @file:OptIn(org.readium.r2.shared.ExperimentalReadiumApi::class)
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 
 package com.kmab.deft.feature.reader
 
@@ -15,6 +16,8 @@ import com.kmab.deft.format.readium.OfflineEpubEngine
 import com.kmab.deft.format.readium.navigatorConfiguration
 import com.kmab.deft.format.readium.toNavigatorPreferences
 import kotlinx.coroutines.runBlocking
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
@@ -23,11 +26,15 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
+import org.readium.r2.navigator.epub.css.FontFamilyDeclaration
+import org.readium.r2.shared.publication.Publication
+import org.readium.r2.shared.util.Url
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.security.MessageDigest
 import java.util.zip.CRC32
 import java.util.zip.ZipEntry
@@ -59,6 +66,7 @@ class EpubNavigatorAttachmentTest {
             assertTrue(navigator.isAdded)
             assertNotNull(navigator.view)
             assertSame(container, navigator.requireView().parent)
+            exportActualNavigatorFonts(navigator, opened.publication)
             activity.supportFragmentManager
                 .beginTransaction()
                 .remove(navigator)
@@ -67,6 +75,56 @@ class EpubNavigatorAttachmentTest {
             controller.pause().stop().destroy()
             opened.close()
         }
+    }
+
+    private fun exportActualNavigatorFonts(
+        navigator: EpubNavigatorFragment,
+        publication: Publication,
+    ) {
+        val directory = File("build/browser-fonts").apply { mkdirs() }
+        val configuration =
+            navigator.javaClass
+                .getDeclaredField("config")
+                .apply { isAccessible = true }
+                .get(navigator) as EpubNavigatorFragment.Configuration
+
+        @Suppress("UNCHECKED_CAST")
+        val declarations =
+            configuration.javaClass
+                .getDeclaredField("fontFamilyDeclarations")
+                .apply {
+                    isAccessible =
+                        true
+                }.get(configuration) as List<FontFamilyDeclaration>
+        val assets = requireNotNull(Url("https://readium_assets/"))
+        val css = declarations.flatMap { it.fontFaces }.joinToString("\n") { face -> face.toCss { assets.resolve(it) } }
+        val families =
+            ReaderFontCatalog.bundled.filter { it.faces.isNotEmpty() }.map { font ->
+                JSONObject().put("id", font.id).put(
+                    "family",
+                    ReaderPreferences(
+                        fontFamily = font.id,
+                    ).toNavigatorPreferences(ReaderThemes.builtIn.first()).fontFamily?.name,
+                )
+            }
+        File(
+            directory,
+            "fonts.json",
+        ).writeText(JSONObject().put("css", css).put("families", JSONArray(families)).toString())
+        runBlocking {
+            publication.resources.filter { it.href.toString().startsWith("__deft_fonts/") }.forEach { link ->
+                val resource = requireNotNull(publication.get(link.url()))
+                try {
+                    File(directory, link.href.toString()).apply {
+                        parentFile?.mkdirs()
+                        writeBytes(requireNotNull(resource.read().getOrNull()))
+                    }
+                } finally {
+                    resource.close()
+                }
+            }
+        }
+        assertEquals(ReaderFontCatalog.bundled.count { it.faces.isNotEmpty() } + 1, declarations.size)
     }
 
     private fun createNavigator(

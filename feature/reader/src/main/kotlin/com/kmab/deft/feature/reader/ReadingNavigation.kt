@@ -7,8 +7,8 @@ internal class ReadingNavigation<T> {
     private var previous: T? = null
     private var pending: ReadingMotion? = null
     private var inputAt: Long = 0
-    var returnPoint: T? = null
-        private set
+    private val history = ArrayDeque<T>()
+    val returnPoint: T? get() = history.lastOrNull()
 
     fun userInput(
         scroll: Boolean,
@@ -23,13 +23,12 @@ internal class ReadingNavigation<T> {
     }
 
     fun jumpFrom(location: T?) {
-        returnPoint = location
+        if (location != null && history.lastOrNull() != location) history.addLast(location)
         pending = null
     }
 
     fun takeReturnPoint(): T? =
-        returnPoint.also {
-            returnPoint = null
+        history.removeLastOrNull().also {
             pending = null
         }
 

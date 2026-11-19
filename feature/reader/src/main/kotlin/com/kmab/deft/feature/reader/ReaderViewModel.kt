@@ -67,6 +67,7 @@ internal class ReaderViewModel
         private val messages = MutableSharedFlow<String>(extraBufferCapacity = 8)
         val notices = messages.asSharedFlow()
         val interaction = ReaderInteraction(mutableState, preferences, writer, events)
+        val search = ReaderSearch(viewModelScope)
         private var started = false
 
         init {
@@ -151,6 +152,7 @@ internal class ReaderViewModel
         }
 
         override fun onCleared() {
+            search.cancel()
             state.value.session
                 ?.opened
                 ?.close()

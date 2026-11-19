@@ -17,7 +17,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,28 +30,18 @@ import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -81,12 +73,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.kmab.deft.core.database.entity.BookmarkEntity
 import com.kmab.deft.core.designsystem.DeftColors
 import com.kmab.deft.core.designsystem.DeftNoticeHost
 import com.kmab.deft.core.designsystem.DeftShapes
@@ -100,11 +89,10 @@ import com.kmab.deft.core.model.ReaderTheme
 import com.kmab.deft.feature.readersettings.ReaderPreferencesPanel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.util.Url
 import java.util.Date
 
-private enum class ReaderSheet { CONTENTS, SETTINGS }
+private enum class ReaderSheet { CONTENTS, SETTINGS, SEARCH }
 
 @Composable
 internal fun ReaderScreen(
@@ -121,32 +109,50 @@ internal fun ReaderScreen(
     val scope = rememberCoroutineScope()
     val notices = rememberDeftNoticeState()
     val session = state.session
-    val navigator = remember(session) { session?.let { ReaderNavigator(activity, model, it) { chrome = !chrome } } }
-    val dark = Color(parseColor(theme.background)).luminance() < DARK_LUMINANCE
-
-    SideEffect {
-        activity.navigator = navigator
-        navigator?.apply(preferences, theme)
-    }
-    DisposableEffect(navigator) {
-        onDispose {
-            navigator?.detach()
-            if (activity.navigator ===
-                navigator
-            ) {
-                activity.navigator = null
+    val contentsState = rememberReaderContentsState()
+    val progressPositions = remember(session) { session?.progressPositions().orEmpty() }
+    var imageHref by rememberSaveable { mutableStateOf<String?>(null) }
+    var chromeInteraction by remember { mutableStateOf(0) }
+    var scrubbing by remember { mutableStateOf(false) }
+    val navigator =
+        remember(session) {
+            session?.let {
+                ReaderNavigator(activity, model, it, onImage = { url -> imageHref = url.toString() }) {
+                    chrome = !chrome
+                    chromeInteraction++
+                }
             }
         }
-    }
-    ReaderWindowEffect(activity, preferences, chrome || sheet != null, dark)
     LaunchedEffect(model) { model.notices.collect { notices.show(it) } }
-    BackHandler(sheet != null) { sheet = null }
+    ReaderNavigationEffects(
+        activity = activity,
+        model = model,
+        navigator = navigator,
+        state = state,
+        preferences = preferences,
+        theme = theme,
+        chrome = chrome,
+        sheetOpen = sheet != null,
+        imageOpen = imageHref != null,
+        scrubbing = scrubbing,
+        interaction = chromeInteraction,
+        hideChrome = { chrome = false },
+        dismissSheet = {
+            model.search.cancel()
+            sheet = null
+        },
+    )
 
     ReaderTheme(theme) {
         CompositionLocalProvider(LocalDeftNoticeState provides notices) {
             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                 if (session != null && navigator != null) {
-                    Column(Modifier.fillMaxSize().displayCutoutPadding()) {
+                    Column(
+                        Modifier
+                            .fillMaxSize()
+                            .displayCutoutPadding()
+                            .then(if (preferences.fullScreen) Modifier else Modifier.systemBarsPadding()),
+                    ) {
                         AndroidView(
                             factory = { context ->
                                 ReaderContainer(
@@ -169,11 +175,18 @@ internal fun ReaderScreen(
                             },
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                         )
-                        if (preferences.showStatusLine) ReaderStatus(state, Modifier.fillMaxWidth())
+                        if (preferences.showStatusLine) {
+                            ReaderStatus(state, progressPositions, preferences.showPageNumber, Modifier.fillMaxWidth())
+                        }
                     }
                     ReaderChrome(
                         visible = chrome,
                         state = state.chromeState(),
+                        positions = progressPositions,
+                        showLocations = preferences.showPageNumber,
+                        onInteraction = { chromeInteraction++ },
+                        onScrubbing = { scrubbing = it },
+                        onSearch = { sheet = ReaderSheet.SEARCH },
                         onBack = activity::finish,
                         onContents = { sheet = ReaderSheet.CONTENTS },
                         onSettings = { sheet = ReaderSheet.SETTINGS },
@@ -207,9 +220,59 @@ internal fun ReaderScreen(
                 }
                 DeftNoticeHost(notices, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
             }
-            ReaderSheets(sheet, state, model, navigator) { sheet = null }
+            ReaderSheets(sheet, state, model, navigator, contentsState) {
+                model.search.cancel()
+                sheet = null
+            }
+            imageHref?.let { href ->
+                session?.opened?.publication?.let { publication ->
+                    Url(href)?.let { ReaderImageViewer(publication, it) { imageHref = null } }
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun ReaderNavigationEffects(
+    activity: ReaderActivity,
+    model: ReaderViewModel,
+    navigator: ReaderNavigator?,
+    state: ReaderState,
+    preferences: ReaderPreferences,
+    theme: ReaderTheme,
+    chrome: Boolean,
+    sheetOpen: Boolean,
+    imageOpen: Boolean,
+    scrubbing: Boolean,
+    interaction: Int,
+    hideChrome: () -> Unit,
+    dismissSheet: () -> Unit,
+) {
+    SideEffect {
+        activity.navigator = navigator
+        navigator?.apply(preferences, theme)
+    }
+    DisposableEffect(navigator) {
+        onDispose {
+            navigator?.detach()
+            if (activity.navigator === navigator) activity.navigator = null
+        }
+    }
+    val dark = Color(parseColor(theme.background)).luminance() < DARK_LUMINANCE
+    ReaderWindowEffect(activity, preferences, chrome || sheetOpen, dark)
+    val overlayOpen = sheetOpen || imageOpen
+    val readingIdle = state.rendered && !scrubbing
+    LaunchedEffect(chrome, overlayOpen, state.rendered, interaction, scrubbing) {
+        if (chrome && !overlayOpen && readingIdle) {
+            delay(CHROME_TIMEOUT_MILLIS)
+            hideChrome()
+        }
+    }
+    BackHandler(!overlayOpen && state.canReturn) {
+        model.interaction.returnPoint()?.let { navigator?.go(it, remember = false) }
+    }
+    BackHandler(sheetOpen, onBack = dismissSheet)
 }
 
 @Composable
@@ -289,7 +352,17 @@ internal fun ReaderChrome(
     onBookmark: () -> Unit,
     onProgress: (Float) -> Unit,
     onReturn: () -> Unit,
+    onSearch: () -> Unit = {},
+    positions: List<org.readium.r2.shared.publication.Locator> = emptyList(),
+    showLocations: Boolean = false,
+    onInteraction: () -> Unit = {},
+    onScrubbing: (Boolean) -> Unit = {},
 ) {
+    val sliderInteraction = remember { MutableInteractionSource() }
+    val dragging by sliderInteraction.collectIsDraggedAsState()
+    val pressing by sliderInteraction.collectIsPressedAsState()
+    LaunchedEffect(dragging, pressing) { onScrubbing(dragging || pressing) }
+    DisposableEffect(Unit) { onDispose { onScrubbing(false) } }
     val progress = state.progress
     var slider by remember { mutableStateOf<Float?>(null) }
     val bookmarked = state.bookmarked
@@ -316,6 +389,7 @@ internal fun ReaderChrome(
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.titleSmall,
                     )
+                    IconButton(onClick = onSearch) { Icon(ReaderIcons.Search, "Search this book") }
                     IconButton(onClick = onContents) { Icon(ReaderIcons.Contents, "Contents and bookmarks") }
                     IconButton(onClick = onBookmark, enabled = state.rendered) {
                         Icon(
@@ -335,56 +409,71 @@ internal fun ReaderChrome(
                 fadeOut() + slideOutVertically { it },
         ) {
             Surface(shadowElevation = 3.dp) {
-                Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp)) {
+                Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 4.dp)) {
                     if (state.canReturn) {
-                        TextButton(onClick = onReturn) {
-                            Icon(ReaderIcons.Return, null, Modifier.size(18.dp))
+                        TextButton(onClick = {
+                            onInteraction()
+                            onReturn()
+                        }) {
+                            Icon(ReaderIcons.Return, null, Modifier.size(16.dp))
                             Spacer(Modifier.width(8.dp))
                             Text("go back to where I was")
                         }
                     }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(state.section, style = MaterialTheme.typography.labelMedium)
+                    val target = progressTarget(positions, slider ?: progress)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "${((slider ?: progress) * PERCENT_SCALE).toInt()}%",
+                            if (slider !=
+                                null
+                            ) {
+                                target?.title?.takeIf(String::isNotBlank) ?: state.section
+                            } else {
+                                state.section
+                            },
+                            Modifier.weight(1f).padding(end = 12.dp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                        Text(
+                            progressLabel(slider ?: progress, positions, showLocations),
                             style = MaterialTheme.typography.labelMedium,
                         )
                     }
-                    Box {
-                        Slider(
-                            value = slider ?: progress,
-                            onValueChange = { slider = it },
-                            onValueChangeFinished = {
-                                slider?.let(onProgress)
-                                slider = null
-                            },
-                            enabled = state.rendered,
-                            modifier =
-                                Modifier.semantics {
-                                    contentDescription =
-                                        "Book progress"
-                                },
-                        )
-                        val ticks = state.ticks
-                        val tickColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        Canvas(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(
-                                    4.dp,
-                                ).align(Alignment.BottomCenter)
-                                .padding(horizontal = 10.dp),
-                        ) {
-                            ticks.forEach {
+                    Slider(
+                        value = slider ?: progress,
+                        onValueChange = {
+                            slider = it
+                            onInteraction()
+                        },
+                        onValueChangeFinished = {
+                            slider?.let(onProgress)
+                            slider = null
+                        },
+                        enabled = state.rendered,
+                        interactionSource = sliderInteraction,
+                        thumb = {
+                            Surface(
+                                Modifier.size(12.dp),
+                                shape = androidx.compose.foundation.shape.CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                            ) {}
+                        },
+                        track = { sliderState ->
+                            val active = MaterialTheme.colorScheme.primary
+                            val inactive = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+                            Canvas(Modifier.fillMaxWidth().height(3.dp)) {
+                                drawLine(inactive, Offset(0f, center.y), Offset(size.width, center.y), size.height)
                                 drawLine(
-                                    tickColor,
-                                    Offset(size.width * it, 0f),
-                                    Offset(size.width * it, size.height),
-                                    strokeWidth = 1.dp.toPx(),
+                                    active,
+                                    Offset(0f, center.y),
+                                    Offset(size.width * sliderState.value, center.y),
+                                    size.height,
                                 )
                             }
-                        }
-                    }
+                        },
+                        modifier = Modifier.height(40.dp).semantics { contentDescription = "Book progress" },
+                    )
                 }
             }
         }
@@ -411,6 +500,8 @@ private fun sectionLabel(state: ReaderState): String {
 @Composable
 private fun ReaderStatus(
     state: ReaderState,
+    positions: List<org.readium.r2.shared.publication.Locator>,
+    showLocations: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -426,156 +517,12 @@ private fun ReaderStatus(
     }
     Row(modifier.padding(horizontal = 18.dp, vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(
-            "${((state.locator?.locations?.progression ?: 0.0) * PERCENT_SCALE).toInt()}% of section",
+            progressLabel((state.locator?.locations?.totalProgression ?: 0.0).toFloat(), positions, showLocations),
             style = MaterialTheme.typography.labelSmall,
         )
         Text(status, style = MaterialTheme.typography.labelSmall)
     }
 }
-
-@Composable
-internal fun ReaderContents(
-    contents: List<Link>,
-    savedBookmarks: List<BookmarkEntity>,
-    currentHref: Url?,
-    onChapter: (Link) -> Unit,
-    onBookmark: (BookmarkEntity) -> Unit,
-    onRename: (Long, String) -> Unit,
-    onRemove: (Long) -> Unit,
-) {
-    var bookmarks by rememberSaveable { mutableStateOf(false) }
-    var editing by remember { mutableStateOf<BookmarkEntity?>(null) }
-    val chapters = remember(contents) { flattenContents(contents) }
-    Column(Modifier.fillMaxWidth().heightIn(max = 620.dp).padding(horizontal = 20.dp)) {
-        Text("your place in the book", style = MaterialTheme.typography.titleLarge)
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
-            SegmentedButton(!bookmarks, {
-                bookmarks = false
-            }, SegmentedButtonDefaults.itemShape(0, 2), icon = {
-                Icon(ReaderIcons.Contents, null, Modifier.size(18.dp))
-            }) { Text("contents") }
-            SegmentedButton(bookmarks, {
-                bookmarks = true
-            }, SegmentedButtonDefaults.itemShape(1, 2), icon = {
-                Icon(ReaderIcons.Bookmark, null, Modifier.size(18.dp))
-            }) { Text("bookmarks") }
-        }
-        LazyColumn(Modifier.fillMaxWidth().weight(1f, fill = false)) {
-            if (bookmarks) {
-                if (savedBookmarks.isEmpty()) {
-                    item {
-                        Text(
-                            "No bookmarks yet. Use the bookmark button to save your place.",
-                            Modifier.padding(vertical = 20.dp),
-                        )
-                    }
-                }
-                itemsIndexed(savedBookmarks, key = { _, item -> item.id }) { _, bookmark ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onBookmark(bookmark)
-                            }.heightIn(min = 64.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(Modifier.weight(1f).padding(vertical = 12.dp)) {
-                            Text(bookmark.label, style = MaterialTheme.typography.bodyLarge)
-                            Text(
-                                "${(bookmark.totalProgression * PERCENT_SCALE).toInt()}%",
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                        }
-                        IconButton(
-                            onClick = { editing = bookmark },
-                        ) { Icon(ReaderIcons.Rename, "Rename ${bookmark.label}") }
-                        IconButton(
-                            onClick = { onRemove(bookmark.id) },
-                        ) { Icon(DeftActionIcons.Trash, "Remove ${bookmark.label}") }
-                    }
-                }
-            } else {
-                if (chapters.isEmpty()) {
-                    item {
-                        Text(
-                            "This book has no table of contents. Use the progress slider to move through it.",
-                            Modifier.padding(vertical = 20.dp),
-                        )
-                    }
-                }
-                itemsIndexed(chapters) { _, chapter ->
-                    Text(
-                        chapter.first.title?.takeIf { it.isNotBlank() } ?: "untitled section",
-                        Modifier.fillMaxWidth().clickable { onChapter(chapter.first) }.heightIn(min = 48.dp).padding(
-                            start =
-                                (
-                                    chapter.second *
-                                        16
-                                ).dp,
-                            top = 14.dp,
-                            bottom = 14.dp,
-                        ),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color =
-                            if (chapter.first.url().removeFragment() ==
-                                currentHref?.removeFragment()
-                            ) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            },
-                    )
-                }
-            }
-            item { Spacer(Modifier.height(24.dp)) }
-        }
-    }
-    editing?.let { bookmark ->
-        var label by remember(bookmark.id) { mutableStateOf(bookmark.label) }
-        Dialog(
-            onDismissRequest = { editing = null },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
-        ) {
-            Box(Modifier.fillMaxWidth().imePadding().padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
-                Surface(Modifier.widthIn(max = 560.dp).fillMaxWidth(), shape = MaterialTheme.shapes.large) {
-                    Column(
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 620.dp)
-                            .verticalScroll(rememberScrollState())
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        Text("name this bookmark", style = MaterialTheme.typography.titleLarge)
-                        OutlinedTextField(
-                            label,
-                            { label = it.take(BOOKMARK_LABEL_LIMIT) },
-                            label = { Text("bookmark name") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            TextButton(onClick = { editing = null }) { Text("cancel") }
-                            TextButton(onClick = {
-                                onRename(bookmark.id, label)
-                                editing = null
-                            }, enabled = label.isNotBlank()) { Text("save") }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-private fun flattenContents(
-    links: List<Link>,
-    depth: Int = 0,
-): List<Pair<Link, Int>> =
-    links.flatMap {
-        listOf(it to depth) +
-            if (depth < MAX_TOC_DEPTH) flattenContents(it.children, depth + 1) else emptyList()
-    }
 
 @Composable
 private fun ReaderWindowEffect(
@@ -603,6 +550,7 @@ private fun ReaderSheets(
     state: ReaderState,
     model: ReaderViewModel,
     navigator: ReaderNavigator?,
+    contentsState: ReaderContentsState,
     dismiss: () -> Unit,
 ) {
     if (sheet == null) return
@@ -612,9 +560,21 @@ private fun ReaderSheets(
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
         when (sheet) {
+            ReaderSheet.SEARCH -> {
+                val search by model.search.state.collectAsStateWithLifecycle()
+                ReaderSearchPanel(
+                    search,
+                    { model.search.query(it, state.session?.opened?.publication) },
+                    {
+                        navigator?.go(it)
+                        dismiss()
+                    },
+                )
+            }
             ReaderSheet.SETTINGS -> ReaderPreferencesPanel(Modifier.fillMaxWidth(), manageAssets = false)
             ReaderSheet.CONTENTS ->
-                ReaderContents(
+                ReaderContentsPanel(
+                    state = contentsState,
                     contents =
                         state.session
                             ?.opened
@@ -642,5 +602,5 @@ private const val DARK_LUMINANCE = 0.3f
 private const val SURFACE_TINT_ALPHA = 0.08f
 private const val PERCENT_SCALE = 100
 private const val STATUS_REFRESH_MILLIS = 30_000L
-private const val BOOKMARK_LABEL_LIMIT = 240
-private const val MAX_TOC_DEPTH = 12
+
+private const val CHROME_TIMEOUT_MILLIS = 4_000L

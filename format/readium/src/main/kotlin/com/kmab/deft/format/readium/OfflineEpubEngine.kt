@@ -89,7 +89,7 @@ class OfflineEpubEngine(
         var retained = false
         try {
             copyVerified(uri, expectedHash, snapshot)
-            publication = openPublication(snapshot, fontResources(fonts))
+            publication = openPublication(snapshot, fontResources(fonts), bundledFontResources(fonts))
             if (publication.isRestricted || publication.isProtected) {
                 throw ReaderOpenException("Protected books cannot be opened in Deft.")
             }
@@ -145,6 +145,7 @@ class OfflineEpubEngine(
     private suspend fun openPublication(
         snapshot: File,
         fonts: Map<Url, File>,
+        bundledFonts: Map<Url, String>,
     ): Publication {
         val asset =
             AssetRetriever(context.contentResolver, OfflineHttpClient).retrieve(snapshot).getOrNull()
@@ -173,12 +174,15 @@ class OfflineEpubEngine(
                                                         },
                                                     ),
                                             )
+                                        } +
+                                        bundledFonts.map { (url, path) ->
+                                            Link(href = url, mediaType = MediaType(fontMediaType(path)))
                                         },
                             )
                         val links = manifest.readingOrder + manifest.resources
                         val html = links.filter { it.mediaType?.isHtml == true }.map { it.url() }.toSet()
                         val svg = links.filter { it.mediaType?.toString() == "image/svg+xml" }.map { it.url() }.toSet()
-                        container = OfflineContainer(container, fonts, html, svg)
+                        container = OfflineContainer(container, fonts, html, svg, context.assets, bundledFonts)
                     })
                     .getOrNull()
                     ?: throw ReaderOpenException("This EPUB could not be opened. It may be protected or damaged.")
@@ -203,7 +207,26 @@ class OfflineEpubEngine(
                 }
             }
         }
+
+    private fun bundledFontResources(fonts: List<ReaderFont>): Map<Url, String> =
+        buildMap {
+            fonts.forEach { font ->
+                font.faces.forEachIndexed { index, face ->
+                    face.assetPath?.takeIf(PublicationPolicy::isLocalResource)?.let { path ->
+                        put(requireNotNull(Url(importedFontPath(font.id, index))), path)
+                    }
+                }
+            }
+        }
 }
+
+private fun fontMediaType(path: String): String =
+    when (path.substringAfterLast('.').lowercase()) {
+        "woff2" -> "font/woff2"
+        "woff" -> "font/woff"
+        "otf" -> "font/otf"
+        else -> "font/ttf"
+    }
 
 internal fun importedFontPath(
     id: String,

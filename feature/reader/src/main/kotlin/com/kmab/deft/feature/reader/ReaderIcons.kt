@@ -26,6 +26,16 @@ internal object ReaderIcons {
             )
         }.build()
 
+    val Search =
+        icon("Search") {
+            moveTo(15.5f, 15.5f)
+            lineTo(21f, 21f)
+            moveTo(17f, 10f)
+            curveTo(17f, 13.87f, 13.87f, 17f, 10f, 17f)
+            curveTo(6.13f, 17f, 3f, 13.87f, 3f, 10f)
+            curveTo(3f, 6.13f, 6.13f, 3f, 10f, 3f)
+            curveTo(13.87f, 3f, 17f, 6.13f, 17f, 10f)
+        }
     val Contents =
         icon("Contents") {
             moveTo(4f, 5f)

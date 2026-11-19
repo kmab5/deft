@@ -8,6 +8,20 @@ import java.io.StringReader
 import javax.xml.parsers.DocumentBuilderFactory
 
 class PublicationPolicyTest {
+    @Test fun truncatedMarkupStillProducesAReadableWellFormedChapter() {
+        val html =
+            PublicationPolicy.sanitizeHtml(
+                "<html><head><title>Damaged</title><body><h1>Chapter<p>Text before truncation &amp;",
+            )
+        val document =
+            DocumentBuilderFactory
+                .newInstance()
+                .newDocumentBuilder()
+                .parse(html.toByteArray().inputStream())
+        assertTrue(document.documentElement.textContent.contains("Text before truncation &"))
+        assertTrue(html.contains("</body>"))
+    }
+
     @Test fun sanitizedXhtmlRemainsWellFormedXmlIncludingVoidTagsAndEntities() {
         val html =
             PublicationPolicy.sanitizeHtml(
@@ -74,7 +88,10 @@ class PublicationPolicyTest {
         assertFalse(html.contains("evil.test"))
         assertTrue(html.contains("Readable text"))
         assertTrue(html.contains("styles/main.css"))
-        assertTrue(html.contains("https://readium_assets/readium/scripts/"))
+        assertTrue(html.contains("https://*/readium/scripts/"))
+        assertTrue(html.contains("img-src 'self' data:"))
+        assertFalse(html.contains("https://readium_assets"))
+        assertFalse(html.contains("https://readium_package"))
         assertTrue(html.contains("connect-src 'none'"))
     }
 }

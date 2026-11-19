@@ -19,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import com.kmab.deft.core.model.PageAnimation
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReaderTheme
+import com.kmab.deft.format.readium.localPublicationUrl
 import com.kmab.deft.format.readium.navigatorConfiguration
 import com.kmab.deft.format.readium.toNavigatorPreferences
 import kotlinx.coroutines.Job
@@ -38,9 +39,12 @@ internal class ReaderNavigator(
     private val activity: FragmentActivity,
     private val model: ReaderViewModel,
     private val session: ReaderSession,
+    private val onImage: (Url) -> Unit = {},
     private val toggleChrome: () -> Unit,
 ) {
     private var fragment: EpubNavigatorFragment? = null
+    private var continuous: ContinuousReaderView? = null
+    private var container: FrameLayout? = null
     private var collection: Job? = null
     private var generation = 0L
     private var preferences = ReaderPreferences()
@@ -48,18 +52,22 @@ internal class ReaderNavigator(
     private var selecting = false
     val handlesSwipes: Boolean
         get() =
-            !preferences.scroll && !selecting &&
-                (preferences.pageAnimation == PageAnimation.NONE || !ValueAnimator.areAnimatorsEnabled())
+            !preferences.scroll && !selecting
 
     fun attach(
         container: FrameLayout,
         initialPreferences: ReaderPreferences,
         initialTheme: ReaderTheme,
     ) {
-        if (fragment != null || activity.isFinishing) return
+        if (fragment != null || continuous != null || activity.isFinishing) return
+        this.container = container
         generation = model.interaction.attachNavigator()
         preferences = initialPreferences
         theme = initialTheme
+        if (initialPreferences.scroll) {
+            attachContinuous(container, initialPreferences, initialTheme)
+            return
+        }
         val configuration =
             navigatorConfiguration(session.fonts, initialTheme).apply {
                 selectionActionModeCallback = selectionCallback()
@@ -98,7 +106,7 @@ internal class ReaderNavigator(
                             fragment?.let {
                                 hardenWebViews(it.view)
                                 model.interaction.rendered(generation, it.currentLocator.value)
-                                applyLinkColor()
+                                applyLinkColor(activity, fragment, theme)
                             }
                         }
                     },
@@ -113,11 +121,18 @@ internal class ReaderNavigator(
             object : InputListener {
                 override fun onTap(event: TapEvent): Boolean {
                     val width = navigator.view?.width ?: return false
-                    val edge = width * TAP_EDGE_FRACTION
-                    if (preferences.scroll || event.point.x in edge..(width - edge)) {
-                        toggleChrome()
-                    } else {
-                        turnPhysical(right = event.point.x > width / 2)
+                    activity.lifecycleScope.launch {
+                        val image = navigator.imageAt(event, width, session.opened.publication)
+                        if (image != null) {
+                            onImage(image)
+                        } else {
+                            val edge = width * TAP_EDGE_FRACTION
+                            if (!preferences.tapToTurn || event.point.x in edge..(width - edge)) {
+                                toggleChrome()
+                            } else {
+                                turnPhysical(right = event.point.x > width / 2)
+                            }
+                        }
                     }
                     return true
                 }
@@ -134,7 +149,7 @@ internal class ReaderNavigator(
                     model.interaction.location(generation, it)
                     if (previousResource != it.href) {
                         previousResource = it.href
-                        applyLinkColor()
+                        applyLinkColor(activity, fragment, theme)
                     }
                 }
             }
@@ -145,14 +160,28 @@ internal class ReaderNavigator(
         newTheme: ReaderTheme,
     ) {
         if (preferences == newPreferences && theme == newTheme) return
+        if (preferences.scroll != newPreferences.scroll) {
+            val host = container
+            if (host != null) {
+                detach()
+                attach(host, newPreferences, newTheme)
+                return
+            }
+        }
         preferences = newPreferences
         theme = newTheme
         model.interaction.preferencesChanged()
+        continuous?.apply(newPreferences, newTheme)
         fragment?.submitPreferences(newPreferences.toNavigatorPreferences(newTheme))
-        applyLinkColor()
+        applyLinkColor(activity, fragment, theme)
     }
 
     fun turn(forward: Boolean) {
+        continuous?.let {
+            model.interaction.userInput()
+            it.turn(forward)
+            return
+        }
         val navigator = fragment ?: return
         model.interaction.userInput()
         val animated = preferences.pageAnimation == PageAnimation.SLIDE && ValueAnimator.areAnimatorsEnabled()
@@ -168,6 +197,13 @@ internal class ReaderNavigator(
     }
 
     fun go(link: Link) {
+        continuous?.let {
+            session.opened.publication.locatorFromLink(link)?.let { point ->
+                model.interaction.beforeJump()
+                it.go(point)
+            } ?: model.notice("That chapter is unavailable in this book.")
+            return
+        }
         val navigator = fragment ?: return
         model.interaction.beforeJump()
         if (!navigator.go(
@@ -184,6 +220,11 @@ internal class ReaderNavigator(
         locator: Locator,
         remember: Boolean = true,
     ) {
+        continuous?.let {
+            if (remember) model.interaction.beforeJump()
+            it.go(locator)
+            return
+        }
         val navigator = fragment ?: return
         if (remember) model.interaction.beforeJump()
         if (!navigator.go(
@@ -200,6 +241,8 @@ internal class ReaderNavigator(
         collection?.cancel()
         collection = null
         model.interaction.detachNavigator(generation)
+        continuous?.destroy()
+        continuous = null
         fragment?.let {
             if (!activity.supportFragmentManager.isDestroyed) {
                 activity.supportFragmentManager
@@ -210,23 +253,54 @@ internal class ReaderNavigator(
             }
         }
         fragment = null
+        container = null
     }
 
-    private fun applyLinkColor() {
-        val color = theme?.accent?.takeIf { Regex("#[0-9a-fA-F]{6}").matches(it) } ?: return
-        val transition =
-            if (ValueAnimator.areAnimatorsEnabled()) {
-                "background-color 180ms linear,color 180ms linear"
-            } else {
-                "none"
-            }
-        activity.lifecycleScope.launch {
-            fragment?.evaluateJavascript(
-                "document.documentElement.style.transition='$transition';" +
-                    "document.documentElement.style.setProperty('--RS__linkColor','$color');" +
-                    "document.documentElement.style.setProperty('--RS__visitedColor','$color');",
+    private fun attachContinuous(
+        host: FrameLayout,
+        initialPreferences: ReaderPreferences,
+        initialTheme: ReaderTheme,
+    ) {
+        val token = generation
+        continuous =
+            ContinuousReaderView(
+                activity,
+                session,
+                initialPreferences,
+                initialTheme,
+                model.state.value.locator ?: session.initialLocator,
+                callbacks =
+                    ContinuousReaderCallbacks(
+                        onLocation = { model.interaction.rendered(token, it) },
+                        onTap = toggleChrome,
+                        onImage = onImage,
+                        onLink = { href ->
+                            val resource = localPublicationUrl(href)
+                            val link = resource?.let { session.opened.publication.linkWithHref(it) }
+                            val point = link?.let { session.opened.publication.locatorFromLink(it) }
+                            if (point == null) {
+                                model.notice("External links stay closed while reading offline.")
+                            } else {
+                                val fragment = href.substringAfter('#', "")
+                                go(
+                                    point.copy(
+                                        locations =
+                                            point.locations.copy(
+                                                fragments = listOfNotNull(fragment.takeIf(String::isNotBlank)),
+                                            ),
+                                    ),
+                                )
+                            }
+                        },
+                        onSelection = model.interaction::selection,
+                        onError = {
+                            model.notice(
+                                "A chapter is unavailable. Continue scrolling or choose another from Contents.",
+                            )
+                        },
+                    ),
             )
-        }
+        host.addView(continuous?.view, FrameLayout.LayoutParams(-1, -1))
     }
 
     private fun selectionCallback() =
@@ -288,6 +362,9 @@ private fun hardenWebViews(view: View?) {
             view.settings.blockNetworkLoads = true
             view.settings.allowFileAccess = false
             view.settings.allowContentAccess = false
+            view.settings.setSupportZoom(false)
+            view.settings.builtInZoomControls = false
+            view.settings.displayZoomControls = false
         }
         is android.view.ViewGroup -> for (index in 0 until view.childCount) hardenWebViews(view.getChildAt(index))
     }
@@ -305,6 +382,7 @@ internal class ReaderContainer(
     private val slop = ViewConfiguration.get(context).scaledTouchSlop
     private var intercepted = false
     private var multiplePointers = false
+    private var horizontal = false
 
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
@@ -312,13 +390,18 @@ internal class ReaderContainer(
             y = event.y
             intercepted = false
             multiplePointers = false
+            horizontal = false
         }
         if (event.pointerCount > 1) multiplePointers = true
         if (event.actionMasked == MotionEvent.ACTION_MOVE) observeMove(event)
         if (intercepted) {
             if (event.actionMasked == MotionEvent.ACTION_UP) {
                 val offset = event.x - x
-                if (kotlin.math.abs(offset) >= MINIMUM_SWIPE_DP * resources.displayMetrics.density) onSwipe(offset)
+                if (horizontal &&
+                    kotlin.math.abs(offset) >= MINIMUM_SWIPE_DP * resources.displayMetrics.density
+                ) {
+                    onSwipe(offset)
+                }
                 intercepted = false
             } else if (event.actionMasked == MotionEvent.ACTION_CANCEL) {
                 intercepted = false
@@ -333,8 +416,10 @@ internal class ReaderContainer(
         val dy = kotlin.math.abs(event.y - y)
         if (dx > slop || dy > slop) onReadingGesture()
         val canIntercept = !intercepted && !multiplePointers && handlesSwipes()
-        if (canIntercept && dx > slop && dx > dy * HORIZONTAL_GESTURE_RATIO) {
-            // Readium hardcodes native fling animation. Only NONE/reduced motion takes this path.
+        if (canIntercept && (dx > slop || dy > slop)) {
+            // Readium treats slight horizontal drift during vertical drags as a page fling.
+            // Classify once, cancel that native fling, and only turn for a horizontal gesture.
+            horizontal = dx > dy * HORIZONTAL_GESTURE_RATIO
             val cancel = MotionEvent.obtain(event).apply { action = MotionEvent.ACTION_CANCEL }
             super.dispatchTouchEvent(cancel)
             cancel.recycle()
@@ -346,3 +431,24 @@ internal class ReaderContainer(
 private const val TAP_EDGE_FRACTION = 0.25f
 private const val HORIZONTAL_GESTURE_RATIO = 1.25f
 private const val MINIMUM_SWIPE_DP = 32
+
+private fun applyLinkColor(
+    activity: FragmentActivity,
+    fragment: EpubNavigatorFragment?,
+    theme: ReaderTheme?,
+) {
+    val color = theme?.accent?.takeIf { Regex("#[0-9a-fA-F]{6}").matches(it) } ?: return
+    val transition =
+        if (ValueAnimator.areAnimatorsEnabled()) {
+            "background-color 180ms linear,color 180ms linear"
+        } else {
+            "none"
+        }
+    activity.lifecycleScope.launch {
+        fragment?.evaluateJavascript(
+            "document.documentElement.style.transition='$transition';" +
+                "document.documentElement.style.setProperty('--RS__linkColor','$color');" +
+                "document.documentElement.style.setProperty('--RS__visitedColor','$color');",
+        )
+    }
+}

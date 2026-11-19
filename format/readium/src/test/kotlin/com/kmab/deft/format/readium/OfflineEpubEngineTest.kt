@@ -34,6 +34,31 @@ import java.util.zip.ZipOutputStream
 class OfflineEpubEngineTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
+    @Test fun bundledFontsUseThePublicationOriginAndServeTheOriginalAssetBytes() =
+        runTest {
+            val source = epub()
+            register(source)
+            val assetPath = "readium/fonts/OpenDyslexic-Regular.otf"
+            val font = ReaderFont("bundled-test", "Bundled test", listOf(ReaderFontFace(assetPath = assetPath)))
+            OfflineEpubEngine(context).open(URI, hash(source.readBytes()), listOf(font)).use { opened ->
+                val href = requireNotNull(Url(importedFontPath(font.id, 0)))
+                val resource = requireNotNull(opened.publication.get(href))
+                try {
+                    val expected = context.assets.open(assetPath).use { it.readBytes() }
+                    assertTrue(expected.contentEquals(resource.read().getOrNull()))
+                    assertEquals(
+                        "font/otf",
+                        opened.publication
+                            .linkWithHref(href)
+                            ?.mediaType
+                            .toString(),
+                    )
+                } finally {
+                    resource.close()
+                }
+            }
+        }
+
     @Test fun opensAnActualEpubWithoutChangingTheSourceAndBlocksRemoteResources() =
         runTest {
             val source = epub()

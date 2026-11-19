@@ -114,7 +114,7 @@ class ReaderChromeTest {
         var bookmarkSelected: Long? = null
         compose.setContent {
             ReaderTheme(ReaderThemes.builtIn[2]) {
-                ReaderContents(
+                ReaderContentsPanel(
                     listOf(chapter),
                     saved.value,
                     chapter.url(),

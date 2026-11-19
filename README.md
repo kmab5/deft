@@ -7,7 +7,7 @@ Deft is an offline Android ebook reader with a reading tracker built in. Open a 
 - **Tracker:** accurate reading time, sessions, streaks, goals, per-book/category/author stats, and a year in review.
 - **Portable:** optional edition matching, export to Goodreads/StoryGraph/Hardcover CSV, and local zip backups.
 
-Status: planning complete, implementation starting. See [`plans/`](plans/) for the design, the roadmap and the milestone plans.
+Status: M1 is merged; the M2 EPUB reader is in device testing at 0.2.2. The feature list above describes the full roadmap; tracking, ratings, notes and additional reading formats remain in later milestones. See [`plans/`](plans/) for the design and roadmap, and the [M2 test checklist](plans/m2-test-checklist.md) for implemented behavior and device retests.
 
 Distribution (planned): GitHub Releases and F-Droid.
 

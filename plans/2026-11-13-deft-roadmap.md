@@ -6,7 +6,7 @@
 
 **Rule for every milestone:** it ends with an installable app that is better than the previous milestone's, all tests green, CI green, and the design doc updated if a decision changed (add a row to the design doc's Decision log, §20).
 
-**Current author-directed handover:** M1 was merged and pushed as `v0.1.2-1` (`e75050a`) after the author authorized the final fixes and local verification. M2 integrates that foundation and is being repaired as `0.2.1-1`; it remains unmerged until its device checklist passes. Push and hand over after local checks/audit without waiting for GitHub CI.
+**Current author-directed handover:** M1 was merged and pushed as `v0.1.2-1` (`e75050a`) after the author authorized the final fixes and local verification. M2 integrates that foundation and is being repaired as `0.2.2-1`; it remains unmerged until its device checklist passes. Push and hand over after local checks/audit without waiting for GitHub CI. The author explicitly brings offline EPUB search, library search, image viewing, launch-last-book and navigation refinements into this patch. M3 tracking/ratings/favorite, M5 highlights/notes and M7/M8 additional formats retain their milestone boundaries.
 
 ## Branching, handover, tagging
 1. Work on `feat/mN-<name>` (fixes: `fix/<topic>`), branched from `main`. Push the branch so CI runs.

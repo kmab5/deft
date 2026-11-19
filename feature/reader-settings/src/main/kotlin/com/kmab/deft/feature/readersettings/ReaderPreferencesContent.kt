@@ -31,6 +31,7 @@ import com.kmab.deft.core.model.PageAnimation
 import com.kmab.deft.core.model.ReaderAlignment
 import com.kmab.deft.core.model.ReaderFont
 import com.kmab.deft.core.model.ReaderMargins
+import com.kmab.deft.core.model.ReaderOrientation
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReaderTheme
 import java.util.Locale
@@ -71,7 +72,7 @@ internal fun ReaderPreferencesContent(
                 when (selected) {
                     0 -> TextPreferences(preferences, fonts, update, onChooseFont)
                     1 -> ThemePreferences(preferences, themes, update, onEditTheme, onDeleteTheme, manageAssets)
-                    else -> PagePreferences(preferences, update)
+                    else -> PagePreferences(preferences, update, manageAssets)
                 }
             }
         }
@@ -124,7 +125,11 @@ private fun TextPreferences(
         }
         SettingDivider()
         Choices("alignment", ReaderAlignment.entries, p.alignment, {
-            if (it == ReaderAlignment.START) "left" else "justify"
+            when (it) {
+                ReaderAlignment.START -> "left"
+                ReaderAlignment.JUSTIFY -> "justify"
+                ReaderAlignment.ORIGINAL -> "original"
+            }
         }) { value -> update { it.copy(alignment = value) } }
         SettingDivider()
         PreferenceToggle("hyphenation", p.hyphenation) { value -> update { it.copy(hyphenation = value) } }
@@ -135,6 +140,7 @@ private fun TextPreferences(
 private fun PagePreferences(
     p: ReaderPreferences,
     update: PreferenceUpdate,
+    manageAssets: Boolean,
 ) {
     ReaderSettingGroup("navigation") {
         Choices("reading mode", listOf(false, true), p.scroll, { if (it) "scroll" else "paged" }) { value ->
@@ -144,8 +150,25 @@ private fun PagePreferences(
         Choices("page animation", PageAnimation.entries, p.pageAnimation, {
             it.name.lowercase(Locale.ROOT)
         }, enabled = !p.scroll) { value -> update { it.copy(pageAnimation = value) } }
+        SettingDivider()
+        PreferenceToggle("tap edges to turn pages", p.tapToTurn) { value -> update { it.copy(tapToTurn = value) } }
+        SettingDivider()
+        Choices("orientation", ReaderOrientation.entries, p.orientation, { it.name.lowercase(Locale.ROOT) }) { value ->
+            update { it.copy(orientation = value) }
+        }
+    }
+    if (manageAssets) {
+        ReaderSettingGroup("on launch") {
+            PreferenceToggle("open last book", p.openLastBook) { value -> update { it.copy(openLastBook = value) } }
+        }
     }
     ReaderSettingGroup("while reading") {
+        PreferenceToggle("fullscreen reading", p.fullScreen) { value -> update { it.copy(fullScreen = value) } }
+        SettingDivider()
+        Choices("progress display", listOf(false, true), p.showPageNumber, {
+            if (it) "page number" else "percentage"
+        }) { value -> update { it.copy(showPageNumber = value) } }
+        SettingDivider()
         PreferenceToggle("show status line", p.showStatusLine) { value -> update { it.copy(showStatusLine = value) } }
         SettingDivider()
         PreferenceToggle("volume keys turn pages", p.volumeKeys) { value -> update { it.copy(volumeKeys = value) } }

@@ -71,7 +71,15 @@ internal class ReaderInteraction(
         state.update { it.copy(canReturn = navigation.returnPoint != null) }
     }
 
-    fun returnPoint(): Locator? = navigation.takeReturnPoint().also { state.update { it.copy(canReturn = false) } }
+    fun returnPoint(): Locator? =
+        navigation.takeReturnPoint().also {
+            state.update {
+                it.copy(
+                    canReturn =
+                        navigation.returnPoint != null,
+                )
+            }
+        }
 
     fun selection(locator: Locator) {
         state.value.session?.let { events.emit(ReaderEvent.Selection(it.bookId, locator.toPosition())) }

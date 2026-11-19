@@ -17,6 +17,24 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class NavigatorPreferencesTest {
+    @Test fun openDyslexicUsesDeftsSameOriginFamilyWithoutReadiumsBuiltinCollision() {
+        assertEquals(
+            "Deft OpenDyslexic",
+            ReaderPreferences(fontFamily = "OpenDyslexic")
+                .toNavigatorPreferences(ReaderThemes.builtIn.first())
+                .fontFamily
+                ?.name,
+        )
+    }
+
+    @Test fun originalAlignmentLeavesPublisherParagraphAlignmentIntact() {
+        assertNull(
+            ReaderPreferences(alignment = ReaderAlignment.ORIGINAL)
+                .toNavigatorPreferences(ReaderThemes.builtIn.first())
+                .textAlign,
+        )
+    }
+
     @Test fun publisherFontCanBeKeptWhileOtherTypographyAndBlackThemeApply() {
         val mapped =
             ReaderPreferences(

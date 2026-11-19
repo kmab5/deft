@@ -25,7 +25,7 @@ fun ReaderPreferences.toNavigatorPreferences(theme: ReaderTheme): EpubPreference
         textColor = Color(parseColor(theme.text)),
         theme = if (android.graphics.Color.luminance(parseColor(theme.background)) < 0.3f) Theme.DARK else Theme.LIGHT,
         // Readium's fontOverride flag is false when this is null. Advanced typography remains enabled.
-        fontFamily = fontFamily.takeUnless { it == "original" }?.let(::FontFamily),
+        fontFamily = fontFamily.takeUnless { it == "original" }?.let(::navigatorFontFamily),
         textNormalization = false,
         fontSize = fontSize,
         lineHeight = lineHeight,
@@ -35,7 +35,12 @@ fun ReaderPreferences.toNavigatorPreferences(theme: ReaderTheme): EpubPreference
                 ReaderMargins.MEDIUM -> 1.0
                 ReaderMargins.LARGE -> 1.5
             },
-        textAlign = if (alignment == ReaderAlignment.JUSTIFY) TextAlign.JUSTIFY else TextAlign.START,
+        textAlign =
+            when (alignment) {
+                ReaderAlignment.ORIGINAL -> null
+                ReaderAlignment.JUSTIFY -> TextAlign.JUSTIFY
+                ReaderAlignment.START -> TextAlign.START
+            },
         hyphens = hyphenation,
         scroll = scroll,
         publisherStyles = false,
@@ -47,6 +52,7 @@ fun navigatorConfiguration(
 ): EpubNavigatorFragment.Configuration =
     EpubNavigatorFragment.Configuration {
         servedAssets = listOf("reader-fonts/.*")
+        disablePageTurnsWhileScrolling = true
         shouldApplyInsetsPadding = false
         readiumCssRsProperties =
             RsProperties(
@@ -55,11 +61,10 @@ fun navigatorConfiguration(
             )
         // Publisher-original has no custom faces; Readium rejects empty family declarations.
         fonts.filter { it.faces.isNotEmpty() }.forEach { font ->
-            addFontFamilyDeclaration(FontFamily(font.id)) {
+            addFontFamilyDeclaration(navigatorFontFamily(font.id)) {
                 font.faces.forEachIndexed { index, face ->
                     addFontFace {
-                        face.assetPath?.let { addSource(it) }
-                        face.privateFilePath?.let {
+                        if (face.assetPath != null || face.privateFilePath != null) {
                             addSource(
                                 requireNotNull(Url("https://readium_package/${importedFontPath(font.id, index)}")),
                             )
@@ -71,3 +76,8 @@ fun navigatorConfiguration(
             }
         }
     }
+
+// Readium appends an asset-origin OpenDyslexic face automatically. Keep Deft's three same-origin
+// faces in their own CSS family so that built-in declaration cannot override the chosen font.
+private fun navigatorFontFamily(id: String): FontFamily =
+    FontFamily(if (id == "OpenDyslexic") "Deft OpenDyslexic" else id)

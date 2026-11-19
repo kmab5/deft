@@ -114,11 +114,15 @@ object PublicationPolicy {
             !uri.isAbsolute && uri.rawAuthority == null && !value.contains('\\')
         }.getOrDefault(false)
 
+    // Readium's synthetic host names contain underscores, which are invalid CSP host sources.
+    // 'self' admits publication resources; path-scoped sources admit the bundled Readium assets.
+    // The navigator intercepts these requests locally. OfflineContainer and blockNetworkLoads
+    // still reject remote resources, including remote URLs using one of these asset paths.
     private const val CSP =
-        "default-src 'none'; script-src https://readium_assets/readium/scripts/; " +
-            "style-src 'unsafe-inline' https://readium_package https://readium_assets; " +
-            "img-src https://readium_package https://readium_assets data:; " +
-            "font-src https://readium_package https://readium_assets; " +
+        "default-src 'none'; script-src https://*/readium/scripts/; " +
+            "style-src 'unsafe-inline' 'self' https://*/readium/readium-css/; " +
+            "img-src 'self' data:; " +
+            "font-src 'self' https://*/reader-fonts/ https://*/readium/fonts/ https://*/readium/readium-css/fonts/; " +
             "media-src 'none'; connect-src 'none'; frame-src 'none'; object-src 'none'; " +
             "base-uri 'none'; form-action 'none'"
 }

@@ -2,9 +2,11 @@ package com.kmab.deft.core.model
 
 enum class ReaderMargins { SMALL, MEDIUM, LARGE }
 
-enum class ReaderAlignment { START, JUSTIFY }
+enum class ReaderAlignment { START, JUSTIFY, ORIGINAL }
 
 enum class PageAnimation { NONE, SLIDE }
+
+enum class ReaderOrientation { SYSTEM, PORTRAIT, LANDSCAPE }
 
 data class ReaderPreferences(
     val fontFamily: String = "Literata",
@@ -24,6 +26,11 @@ data class ReaderPreferences(
     val showStatusLine: Boolean = true,
     val volumeKeys: Boolean = false,
     val keepScreenOn: Boolean = true,
+    val openLastBook: Boolean = false,
+    val showPageNumber: Boolean = false,
+    val fullScreen: Boolean = true,
+    val tapToTurn: Boolean = true,
+    val orientation: ReaderOrientation = ReaderOrientation.SYSTEM,
 ) {
     fun normalized(): ReaderPreferences =
         copy(

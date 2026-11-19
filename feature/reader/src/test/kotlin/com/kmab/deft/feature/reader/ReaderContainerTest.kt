@@ -16,6 +16,18 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class ReaderContainerTest {
+    @Test fun verticalDragWithHorizontalDriftNeverTurnsAPage() {
+        val childEvents = mutableListOf<Int>()
+        val swipes = mutableListOf<Float>()
+        val container = container(true, childEvents, swipes)
+        touch(container, MotionEvent.ACTION_DOWN, 300f, 400f)
+        touch(container, MotionEvent.ACTION_MOVE, 270f, 180f)
+        touch(container, MotionEvent.ACTION_UP, 230f, 40f)
+        assertTrue(childEvents.contains(MotionEvent.ACTION_CANCEL))
+        assertFalse(childEvents.contains(MotionEvent.ACTION_UP))
+        assertTrue(swipes.isEmpty())
+    }
+
     @Test fun horizontalPageSwipeCancelsNativeFlingAndUsesPreferenceAwareTurn() {
         val childEvents = mutableListOf<Int>()
         val swipes = mutableListOf<Float>()

@@ -19,6 +19,7 @@ import com.kmab.deft.core.designsystem.DeftTheme
 import com.kmab.deft.core.model.PageAnimation
 import com.kmab.deft.core.model.ReaderAlignment
 import com.kmab.deft.core.model.ReaderMargins
+import com.kmab.deft.core.model.ReaderOrientation
 import com.kmab.deft.core.model.ReaderPreferences
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -116,6 +117,8 @@ class ReaderPreferencesContentTest {
         }
         compose.onNodeWithContentDescription("increase line height").performClick()
         compose.onNodeWithText("large").performScrollTo().performClick()
+        compose.onNodeWithText("original").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(ReaderAlignment.ORIGINAL, state.value.alignment) }
         compose.onNodeWithText("justify").performScrollTo().performClick()
         compose.onNodeWithText("hyphenation").performScrollTo().performClick()
         compose.onNodeWithText("page", useUnmergedTree = true).performClick()
@@ -135,6 +138,38 @@ class ReaderPreferencesContentTest {
                 ),
                 state.value,
             )
+        }
+    }
+
+    @Test
+    fun launchAndProgressChoicesUpdateGlobalPreferences() {
+        val state = mutableStateOf(ReaderPreferences())
+        compose.setContent {
+            DeftTheme {
+                ReaderPreferencesContent(
+                    state.value,
+                    emptyList(),
+                    ReaderFontCatalog.bundled,
+                    { state.value = it(state.value).normalized() },
+                    {},
+                    {},
+                    {},
+                    manageAssets = true,
+                )
+            }
+        }
+        compose.onNodeWithText("page", useUnmergedTree = true).performClick()
+        compose.onNodeWithText("open last book").performScrollTo().performClick()
+        compose.onNodeWithText("page number").performScrollTo().performClick()
+        compose.onNodeWithText("fullscreen reading").performScrollTo().performClick()
+        compose.onNodeWithText("tap edges to turn pages").performScrollTo().performClick()
+        compose.onNodeWithText("landscape").performScrollTo().performClick()
+        compose.runOnIdle {
+            assertTrue(state.value.openLastBook)
+            assertTrue(state.value.showPageNumber)
+            assertEquals(false, state.value.fullScreen)
+            assertEquals(false, state.value.tapToTurn)
+            assertEquals(ReaderOrientation.LANDSCAPE, state.value.orientation)
         }
     }
 

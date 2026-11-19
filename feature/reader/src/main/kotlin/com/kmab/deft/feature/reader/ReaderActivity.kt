@@ -1,5 +1,7 @@
 package com.kmab.deft.feature.reader
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.compose.setContent
@@ -9,6 +11,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
+import com.kmab.deft.core.model.ReaderOrientation
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -20,8 +23,8 @@ class ReaderActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Readium fragments require a live publication in their constructor. Rebuild that fragment
-        // explicitly; restore only our locator, never Android's constructor-less fragment state.
-        super.onCreate(null)
+        // explicitly while retaining Compose controls and the rest of Android's saved state.
+        super.onCreate(savedInstanceState?.withoutReaderFragmentState())
         readerWindow = ReaderWindow(window)
         enableEdgeToEdge()
         model.open(intent.getLongExtra(ReaderLauncher.BOOK_ID, -1L), savedInstanceState?.getString(LOCATION))
@@ -62,12 +65,18 @@ class ReaderActivity : FragmentActivity() {
         chrome: Boolean,
         dark: Boolean,
     ) {
-        readerWindow.apply(model.preferences.value)
+        val preferences = model.preferences.value
+        readerWindow.apply(preferences)
+        applyReaderOrientation(preferences.orientation)
         WindowCompat.getInsetsController(window, window.decorView).apply {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             isAppearanceLightStatusBars = !dark
             isAppearanceLightNavigationBars = !dark
-            if (chrome) show(WindowInsetsCompat.Type.systemBars()) else hide(WindowInsetsCompat.Type.systemBars())
+            if (chrome || !preferences.fullScreen) {
+                show(WindowInsetsCompat.Type.systemBars())
+            } else {
+                hide(WindowInsetsCompat.Type.systemBars())
+            }
         }
     }
 
@@ -93,4 +102,24 @@ class ReaderActivity : FragmentActivity() {
     private companion object {
         const val LOCATION = "reader-location"
     }
+}
+
+/** FragmentManager alone needs fresh state because its fragment factory holds the live book. */
+internal fun Bundle.withoutReaderFragmentState(): Bundle =
+    Bundle(this).apply {
+        remove("android:support:fragments")
+        val registryKey = "androidx.lifecycle.BundlableSavedStateRegistry.key"
+        getBundle(registryKey)?.let { registry ->
+            putBundle(registryKey, Bundle(registry).apply { remove("android:support:fragments") })
+        }
+    }
+
+internal fun Activity.applyReaderOrientation(orientation: ReaderOrientation) {
+    val requested =
+        when (orientation) {
+            ReaderOrientation.SYSTEM -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            ReaderOrientation.PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            ReaderOrientation.LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        }
+    if (requestedOrientation != requested) requestedOrientation = requested
 }

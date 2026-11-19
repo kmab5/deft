@@ -3,6 +3,7 @@ package com.kmab.deft.core.datastore
 import com.kmab.deft.core.model.PageAnimation
 import com.kmab.deft.core.model.ReaderAlignment
 import com.kmab.deft.core.model.ReaderMargins
+import com.kmab.deft.core.model.ReaderOrientation
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReaderTheme
 import com.kmab.deft.core.model.ReaderThemes
@@ -35,6 +36,13 @@ internal object ReaderSettingsCodec {
                 showStatusLine = json.optBoolean("showStatusLine", defaults.showStatusLine),
                 volumeKeys = json.optBoolean("volumeKeys", defaults.volumeKeys),
                 keepScreenOn = json.optBoolean("keepScreenOn", defaults.keepScreenOn),
+                openLastBook = json.optBoolean("openLastBook", defaults.openLastBook),
+                showPageNumber = json.optBoolean("showPageNumber", defaults.showPageNumber),
+                fullScreen = json.optBoolean("fullScreen", defaults.fullScreen),
+                tapToTurn = json.optBoolean("tapToTurn", defaults.tapToTurn),
+                orientation =
+                    ReaderOrientation.entries.find { it.name == json.optString("orientation") }
+                        ?: defaults.orientation,
             ).normalized()
         } catch (_: JSONException) {
             ReaderPreferences()
@@ -60,6 +68,11 @@ internal object ReaderSettingsCodec {
                 put("showStatusLine", value.showStatusLine)
                 put("volumeKeys", value.volumeKeys)
                 put("keepScreenOn", value.keepScreenOn)
+                put("openLastBook", value.openLastBook)
+                put("showPageNumber", value.showPageNumber)
+                put("fullScreen", value.fullScreen)
+                put("tapToTurn", value.tapToTurn)
+                put("orientation", value.orientation.name)
             }.toString()
 
     fun themes(raw: String?): List<ReaderTheme> =

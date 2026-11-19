@@ -15,6 +15,18 @@ class ReadingNavigationTest {
         assertNull(navigation.takeReturnPoint())
     }
 
+    @Test fun returnsThroughEveryExplicitJumpInReverseOrder() {
+        val navigation = ReadingNavigation<String>()
+        navigation.jumpFrom("one")
+        navigation.jumpFrom("two")
+        navigation.jumpFrom("two")
+        navigation.jumpFrom(null)
+        assertEquals("two", navigation.takeReturnPoint())
+        assertEquals("one", navigation.returnPoint)
+        assertEquals("one", navigation.takeReturnPoint())
+        assertNull(navigation.takeReturnPoint())
+    }
+
     @Test fun emitsOnlyChangedLocationsAfterRecentUserInput() {
         val navigation = ReadingNavigation<String>()
         navigation.arrived("one", 0)

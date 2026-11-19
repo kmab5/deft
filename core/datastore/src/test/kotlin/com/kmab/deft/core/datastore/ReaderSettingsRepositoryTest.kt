@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.kmab.deft.core.model.PageAnimation
 import com.kmab.deft.core.model.ReaderAlignment
 import com.kmab.deft.core.model.ReaderMargins
+import com.kmab.deft.core.model.ReaderOrientation
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReaderTheme
 import kotlinx.coroutines.CoroutineScope
@@ -42,7 +43,7 @@ class ReaderSettingsRepositoryTest {
                     1.4,
                     1.8,
                     ReaderMargins.LARGE,
-                    ReaderAlignment.JUSTIFY,
+                    ReaderAlignment.ORIGINAL,
                     false,
                     custom.id,
                     true,
@@ -55,6 +56,11 @@ class ReaderSettingsRepositoryTest {
                     false,
                     true,
                     false,
+                    openLastBook = true,
+                    showPageNumber = true,
+                    fullScreen = false,
+                    tapToTurn = false,
+                    orientation = ReaderOrientation.LANDSCAPE,
                 )
             try {
                 first.upsertTheme(custom)
