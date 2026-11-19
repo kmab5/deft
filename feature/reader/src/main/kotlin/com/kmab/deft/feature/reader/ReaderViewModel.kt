@@ -6,10 +6,12 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kmab.deft.core.database.entity.BookmarkEntity
+import com.kmab.deft.core.datastore.LibrarySettingsRepository
 import com.kmab.deft.core.datastore.ReaderSettingsRepository
 import com.kmab.deft.core.model.ReaderFont
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReadingPosition
+import com.kmab.deft.core.model.SearchOptions
 import com.kmab.deft.feature.readersettings.ReaderFontRepository
 import com.kmab.deft.format.readium.OpenedEpub
 import com.kmab.deft.format.readium.ReaderOpenException
@@ -22,6 +24,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -52,10 +56,12 @@ internal data class ReaderState(
 @HiltViewModel
 internal class ReaderViewModel
     @Inject
+    @Suppress("LongParameterList") // Hilt injects the independent reader and library settings repositories explicitly.
     constructor(
         @ApplicationContext private val context: Context,
         private val books: BookRepository,
         settings: ReaderSettingsRepository,
+        librarySettings: LibrarySettingsRepository,
         private val fonts: ReaderFontRepository,
         private val writer: ReaderPositionWriter,
         private val events: ReaderEvents,
@@ -64,6 +70,11 @@ internal class ReaderViewModel
         val state = mutableState.asStateFlow()
         val preferences = settings.preferences.stateIn(viewModelScope, SharingStarted.Eagerly, ReaderPreferences())
         val themes = settings.customThemes.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        val advancedSearch =
+            librarySettings.settings
+                .map { it.advancedSearch }
+                .distinctUntilChanged()
+                .stateIn(viewModelScope, SharingStarted.Eagerly, false)
         private val messages = MutableSharedFlow<String>(extraBufferCapacity = 8)
         val notices = messages.asSharedFlow()
         val interaction = ReaderInteraction(mutableState, preferences, writer, events)
@@ -72,6 +83,11 @@ internal class ReaderViewModel
 
         init {
             viewModelScope.launch { writer.failures.collect { notice(it) } }
+            viewModelScope.launch {
+                advancedSearch.collect { enabled ->
+                    if (!enabled && search.state.value.options != SearchOptions()) search.options(SearchOptions())
+                }
+            }
         }
 
         // Untrusted format/provider failures become actionable UI errors; cancellation remains cancellation.

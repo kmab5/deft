@@ -5,13 +5,10 @@ package com.kmab.deft.feature.reader
 import android.animation.ValueAnimator
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.Context
 import android.view.ActionMode
 import android.view.Menu
 import android.view.MenuItem
-import android.view.MotionEvent
 import android.view.View
-import android.view.ViewConfiguration
 import android.webkit.WebView
 import android.widget.FrameLayout
 import androidx.fragment.app.FragmentActivity
@@ -53,6 +50,8 @@ internal class ReaderNavigator(
     val handlesSwipes: Boolean
         get() =
             !preferences.scroll && !selecting
+    val nativeSwipes: Boolean
+        get() = preferences.pageAnimation == PageAnimation.SLIDE && ValueAnimator.areAnimatorsEnabled()
 
     fun attach(
         container: FrameLayout,
@@ -126,11 +125,10 @@ internal class ReaderNavigator(
                         if (image != null) {
                             onImage(image)
                         } else {
-                            val edge = width * TAP_EDGE_FRACTION
-                            if (!preferences.tapToTurn || event.point.x in edge..(width - edge)) {
-                                toggleChrome()
-                            } else {
-                                turnPhysical(right = event.point.x > width / 2)
+                            when (readerTapAction(event.point.x, width, preferences.tapToTurn)) {
+                                ReaderTapAction.CHROME -> toggleChrome()
+                                ReaderTapAction.LEFT -> turnPhysical(right = false)
+                                ReaderTapAction.RIGHT -> turnPhysical(right = true)
                             }
                         }
                     }
@@ -344,14 +342,16 @@ internal class ReaderNavigator(
                                 ClipboardManager::class.java,
                             ).setPrimaryClip(ClipData.newPlainText("Book text", text))
                     }
+                    fragment?.clearSelection()
                     mode.finish()
                 }
                 return true
             }
 
             override fun onDestroyActionMode(mode: ActionMode) {
+                // Chromium can recreate the toolbar while a selection handle moves.
+                // Its lifetime is not the lifetime of the selected DOM range.
                 selecting = false
-                fragment?.clearSelection()
             }
         }
 }
@@ -369,68 +369,6 @@ private fun hardenWebViews(view: View?) {
         is android.view.ViewGroup -> for (index in 0 until view.childCount) hardenWebViews(view.getChildAt(index))
     }
 }
-
-/** Observes gestures without stealing WebView selection, scrolling or accessibility actions. */
-internal class ReaderContainer(
-    context: Context,
-    private val onReadingGesture: () -> Unit,
-    private val handlesSwipes: () -> Boolean,
-    private val onSwipe: (Float) -> Unit,
-) : FrameLayout(context) {
-    private var x = 0f
-    private var y = 0f
-    private val slop = ViewConfiguration.get(context).scaledTouchSlop
-    private var intercepted = false
-    private var multiplePointers = false
-    private var horizontal = false
-
-    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
-        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-            x = event.x
-            y = event.y
-            intercepted = false
-            multiplePointers = false
-            horizontal = false
-        }
-        if (event.pointerCount > 1) multiplePointers = true
-        if (event.actionMasked == MotionEvent.ACTION_MOVE) observeMove(event)
-        if (intercepted) {
-            if (event.actionMasked == MotionEvent.ACTION_UP) {
-                val offset = event.x - x
-                if (horizontal &&
-                    kotlin.math.abs(offset) >= MINIMUM_SWIPE_DP * resources.displayMetrics.density
-                ) {
-                    onSwipe(offset)
-                }
-                intercepted = false
-            } else if (event.actionMasked == MotionEvent.ACTION_CANCEL) {
-                intercepted = false
-            }
-            return true
-        }
-        return super.dispatchTouchEvent(event)
-    }
-
-    private fun observeMove(event: MotionEvent) {
-        val dx = kotlin.math.abs(event.x - x)
-        val dy = kotlin.math.abs(event.y - y)
-        if (dx > slop || dy > slop) onReadingGesture()
-        val canIntercept = !intercepted && !multiplePointers && handlesSwipes()
-        if (canIntercept && (dx > slop || dy > slop)) {
-            // Readium treats slight horizontal drift during vertical drags as a page fling.
-            // Classify once, cancel that native fling, and only turn for a horizontal gesture.
-            horizontal = dx > dy * HORIZONTAL_GESTURE_RATIO
-            val cancel = MotionEvent.obtain(event).apply { action = MotionEvent.ACTION_CANCEL }
-            super.dispatchTouchEvent(cancel)
-            cancel.recycle()
-            intercepted = true
-        }
-    }
-}
-
-private const val TAP_EDGE_FRACTION = 0.25f
-private const val HORIZONTAL_GESTURE_RATIO = 1.25f
-private const val MINIMUM_SWIPE_DP = 32
 
 private fun applyLinkColor(
     activity: FragmentActivity,

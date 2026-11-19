@@ -1,9 +1,11 @@
 package com.kmab.deft.feature.library
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -33,7 +35,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.kmab.deft.core.database.model.BookListItem
 import com.kmab.deft.core.designsystem.DeftShapes
@@ -86,6 +93,20 @@ internal fun BoxScope.LibraryScrollOverlay(
 ) {
     val colors = LocalDeftColors.current
     val scope = rememberCoroutineScope()
+    var scrollbarVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(scroll.scrolling) {
+        if (scroll.scrolling) {
+            scrollbarVisible = true
+        } else {
+            delay(SCROLLBAR_TIMEOUT_MS)
+            scrollbarVisible = false
+        }
+    }
+    LibraryScrollbar(
+        scroll,
+        scrollbarVisible,
+        Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(vertical = 8.dp),
+    )
     Column(
         Modifier.align(Alignment.BottomEnd).padding(16.dp),
         horizontalAlignment = Alignment.End,
@@ -113,76 +134,119 @@ internal fun BoxScope.LibraryScrollOverlay(
             )
         }
     }
-    var scrollbarVisible by remember { mutableStateOf(false) }
-    LaunchedEffect(scroll.scrolling) {
-        if (scroll.scrolling) {
-            scrollbarVisible = true
-        } else {
-            delay(SCROLLBAR_TIMEOUT_MS)
-            scrollbarVisible = false
-        }
-    }
-    AnimatedVisibility(
-        scrollbarVisible,
-        modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(vertical = 8.dp, horizontal = 3.dp),
-        enter = fadeIn(),
-        exit = fadeOut(),
-    ) {
-        LibraryScrollbar(scroll)
-    }
 }
 
 @Composable
-private fun LibraryScrollbar(scroll: LibraryScrollState) {
+private fun LibraryScrollbar(
+    scroll: LibraryScrollState,
+    visible: Boolean,
+    modifier: Modifier,
+) {
     val color = LocalDeftColors.current.muted
-    Canvas(Modifier.fillMaxHeight().width(3.dp).testTag("library_scrollbar")) {
-        val metrics =
-            if (scroll.gridView) {
-                val info = scroll.grid.layoutInfo
-                val visible = info.visibleItemsInfo
-                val first = visible.firstOrNull()
-                val itemHeight = first?.size?.height ?: 1
-                val columns = visible.count { it.row == first?.row }.coerceAtLeast(1)
-                val offset = scroll.grid.firstVisibleItemScrollOffset.toFloat() / itemHeight.coerceAtLeast(1)
-                ScrollbarMetrics(
-                    (info.totalItemsCount + columns - 1) / columns,
-                    scroll.grid.firstVisibleItemIndex / columns + offset,
-                    (info.viewportEndOffset - info.viewportStartOffset).toFloat() / itemHeight.coerceAtLeast(1),
-                )
+    val minimumThumb = with(LocalDensity.current) { 48.dp.toPx() }
+    var dragging by remember { mutableStateOf(false) }
+    var trackHeight by remember { mutableStateOf(1f) }
+    var target by remember { mutableStateOf<Int?>(null) }
+    var pointer by remember { mutableStateOf(0f) }
+    val opacity by animateFloatAsState(if (visible || dragging) 1f else 0f, label = "scrollbar fade")
+    LaunchedEffect(target) {
+        target?.let { if (scroll.gridView) scroll.grid.scrollToItem(it) else scroll.list.scrollToItem(it) }
+    }
+
+    fun seek(y: Float) {
+        val metrics = scroll.metrics()
+        val total =
+            if (scroll.gridView) scroll.grid.layoutInfo.totalItemsCount else scroll.list.layoutInfo.totalItemsCount
+        val thumb =
+            (
+                trackHeight * metrics.visible /
+                    metrics.total.coerceAtLeast(
+                        1,
+                    )
+            ).coerceIn(minimumThumb.coerceAtMost(trackHeight), trackHeight)
+        val fraction = ((y - thumb / 2f) / (trackHeight - thumb).coerceAtLeast(1f)).coerceIn(0f, 1f)
+        val last = ((metrics.total - metrics.visible).coerceAtLeast(0f) * metrics.columns).toInt()
+        target =
+            if (fraction >=
+                1f
+            ) {
+                (total - 1).coerceAtLeast(0)
             } else {
-                val info = scroll.list.layoutInfo
-                val height =
-                    info.visibleItemsInfo
-                        .firstOrNull()
-                        ?.size
-                        ?.coerceAtLeast(1) ?: 1
-                ScrollbarMetrics(
-                    info.totalItemsCount,
-                    scroll.list.firstVisibleItemIndex + scroll.list.firstVisibleItemScrollOffset.toFloat() / height,
-                    (info.viewportEndOffset - info.viewportStartOffset).toFloat() / height,
-                )
+                (fraction * last).toInt().coerceIn(0, (total - 1).coerceAtLeast(0))
             }
+    }
+    Canvas(
+        modifier
+            .width(48.dp)
+            .testTag("library_scrollbar")
+            .semantics { contentDescription = "drag to scroll library" }
+            .onSizeChanged { trackHeight = it.height.toFloat().coerceAtLeast(1f) }
+            .pointerInput(scroll) {
+                detectVerticalDragGestures(
+                    onDragStart = {
+                        dragging = true
+                        pointer = it.y
+                        seek(pointer)
+                    },
+                    onDragEnd = { dragging = false },
+                    onDragCancel = { dragging = false },
+                    onVerticalDrag = { change, amount ->
+                        change.consume()
+                        pointer += amount
+                        seek(pointer)
+                    },
+                )
+            },
+    ) {
+        val metrics = scroll.metrics()
         if (metrics.total > 0 && metrics.visible < metrics.total) {
             val thumb =
-                (size.height * metrics.visible / metrics.total)
-                    .coerceAtLeast(
-                        24.dp.toPx(),
-                    ).coerceAtMost(size.height)
+                (size.height * metrics.visible / metrics.total).coerceIn(
+                    48.dp.toPx().coerceAtMost(size.height),
+                    size.height,
+                )
             val fraction = (metrics.first / (metrics.total - metrics.visible)).coerceIn(0f, 1f)
+            val width = 8.dp.toPx()
             drawRoundRect(
-                color,
-                Offset(0f, (size.height - thumb) * fraction),
-                Size(size.width, thumb),
-                CornerRadius(size.width),
+                color.copy(alpha = opacity),
+                Offset(
+                    size.width - width - 4.dp.toPx(),
+                    (size.height - thumb) * fraction,
+                ),
+                Size(width, thumb),
+                CornerRadius(width),
             )
         }
     }
 }
 
+private fun LibraryScrollState.metrics(): ScrollbarMetrics =
+    if (gridView) {
+        val info = grid.layoutInfo
+        val first = info.visibleItemsInfo.firstOrNull()
+        val height = (first?.size?.height ?: 1).coerceAtLeast(1) + info.mainAxisItemSpacing
+        val columns = info.visibleItemsInfo.count { it.row == first?.row }.coerceAtLeast(1)
+        ScrollbarMetrics(
+            (info.totalItemsCount + columns - 1) / columns,
+            grid.firstVisibleItemIndex / columns + grid.firstVisibleItemScrollOffset.toFloat() / height,
+            (info.viewportEndOffset - info.viewportStartOffset).toFloat() / height,
+            columns,
+        )
+    } else {
+        val info = list.layoutInfo
+        val height = (info.visibleItemsInfo.firstOrNull()?.size ?: 1).coerceAtLeast(1) + info.mainAxisItemSpacing
+        ScrollbarMetrics(
+            info.totalItemsCount,
+            list.firstVisibleItemIndex + list.firstVisibleItemScrollOffset.toFloat() / height,
+            (info.viewportEndOffset - info.viewportStartOffset).toFloat() / height,
+        )
+    }
+
 private data class ScrollbarMetrics(
     val total: Int,
     val first: Float,
     val visible: Float,
+    val columns: Int = 1,
 )
 
 private const val SCROLLBAR_TIMEOUT_MS = 900L

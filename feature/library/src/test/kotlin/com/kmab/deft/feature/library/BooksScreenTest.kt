@@ -3,8 +3,10 @@ package com.kmab.deft.feature.library
 import android.content.Context
 import android.provider.Settings
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -13,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeUp
 import androidx.test.core.app.ApplicationProvider
@@ -425,5 +428,76 @@ class BooksScreenTest {
         compose.onNodeWithContentDescription("scroll to top").performClick()
         compose.onNodeWithTag("book_1").assertIsDisplayed()
         compose.onNodeWithContentDescription("scroll to top").assertDoesNotExist()
+    }
+
+    @Test fun scrollbarDragMovesList() = scrollbarDragMovesBooks(false)
+
+    @Test fun scrollbarDragMovesGrid() = scrollbarDragMovesBooks(true)
+
+    @Test fun fadedScrollbarDoesNotInterceptCardRightEdge() {
+        val books =
+            (1L..100L).map {
+                BookListItem(it, "Book $it", "book $it", "Writer", BookFormat.EPUB, null, Instant.EPOCH, false, false)
+            }
+        var opened = 0L
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    BooksUiState(books = books, gridView = false, isLoading = false),
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    { _, _ -> },
+                    onOpenBook = { opened = it },
+                )
+            }
+        }
+        compose.mainClock.advanceTimeBy(1500)
+        compose.onNodeWithTag("book_1").performTouchInput { click(Offset(width - 4f, centerY)) }
+        assertEquals(1L, opened)
+        val card = compose.onNodeWithTag("book_1").fetchSemanticsNode().boundsInRoot
+        val list = compose.onNodeWithTag("book_list").fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithTag("book_list").performTouchInput {
+            val x = card.right - list.left - 4f
+            swipe(Offset(x, height * 0.7f), Offset(x, height * 0.5f), durationMillis = 800)
+        }
+        // A normal small swipe must not jump to the middle of the library like a scrollbar seek.
+        compose.onNodeWithTag("book_50").assertDoesNotExist()
+        compose.onNodeWithTag("book_3").assertExists()
+    }
+
+    private fun scrollbarDragMovesBooks(grid: Boolean) {
+        val books =
+            (1L..100L).map {
+                BookListItem(it, "Book $it", "book $it", "Writer", BookFormat.EPUB, null, Instant.EPOCH, false, false)
+            }
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    BooksUiState(books = books, gridView = grid, isLoading = false),
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    { _, _ -> },
+                )
+            }
+        }
+        compose.onNodeWithTag("book_1").assertExists()
+        compose.onNodeWithTag("library_scrollbar").performTouchInput {
+            swipeDown(
+                startY = height * 0.15f,
+                endY =
+                    height * 0.9f,
+                durationMillis = 500,
+            )
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag("book_1").assertDoesNotExist()
     }
 }

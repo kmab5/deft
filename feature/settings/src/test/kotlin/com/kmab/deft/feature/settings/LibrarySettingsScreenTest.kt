@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -201,6 +203,17 @@ class LibrarySettingsScreenTest {
         compose.onNodeWithText("storage on this device").performScrollTo().assertIsDisplayed()
     }
 
+    @Test fun advancedSearchHasALabelledToggleAndPersists() {
+        compose.setContent { if (renderScreen.value) DeftTheme { LibrarySettingsScreen({}, vm) } }
+        compose
+            .onNodeWithText("advanced search")
+            .performScrollTo()
+            .assertIsOff()
+            .performClick()
+        compose.waitUntil { runBlocking { settings.settings.first().advancedSearch } }
+        compose.onNodeWithText("advanced search").assertIsOn()
+    }
+
     @Test fun formatPersistsAndSchedules() {
         compose.setContent { if (renderScreen.value) DeftTheme { LibrarySettingsScreen({}, vm) } }
         compose.runOnIdle { vm.format(com.kmab.deft.core.model.BookFormat.PDF, false) }
@@ -249,7 +262,7 @@ class LibrarySettingsScreenTest {
         runBlocking { folders.add(Uri.parse("content://test/tree/root")) }
         manager.cancelAllWork().result.get()
         compose.setContent { if (renderScreen.value) DeftTheme { LibrarySettingsScreen({}, vm) } }
-        compose.onAllNodes(isToggleable()).assertCountEquals(9)
+        compose.onAllNodes(isToggleable()).assertCountEquals(10)
         compose.onNodeWithText("remove").performScrollTo().performClick()
         compose.onNodeWithText("cancel").performClick()
         compose.waitForIdle()

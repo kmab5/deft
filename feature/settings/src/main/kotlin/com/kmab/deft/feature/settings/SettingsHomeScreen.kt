@@ -46,7 +46,7 @@ fun SettingsHomeScreen(
                 Column {
                     SettingsCategory(
                         "library",
-                        "Folders, file types and ignored books.",
+                        "Folders, file types, ignored books and search.",
                         DeftActionIcons.Folder,
                         onLibrary,
                     )

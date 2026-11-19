@@ -1,6 +1,33 @@
 # M2 — EPUB reader + M1 feedback test checklist
 
-Install `app/build/outputs/apk/release/deft-0.2.2.apk` over the existing Deft installation. Keep app data. Start with **0.2.2 — complete feedback retest** below; earlier results and your comments are preserved as history. This includes the final M1 fixes already merged into main. M2 remains unmerged until you approve this checklist. Tick only steps actually tested, and put observations/screenshots under the relevant section or in `plans/feedback/`.
+## 0.2.3 — device feedback retest
+
+All original 0.2.2 comments/results remain below. This section covers every new comment and the seven November 19 screenshots. Later milestone boundaries remain unchanged.
+
+- [ ] Update from 0.2.2 to **0.2.3** without uninstalling. Folders, library filters/sort, reader settings, positions and bookmarks remain.
+- [ ] Open **H Is for Homicide — Sue Grafton**. The formerly broken chapter renders without the duplicate-style error. Move through several chapters, switch paged/continuous mode and change typography. Original book files remain unchanged.
+- [ ] Open a disposable malformed or missing-chapter EPUB. Healthy text/chapters remain usable; any unreadable chapter does not trap navigation or prevent opening another book. An unreadable whole archive can still report an opening error.
+- [ ] Tap a raster image and an SVG cover. Image appears in its separate viewer; pinch zoom and pan work. Close or press Back and confirm the reading passage is unchanged. Repeat offline.
+- [ ] Long-press text, drag each selection handle, then release. Selection stays visible in paged and continuous modes; normal navigation returns after dismissing it. Copy still works.
+- [ ] In paged mode, test left/right taps across the outer **40%** on each side; the center **20%** toggles controls. Disabled tap-edge turns still toggles controls everywhere.
+- [ ] With Slide animation, slowly drag horizontally: the page follows your finger. Return more than halfway toward the drag origin and release: the turn cancels. Try both directions and chapter boundaries. Vertical drags/pinch must not turn pages.
+- [ ] Swipe from either very edge for Android Back/system bars in fullscreen. This must not also turn a page. Repeat with gesture and three-button system navigation if available, animation None and Android animations disabled.
+- [ ] Continuous reading shows a subtle horizontal divider between chapters. Scroll through boundaries and change typography without losing the nearby passage.
+- [ ] Try Light, Sepia, Dark, Black and a custom theme: HUD and sheets are visibly distinct from the book background. Hidden-HUD status text changes with the theme and has side padding. Nonfullscreen reading leaves additional space below the system status bar.
+- [ ] The taller top bar shows the **book title**; the bottom shows the **chapter name**, percentage or **page** position. Slider endpoints align with the labels. Scrubbing previews a chapter and navigates on release; Jump Back still works. EPUB pages are reflowable position estimates, not printed-page numbers.
+- [ ] Expand/collapse a nested TOC: children are clearly indented beyond their parent. Reopen after scrolling/jumping; list state and current chapter remain useful.
+- [ ] In-book search does not execute while typing. Tap the right-hand **search** action or keyboard Search/Enter to run it. Check results, no results, clearing, cancellation and Back to the original passage.
+- [ ] Settings → Library → **advanced search** starts off. Enable it; both library and book search show match-case, whole-word and regex controls. Turn it off and verify those options no longer affect results. Restart Deft and verify the global setting persists.
+- [ ] Test literal search, case-sensitive words, whole words, and regex such as `chapter [0-9]+`. An invalid pattern produces a readable error. Lookaround/backreferences are unsupported and explained. A broad pattern such as `.*` shows compact results and keeps the app responsive. Repeated matching passages navigate to their respective positions.
+- [ ] In grid and list, drag the larger scrollbar handle to the middle and bottom. After it fades, book taps and ordinary scrolling near card right edges still work. Continue and return-to-top remain usable; final books are not covered.
+- [ ] Rescan: completion notice has a readable message, distinct aligned **scan details** action and easy close control. Details still lists added/skipped/error information. Multiple notices stack and dismiss smoothly; interacting pauses dismissal.
+- [ ] Inspect icons across library, book details, settings, notices and reader: established Material outline icons are consistent and meaningful. Icon-only controls have useful TalkBack labels.
+- [ ] Repeat reader controls/search, library, notices and settings at 150% text and in landscape. Use TalkBack on the advanced-search switch, search action, TOC, bookmarks and scrollbar; no unnamed new control or unreachable action.
+- [ ] Retest cold-launch last book, rotation, background/foreground, saved position/bookmarks, brightness and volume-key turns. Confirm explicitly when M2 is accepted for merge.
+
+Coverage: corrupted content/image viewer/selection → steps 2–5; tap zones/swipe cancellation/system edges/dividers → 6–9; HUD/status/padding/progress/page wording/TOC → 10–12; explicit and advanced search → 13–15; draggable scrollbar/notices/icons → 16–18; accessibility/regression → 19–20.
+
+Install `app/build/outputs/apk/release/deft-0.2.3.apk` over the existing Deft installation. Keep app data. Start with **0.2.3 — device feedback retest** below; earlier results and your comments are preserved as history. This includes the final M1 fixes already merged into main. M2 remains unmerged until you approve this checklist. Tick only steps actually tested, and put observations/screenshots under the relevant section or in `plans/feedback/`.
 
 Suggested samples: two ordinary EPUBs with several chapters, one illustrated EPUB, a long chapter, non-Latin text, a protected EPUB if available, a damaged copy, one valid TTF/OTF and one invalid font file. Use disposable copies for missing/changed/forget checks. PDF and other formats are scanned/listed, but reading them belongs to later milestones.
 

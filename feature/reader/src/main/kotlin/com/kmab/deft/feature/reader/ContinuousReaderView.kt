@@ -155,8 +155,9 @@ internal class ContinuousReaderView(
             ): Boolean = delegate.onActionItemClicked(mode, item)
 
             override fun onDestroyActionMode(mode: ActionMode) {
+                // Android recreates the floating toolbar while a selection handle moves.
+                // The native delegate owns dismissal; clearing ranges here cancels that selection.
                 delegate.onDestroyActionMode(mode)
-                script("deftContinuous.clearSelection();")
             }
         }
 

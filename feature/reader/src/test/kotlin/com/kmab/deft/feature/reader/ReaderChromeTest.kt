@@ -4,10 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
@@ -26,6 +30,8 @@ import com.kmab.deft.core.database.entity.BookmarkEntity
 import com.kmab.deft.core.model.ReaderThemes
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,49 +52,65 @@ class ReaderChromeTest {
 
     @After fun restoreFontScale() = RuntimeEnvironment.setFontScale(1f)
 
+    @Test fun nativeSurfacesStayDistinctAndReadableInEveryReaderTheme() {
+        val theme = mutableStateOf(ReaderThemes.builtIn.first())
+        var scheme: ColorScheme? = null
+        compose.setContent { ReaderTheme(theme.value) { scheme = MaterialTheme.colorScheme } }
+        ReaderThemes.builtIn.forEach { choice ->
+            compose.runOnIdle { theme.value = choice }
+            compose.waitForIdle()
+            compose.runOnIdle {
+                val colors = requireNotNull(scheme)
+                assertNotEquals(colors.background, colors.surface)
+                assertTrue(contrast(colors.onSurface, colors.surface) >= 4.5f)
+                assertTrue(contrast(colors.primary, colors.surface) >= 4.5f)
+            }
+        }
+    }
+
     @OptIn(ExperimentalRoborazziApi::class)
     @Test
     fun largeTextChromeKeepsActionsAccessibleAndReturnsAfterJump() {
         RuntimeEnvironment.setFontScale(1.5f)
         val state =
             mutableStateOf(
-                ReaderChromeState("Chapter two", 0.35f, "section 2 of 8", listOf(0f, 0.2f, 0.5f), false, true, true),
+                ReaderChromeState(
+                    "The quiet afternoon",
+                    0.35f,
+                    "Chapter two",
+                    listOf(0f, 0.2f, 0.5f),
+                    false,
+                    true,
+                    true,
+                ),
             )
         var back = 0
         var contents = 0
         var settings = 0
         var returns = 0
         compose.setContent {
-            ReaderTheme(ReaderThemes.builtIn.first()) {
-                Box(
-                    Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).testTag("reader_reference"),
-                ) {
-                    Text(
-                        "A quiet afternoon\n\nThe path turned toward the old house. " +
-                            "Beyond the trees, the last light settled on the garden.",
-                        Modifier.padding(horizontal = 28.dp, vertical = 150.dp),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    ReaderChrome(
-                        true,
-                        state.value,
-                        { back++ },
-                        { contents++ },
-                        { settings++ },
-                        { state.value = state.value.copy(bookmarked = !state.value.bookmarked) },
-                        {},
-                        {
-                            returns++
-                            state.value = state.value.copy(canReturn = false)
-                        },
-                    )
-                }
+            ReaderReference {
+                ReaderChrome(
+                    true,
+                    state.value,
+                    { back++ },
+                    { contents++ },
+                    { settings++ },
+                    { state.value = state.value.copy(bookmarked = !state.value.bookmarked) },
+                    {},
+                    {
+                        returns++
+                        state.value = state.value.copy(canReturn = false)
+                    },
+                )
             }
         }
         listOf("Close reader", "Contents and bookmarks", "Add bookmark", "Reading settings", "Book progress").forEach {
             compose.onNodeWithContentDescription(it).assertIsDisplayed()
         }
         compose.onNodeWithText("go back to where I was").assertIsDisplayed()
+        compose.onNodeWithText("The quiet afternoon").assertIsDisplayed()
+        compose.onNodeWithText("Chapter two").assertIsDisplayed()
         val output = File("build/reports/screenshots/reader-chrome-large-text.png").apply { parentFile?.mkdirs() }
         compose.onNodeWithTag("reader_reference").captureRoboImage(
             output.path,
@@ -103,6 +125,23 @@ class ReaderChromeTest {
         compose.onNodeWithContentDescription("Close reader").performClick()
         assertEquals(listOf(1, 1, 1, 1), listOf(back, contents, settings, returns))
         assertEquals(false, state.value.bookmarked)
+    }
+
+    @Composable
+    private fun ReaderReference(content: @Composable () -> Unit) {
+        ReaderTheme(ReaderThemes.builtIn.first()) {
+            Box(
+                Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).testTag("reader_reference"),
+            ) {
+                Text(
+                    "A quiet afternoon\n\nThe path turned toward the old house. " +
+                        "Beyond the trees, the last light settled on the garden.",
+                    Modifier.padding(horizontal = 28.dp, vertical = 150.dp),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                content()
+            }
+        }
     }
 
     @Test fun contentsNavigatesAndBookmarksCanBeRenamedAndRemoved() {
@@ -140,5 +179,14 @@ class ReaderChromeTest {
         compose.onNodeWithContentDescription("Remove Return here").performClick()
         compose.onNodeWithText("No bookmarks yet. Use the bookmark button to save your place.").assertIsDisplayed()
         assertEquals(emptyList<BookmarkEntity>(), saved.value)
+    }
+
+    private fun contrast(
+        first: Color,
+        second: Color,
+    ): Float {
+        val a = first.luminance()
+        val b = second.luminance()
+        return (maxOf(a, b) + 0.05f) / (minOf(a, b) + 0.05f)
     }
 }

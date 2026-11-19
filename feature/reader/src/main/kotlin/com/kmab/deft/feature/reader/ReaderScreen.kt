@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -40,6 +41,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
@@ -66,6 +68,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
@@ -151,7 +154,15 @@ internal fun ReaderScreen(
                         Modifier
                             .fillMaxSize()
                             .displayCutoutPadding()
-                            .then(if (preferences.fullScreen) Modifier else Modifier.systemBarsPadding()),
+                            .then(
+                                if (preferences.fullScreen) {
+                                    Modifier
+                                } else {
+                                    Modifier.systemBarsPadding().padding(
+                                        top = 12.dp,
+                                    )
+                                },
+                            ),
                     ) {
                         AndroidView(
                             factory = { context ->
@@ -160,6 +171,7 @@ internal fun ReaderScreen(
                                     model.interaction::userInput,
                                     { navigator.handlesSwipes },
                                     navigator::swipe,
+                                    { navigator.nativeSwipes },
                                 ).apply {
                                     id = R.id.reader_navigator
                                     addOnAttachStateChangeListener(
@@ -285,33 +297,39 @@ internal fun ReaderTheme(
     val accent by animateColorAsState(Color(parseColor(theme.accent)), label = "reader accent")
     val dark = background.luminance() < DARK_LUMINANCE
     val base = if (dark) DeftColors.Ink else DeftColors.Paper
+    val surface = text.copy(alpha = SURFACE_TINT_ALPHA).compositeOver(background)
+    val surface2 = text.copy(alpha = SURFACE_TINT_ALPHA).compositeOver(surface)
+    val controlText = readableControlColor(text, surface2)
+    val controlAccent = readableControlColor(accent, surface2)
     val colors =
         base.copy(
             bg = background,
-            surface = background,
-            surface2 = text.copy(alpha = SURFACE_TINT_ALPHA).compositeOver(background),
-            text = text,
-            muted = text.copy(alpha = 0.75f),
-            accent = accent,
-            accentText = accent,
+            surface = surface,
+            surface2 = surface2,
+            text = controlText,
+            muted = controlText.copy(alpha = 0.85f),
+            accent = controlAccent,
+            accentText = controlAccent,
             onAccent = background,
             line = text.copy(alpha = 0.15f),
             line2 = text.copy(alpha = DARK_LUMINANCE),
         )
     val scheme =
         (if (dark) darkColorScheme() else lightColorScheme()).copy(
-            primary = accent,
+            primary = controlAccent,
             onPrimary = background,
             background = background,
             onBackground = text,
-            surface = background,
-            onSurface = text,
+            surface = surface,
+            onSurface = controlText,
             surfaceVariant = colors.surface2,
             onSurfaceVariant = colors.muted,
+            secondaryContainer = colors.surface2,
+            onSecondaryContainer = controlText,
             outline = colors.line2,
-            surfaceTint = background,
+            surfaceTint = surface,
         )
-    CompositionLocalProvider(LocalDeftColors provides colors) {
+    CompositionLocalProvider(LocalDeftColors provides colors, LocalContentColor provides text) {
         MaterialTheme(
             colorScheme = scheme,
             typography = DeftTypography.material,
@@ -319,6 +337,21 @@ internal fun ReaderTheme(
             content = content,
         )
     }
+}
+
+/** Keep custom reader hues while ensuring labels still contrast against raised controls. */
+private fun readableControlColor(
+    color: Color,
+    background: Color,
+): Color {
+    fun contrast(candidate: Color): Float =
+        (maxOf(candidate.luminance(), background.luminance()) + WCAG_LUMINANCE_OFFSET) /
+            (minOf(candidate.luminance(), background.luminance()) + WCAG_LUMINANCE_OFFSET)
+    if (contrast(color) >= MIN_CONTROL_CONTRAST) return color
+    val target = if (contrast(Color.White) > contrast(Color.Black)) Color.White else Color.Black
+    return (1..CONTROL_COLOR_STEPS)
+        .map { lerp(color, target, it.toFloat() / CONTROL_COLOR_STEPS) }
+        .firstOrNull { contrast(it) >= MIN_CONTROL_CONTRAST } ?: target
 }
 
 internal data class ReaderChromeState(
@@ -333,7 +366,7 @@ internal data class ReaderChromeState(
 
 private fun ReaderState.chromeState() =
     ReaderChromeState(
-        title = locator?.title?.takeIf { it.isNotBlank() } ?: session?.title.orEmpty(),
+        title = session?.title.orEmpty(),
         progress = (locator?.locations?.totalProgression ?: 0.0).toFloat().coerceIn(0f, 1f),
         section = sectionLabel(this),
         ticks = session?.let(::chapterTicks).orEmpty(),
@@ -376,7 +409,11 @@ internal fun ReaderChrome(
         ) {
             Surface(shadowElevation = 3.dp) {
                 Row(
-                    Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .heightIn(min = 72.dp)
+                        .padding(horizontal = 4.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(onClick = onBack) { Icon(DeftActionIcons.Back, "Close reader") }
@@ -409,7 +446,7 @@ internal fun ReaderChrome(
                 fadeOut() + slideOutVertically { it },
         ) {
             Surface(shadowElevation = 3.dp) {
-                Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 4.dp)) {
+                Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 18.dp, vertical = 4.dp)) {
                     if (state.canReturn) {
                         TextButton(onClick = {
                             onInteraction()
@@ -421,7 +458,10 @@ internal fun ReaderChrome(
                         }
                     }
                     val target = progressTarget(positions, slider ?: progress)
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Text(
                             if (slider !=
                                 null
@@ -472,7 +512,11 @@ internal fun ReaderChrome(
                                 )
                             }
                         },
-                        modifier = Modifier.height(40.dp).semantics { contentDescription = "Book progress" },
+                        modifier =
+                            Modifier.fillMaxWidth().height(32.dp).semantics {
+                                contentDescription =
+                                    "Book progress"
+                            },
                     )
                 }
             }
@@ -486,16 +530,20 @@ private fun chapterTicks(session: ReaderSession): List<Float> =
             it.href
         }.mapNotNull { it.locations.totalProgression?.toFloat() }
 
-private fun sectionLabel(state: ReaderState): String {
-    val links =
+private fun sectionLabel(state: ReaderState): String =
+    chapterLabel(
+        state.locator,
+        state.session
+            ?.opened
+            ?.publication
+            ?.tableOfContents
+            .orEmpty(),
         state.session
             ?.opened
             ?.publication
             ?.readingOrder
-            .orEmpty()
-    val index = links.indexOfFirst { it.url().removeFragment() == state.locator?.href?.removeFragment() }
-    return if (index >= 0) "section ${index + 1} of ${links.size}" else "reading progress"
-}
+            .orEmpty(),
+    )
 
 @Composable
 private fun ReaderStatus(
@@ -515,12 +563,13 @@ private fun ReaderStatus(
             delay(STATUS_REFRESH_MILLIS)
         }
     }
-    Row(modifier.padding(horizontal = 18.dp, vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(modifier.padding(horizontal = 24.dp, vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(
             progressLabel((state.locator?.locations?.totalProgression ?: 0.0).toFloat(), positions, showLocations),
             style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onBackground,
         )
-        Text(status, style = MaterialTheme.typography.labelSmall)
+        Text(status, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onBackground)
     }
 }
 
@@ -562,13 +611,17 @@ private fun ReaderSheets(
         when (sheet) {
             ReaderSheet.SEARCH -> {
                 val search by model.search.state.collectAsStateWithLifecycle()
+                val advanced by model.advancedSearch.collectAsStateWithLifecycle()
                 ReaderSearchPanel(
                     search,
-                    { model.search.query(it, state.session?.opened?.publication) },
+                    model.search::edit,
                     {
                         navigator?.go(it)
                         dismiss()
                     },
+                    submit = { model.search.submit(state.session?.opened?.publication) },
+                    advanced = advanced,
+                    options = model.search::options,
                 )
             }
             ReaderSheet.SETTINGS -> ReaderPreferencesPanel(Modifier.fillMaxWidth(), manageAssets = false)
@@ -599,7 +652,10 @@ private fun ReaderSheets(
 }
 
 private const val DARK_LUMINANCE = 0.3f
-private const val SURFACE_TINT_ALPHA = 0.08f
+private const val SURFACE_TINT_ALPHA = 0.12f
+private const val MIN_CONTROL_CONTRAST = 4.5f
+private const val CONTROL_COLOR_STEPS = 20
+private const val WCAG_LUMINANCE_OFFSET = 0.05f
 private const val PERCENT_SCALE = 100
 private const val STATUS_REFRESH_MILLIS = 30_000L
 

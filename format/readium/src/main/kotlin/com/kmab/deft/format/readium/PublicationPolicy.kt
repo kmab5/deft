@@ -47,6 +47,7 @@ object PublicationPolicy {
                     "input, button, textarea, select, meta[http-equiv], meta[charset]",
             ).remove()
         cleanElements(document)
+        preservePublisherRootStyle(document)
         document.head().prependElement("meta").attr("charset", "utf-8")
         document
             .head()
@@ -54,6 +55,17 @@ object PublicationPolicy {
             .attr("http-equiv", "Content-Security-Policy")
             .attr("content", CSP)
         return document.outerHtml()
+    }
+
+    /** Readium 3.2 inserts its own root style attribute instead of merging an existing one. */
+    private fun preservePublisherRootStyle(document: Document) {
+        val root = document.selectFirst("html") ?: return
+        val css = root.attr("style")
+        if (!root.hasAttr("style")) return
+        root.removeAttr("style")
+        if (css.isNotBlank()) {
+            document.head().appendElement("style").appendText(":root{$css}")
+        }
     }
 
     fun sanitizeSvg(bytes: ByteArray): String =

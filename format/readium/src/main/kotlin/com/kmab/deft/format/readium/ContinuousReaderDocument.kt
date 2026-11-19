@@ -15,6 +15,8 @@ object ContinuousReaderDocument {
             <style>
             html,body{margin:0;padding:0;overflow-anchor:none;overscroll-behavior-x:none;background:transparent}
             body{overflow-x:hidden}main,section{display:block;position:relative;width:100%;margin:0;padding:0}
+            section+section::before{content:"";position:absolute;z-index:1;top:0;left:24px;right:24px;
+            height:1px;background:currentColor;opacity:.2;pointer-events:none}
             iframe{display:block;width:100%;border:0;margin:0;padding:0;overflow:hidden}
             </style>
             <script type="application/json" id="deft-chapters">$manifest</script>

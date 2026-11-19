@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import com.kmab.deft.core.model.ReaderThemes
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -60,6 +61,17 @@ class ReaderContentsTest {
         compose.onNodeWithTag("reader_contents_list").performScrollToIndex(0)
         compose.onNodeWithContentDescription("expand Chapter 0").performClick()
         compose.onNodeWithText("Section 0").assertIsDisplayed()
+        val parentLeft =
+            compose
+                .onNodeWithText("Chapter 0")
+                .fetchSemanticsNode()
+                .boundsInRoot.left
+        val childLeft =
+            compose
+                .onNodeWithText("Section 0")
+                .fetchSemanticsNode()
+                .boundsInRoot.left
+        assertTrue("A nested title must start after its parent's title", childLeft > parentLeft)
         assertEquals(0, navigations)
         compose.runOnIdle { shown.value = false }
         compose.onNodeWithText("Section 0").assertDoesNotExist()

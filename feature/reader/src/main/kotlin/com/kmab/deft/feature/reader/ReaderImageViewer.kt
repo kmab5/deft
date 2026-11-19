@@ -80,21 +80,7 @@ internal fun ReaderImageViewer(
                                     setSupportZoom(true)
                                 }
                                 webViewClient =
-                                    object : WebViewClient() {
-                                        override fun shouldOverrideUrlLoading(
-                                            view: WebView,
-                                            request: WebResourceRequest,
-                                        ) = true
-
-                                        override fun shouldInterceptRequest(
-                                            view: WebView,
-                                            request: WebResourceRequest,
-                                        ) = WebResourceResponse(
-                                            "text/plain",
-                                            "UTF-8",
-                                            ByteArrayInputStream(byteArrayOf()),
-                                        )
-                                    }
+                                    ReaderImageWebViewClient()
                                 loadDataWithBaseURL(null, content.html, "text/html", "UTF-8", null)
                             }
                         },
@@ -106,6 +92,24 @@ internal fun ReaderImageViewer(
             }
         }
     }
+}
+
+internal class ReaderImageWebViewClient : WebViewClient() {
+    override fun shouldOverrideUrlLoading(
+        view: WebView,
+        request: WebResourceRequest,
+    ) = true
+
+    override fun shouldInterceptRequest(
+        view: WebView,
+        request: WebResourceRequest,
+    ): WebResourceResponse? =
+        if (request.url.toString().startsWith("data:image/")) {
+            // WebView also intercepts data URLs. Returning empty bytes here hides our own image.
+            null
+        } else {
+            WebResourceResponse("text/plain", "UTF-8", ByteArrayInputStream(byteArrayOf()))
+        }
 }
 
 private data class ImageContent(

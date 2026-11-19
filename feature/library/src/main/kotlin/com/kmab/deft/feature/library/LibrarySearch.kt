@@ -72,12 +72,35 @@ internal fun LibrarySearch(
 }
 
 /** Search refines the active format/missing filters and preserves the selected ordering. */
-internal fun List<BookListItem>.searchBooks(query: String): List<BookListItem> {
-    val words = query.trim().split(Regex("\\s+")).filter(String::isNotEmpty)
-    if (words.isEmpty()) return this
-    return filter { book ->
-        words.all { word ->
-            book.title.contains(word, ignoreCase = true) || book.authorsDisplay.contains(word, ignoreCase = true)
-        }
+internal fun List<BookListItem>.searchBooks(
+    query: String,
+    options: com.kmab.deft.core.model.SearchOptions =
+        com.kmab.deft.core.model
+            .SearchOptions(),
+): List<BookListItem> {
+    if (query.isBlank()) return this
+    require(query.length <= com.kmab.deft.core.model.SearchPattern.MAX_PATTERN_LENGTH) {
+        "Use a search pattern of at most 256 characters."
     }
+    val queries = if (options.regex) listOf(query) else query.trim().split(Regex("\\s+"))
+    val patterns =
+        queries.map {
+            com.kmab.deft.core.model.SearchPattern
+                .compile(it, options)
+        }
+    return filter { book -> patterns.all { it.contains(book.title) || it.contains(book.authorsDisplay) } }
+}
+
+@Composable
+internal fun LibrarySearchFilters(
+    advanced: Boolean,
+    options: com.kmab.deft.core.model.SearchOptions,
+    onOptions: (com.kmab.deft.core.model.SearchOptions) -> Unit,
+    result: Result<List<BookListItem>>,
+) {
+    if (advanced) {
+        com.kmab.deft.core.designsystem
+            .SearchOptionsControls(options, onOptions)
+    }
+    result.exceptionOrNull()?.message?.let { Text(it, Modifier.padding(horizontal = 16.dp)) }
 }

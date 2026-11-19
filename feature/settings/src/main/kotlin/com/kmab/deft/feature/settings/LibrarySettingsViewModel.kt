@@ -58,6 +58,8 @@ class LibrarySettingsViewModel
             scheduler.scanNow()
         }
 
+        fun advancedSearch(value: Boolean) = perform { settings.setAdvancedSearch(value) }
+
         fun scanNow() = scheduler.scanNow()
 
         private fun perform(action: suspend () -> Unit) =

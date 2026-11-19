@@ -45,6 +45,7 @@ data class BooksUiState(
     val listSize: BookDisplaySize = BookDisplaySize.MEDIUM,
     val hasScanDetails: Boolean = false,
     val continueReading: BookListItem? = null,
+    val advancedSearch: Boolean = false,
 )
 
 private data class BookQuery(
@@ -132,6 +133,7 @@ class BooksViewModel
                     result.query.settings.listSize,
                     hasScanDetails = scan.report != null || (scan.isFinished && scan.workId != null),
                     continueReading = recent,
+                    advancedSearch = result.query.settings.advancedSearch,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), BooksUiState())
 

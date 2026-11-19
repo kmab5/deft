@@ -1,8 +1,9 @@
 package com.kmab.deft.feature.reader
 
+import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 
-/** EPUB locations are stable text positions, not screen-sized or printed pages. */
+/** Reflowable page labels use stable EPUB positions so changing typography does not renumber them. */
 internal fun progressTarget(
     positions: List<Locator>,
     progress: Float,
@@ -17,26 +18,32 @@ internal fun progressLabel(
 ): String {
     if (showLocations && positions.isNotEmpty()) {
         val location = progressTarget(positions, progress)?.locations?.position ?: 1
-        return "location $location / ${positions.size}"
+        return "page $location / ${positions.size}"
     }
     return "${(progress.coerceIn(0f, 1f) * PERCENT).toInt()}%"
 }
 
 internal fun ReaderSession.progressPositions(): List<Locator> {
     val publication = opened.publication
-    val names = publication.tableOfContents.flattenLinks().associate { it.url().removeFragment() to it.title }
     return positions.map { locator ->
-        if (locator.title.isNullOrBlank()) {
-            val title =
-                names[locator.href.removeFragment()]
-                    ?: "section ${publication.readingOrder.indexOfFirst {
-                        it.url().removeFragment() == locator.href.removeFragment()
-                    } + 1}"
-            locator.copy(title = title)
-        } else {
-            locator
-        }
+        locator.copy(title = chapterLabel(locator, publication.tableOfContents, publication.readingOrder))
     }
+}
+
+internal fun chapterLabel(
+    locator: Locator?,
+    contents: List<Link>,
+    readingOrder: List<Link>,
+): String {
+    val href = locator?.href
+    val entries = contents.flattenLinks()
+    val named =
+        entries.firstOrNull { it.url() == href && !it.title.isNullOrBlank() }
+            ?: entries.firstOrNull { it.url().removeFragment() == href?.removeFragment() && !it.title.isNullOrBlank() }
+    val index = readingOrder.indexOfFirst { it.url().removeFragment() == href?.removeFragment() }
+    return locator?.title?.takeIf(String::isNotBlank) ?: named?.title
+        ?: readingOrder.getOrNull(index)?.title?.takeIf(String::isNotBlank)
+        ?: if (index >= 0) "chapter ${index + 1}" else "reading progress"
 }
 
 private fun List<org.readium.r2.shared.publication.Link>.flattenLinks(

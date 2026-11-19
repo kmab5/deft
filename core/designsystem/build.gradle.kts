@@ -3,6 +3,8 @@ plugins {
     id("deft.android.compose")
 }
 dependencies {
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
+    implementation(project(":core:model"))
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.github.takahirom.roborazzi:roborazzi:1.59.0")
     testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:1.59.0")

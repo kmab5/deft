@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -111,6 +112,20 @@ fun LibrarySettingsScreen(
                 },
             )
             LibraryFileTypes(settings, viewModel::format)
+            Row(
+                Modifier.fillMaxWidth().toggleable(
+                    value = settings.advancedSearch,
+                    role = Role.Switch,
+                    onValueChange = viewModel::advancedSearch,
+                ),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                    Text("advanced search", style = DeftTypography.title)
+                    Text("Case, whole words and regex in your library and books.", style = DeftTypography.body)
+                }
+                androidx.compose.material3.Switch(settings.advancedSearch, onCheckedChange = null)
+            }
             IgnoredBooksEntry(onIgnoredBooks)
             LibraryStorageSection(scan.isScanning)
         }

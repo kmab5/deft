@@ -25,6 +25,16 @@ class LibrarySearchTest {
         assertEquals(emptyList<Long>(), books.searchBooks("earthsea herbert").map { it.id })
     }
 
+    @Test fun advancedOptionsApplyToBothTitlesAndAuthors() {
+        val options =
+            com.kmab.deft.core.model
+                .SearchOptions(regex = true)
+        assertEquals(listOf(8L, 3L), books.searchBooks("Guin|Earthsea", options).map { it.id })
+        assertEquals(emptyList<Long>(), books.searchBooks("guin", options.copy(matchCase = true)).map { it.id })
+        assertEquals(emptyList<Long>(), books.searchBooks("Dark", options.copy(wholeWord = true)).map { it.id })
+        assertEquals(listOf(8L), books.searchBooks("Darkness", options.copy(wholeWord = true)).map { it.id })
+    }
+
     private fun book(
         id: Long,
         title: String,

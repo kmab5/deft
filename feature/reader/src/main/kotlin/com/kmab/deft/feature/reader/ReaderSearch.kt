@@ -10,21 +10,33 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.kmab.deft.core.designsystem.SearchOptionsControls
+import com.kmab.deft.core.model.SearchOptions
+import com.kmab.deft.core.model.SearchPattern
+import com.kmab.deft.format.readium.searchText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,8 +44,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
-import org.readium.r2.shared.publication.services.search.SearchIterator
-import org.readium.r2.shared.publication.services.search.search
 import kotlin.coroutines.coroutineContext
 
 internal data class ReaderSearchState(
@@ -41,9 +51,11 @@ internal data class ReaderSearchState(
     val searching: Boolean = false,
     val results: List<Locator> = emptyList(),
     val error: String? = null,
+    val options: SearchOptions = SearchOptions(),
+    val submitted: Boolean = false,
 )
 
-/** A cancellable, publication-local search; each query owns and closes its iterator. */
+/** A cancellable, publication-local search; each submitted query closes its chapter resources. */
 internal class ReaderSearch(
     private val scope: CoroutineScope,
 ) {
@@ -51,33 +63,61 @@ internal class ReaderSearch(
     val state = mutableState.asStateFlow()
     private var job: Job? = null
 
+    fun edit(text: String) {
+        job?.cancel()
+        mutableState.update {
+            it.copy(
+                query = text,
+                searching = false,
+                results = emptyList(),
+                error = null,
+                submitted = false,
+            )
+        }
+    }
+
+    fun options(value: SearchOptions) {
+        job?.cancel()
+        mutableState.update {
+            it.copy(options = value, searching = false, results = emptyList(), error = null, submitted = false)
+        }
+    }
+
+    fun submit(publication: Publication?) = query(state.value.query, publication)
+
     fun query(
         text: String,
         publication: Publication?,
     ) {
         job?.cancel()
-        mutableState.value = ReaderSearchState(query = text, searching = text.isNotBlank())
-        if (text.isBlank() || publication == null) {
-            mutableState.update { it.copy(searching = false) }
-            return
-        }
+        val options = state.value.options
+        mutableState.value = ReaderSearchState(query = text, options = options, submitted = true)
+        if (text.isBlank() || publication == null) return
+        val pattern =
+            try {
+                SearchPattern.compile(if (options.regex) text else text.trim(), options)
+            } catch (error: IllegalArgumentException) {
+                mutableState.update { it.copy(error = error.message) }
+                return
+            }
+        mutableState.update { it.copy(searching = true) }
         job =
             scope.launch {
-                delay(SEARCH_DELAY)
                 try {
-                    val iterator = publication.search(text.trim())
-                    if (iterator == null) {
-                        mutableState.update { it.copy(searching = false, error = "This book cannot be searched.") }
-                        return@launch
-                    }
-                    try {
-                        var more = true
-                        while (more) {
-                            more = readSearchPage(iterator)
-                        }
-                        mutableState.update { it.copy(searching = false) }
-                    } finally {
-                        iterator.close()
+                    val result = publication.searchText(pattern, RESULT_LIMIT)
+                    coroutineContext.ensureActive()
+                    mutableState.update {
+                        it.copy(
+                            searching = false,
+                            results = result.locators,
+                            error =
+                                if (result.incomplete) {
+                                    "Search is limited to 500 matches and bounded chapters. " +
+                                        "Refine your search; some text may be omitted."
+                                } else {
+                                    null
+                                },
+                        )
                     }
                 } catch (cancel: CancellationException) {
                     throw cancel
@@ -92,33 +132,6 @@ internal class ReaderSearch(
             }
     }
 
-    private suspend fun readSearchPage(iterator: SearchIterator): Boolean {
-        val page = iterator.next()
-        coroutineContext.ensureActive()
-        val results = page.getOrNull()?.locators
-        return when {
-            page.isFailure -> {
-                mutableState.update { it.copy(error = "Some of this book could not be searched.") }
-                false
-            }
-            results == null -> false
-            else -> {
-                mutableState.update { it.copy(results = (it.results + results).take(RESULT_LIMIT)) }
-                val limitReached = mutableState.value.results.size >= RESULT_LIMIT
-                if (limitReached) {
-                    mutableState.update {
-                        it.copy(
-                            error =
-                                "Showing the first $RESULT_LIMIT matches. " +
-                                    "Refine your search for more precise results.",
-                        )
-                    }
-                }
-                !limitReached
-            }
-        }
-    }
-
     fun cancel() {
         job?.cancel()
         mutableState.update { it.copy(searching = false) }
@@ -130,6 +143,9 @@ internal fun ReaderSearchPanel(
     state: ReaderSearchState,
     query: (String) -> Unit,
     select: (Locator) -> Unit,
+    submit: () -> Unit = {},
+    advanced: Boolean = false,
+    options: (SearchOptions) -> Unit = {},
 ) {
     Column(Modifier.fillMaxWidth().heightIn(max = 620.dp).padding(horizontal = 20.dp)) {
         Text("search this book", style = MaterialTheme.typography.titleLarge)
@@ -137,13 +153,25 @@ internal fun ReaderSearchPanel(
             value = state.query,
             onValueChange = query,
             label = { Text("word or phrase") },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            modifier =
+                Modifier.fillMaxWidth().padding(vertical = 12.dp).onPreviewKeyEvent {
+                    if (it.key == Key.Enter || it.key == Key.NumPadEnter) {
+                        if (it.type == KeyEventType.KeyUp) submit()
+                        true
+                    } else {
+                        false
+                    }
+                },
             singleLine = true,
+            trailingIcon = { TextButton(onClick = submit) { Text("Search") } },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { submit() }),
         )
+        if (advanced) SearchOptionsControls(state.options, options)
         if (state.searching) LinearProgressIndicator(Modifier.fillMaxWidth())
         Text(
             state.error ?: when {
-                state.query.isBlank() -> "Search the text in this book."
+                !state.submitted || state.query.isBlank() -> "Search the text in this book."
                 state.searching -> "Searching · ${state.results.size} results"
                 state.results.isEmpty() -> "No matches. Try another word or phrase."
                 else -> "${state.results.size} results"
@@ -179,5 +207,4 @@ internal fun ReaderSearchPanel(
     }
 }
 
-private const val SEARCH_DELAY = 300L
 private const val RESULT_LIMIT = 500

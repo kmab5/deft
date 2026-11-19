@@ -103,7 +103,7 @@ Offered, in this order: **original** (the book's own fonts, i.e. publisher defau
 
 ## 5. Iconography
 
-- **Lucide** (ISC) redrawn to kmab's grammar: 24dp grid, 1.75 stroke, square caps, square joins. Ship them as Compose `ImageVector`s in `core/designsystem/icons/`. Include only the icons used.
+- **Material Outlined** vectors from AndroidX Compose Material Icons (Apache-2.0), at 24dp. Use shared aliases in `core/designsystem/icons/` and auto-mirrored directional variants. Do not handcraft action icons. R8 retains only referenced vectors. This replaces the earlier redrawn Lucide grammar following device feedback.
 - Outline only. Don't mix filled and outline icons in one group. The single exception: the **favourite heart fills** when on.
 - Sizes 16, 20, 24. Pair any icon whose meaning isn't obvious with a label.
 - Icon colour follows meaning: `accent` for active/current, `finished` for success, `paused` for non-critical; otherwise `muted`.
@@ -274,7 +274,7 @@ Vertical full-bleed pages, one stat each, swiped like a story: the big number in
 
 ### 11.8 reader
 Content full-bleed. A tap in the centre reveals two bars, coloured from the reader theme and fading over `medium`:
-- **Top bar:** back, chapter title, then four icons: contents, search, bookmark, and **one settings button** (sliders icon).
+- **Top bar:** back, book title, then search, contents, bookmark, and **one settings button** (sliders icon). Give the bar at least 72dp height and a distinct control surface. The chapter name belongs above the bottom progress track, opposite percentage or page position; align labels with the track endpoints.
 - **Bottom bar:** chapter progress slider with chapter ticks, and one mono line: "ch. 7 of 22 · 43% · 2h 10m left".
 
 **All reading settings live behind that one button** (as in Lithium): a single sheet with three tabs and a sliding 2dp indicator:

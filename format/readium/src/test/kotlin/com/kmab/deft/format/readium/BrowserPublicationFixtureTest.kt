@@ -9,15 +9,79 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.readium.r2.navigator.epub.css.ReadiumCss
+import org.readium.r2.navigator.epub.css.UserProperties
 import org.readium.r2.shared.util.Url
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
+import java.util.zip.ZipFile
 
 /** Exports production-sanitized content and the dependency's real assets for Chromium verification. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class BrowserPublicationFixtureTest {
+    /** Optional local diagnostic; never exports or commits the reader's book content. */
+    @Test fun localDiagnosticBookSurvivesNormalizationAndActualReadiumInjection() {
+        val path = System.getenv("DEFT_READER_DIAGNOSTIC_EPUB")
+        org.junit.Assume.assumeTrue("Optional local EPUB diagnostic", !path.isNullOrBlank())
+        val source = File(requireNotNull(path))
+        val before =
+            java.security.MessageDigest
+                .getInstance("SHA-256")
+                .digest(source.readBytes())
+        var checked = 0
+        ZipFile(source).use { archive ->
+            archive
+                .entries()
+                .asSequence()
+                .filter {
+                    it.name.substringAfterLast('.').lowercase() in setOf("xhtml", "html", "htm")
+                }.forEach { entry ->
+                    val bytes = archive.getInputStream(entry).use { it.readBytes() }
+                    val normalized = PublicationPolicy.sanitizeHtml(bytes)
+                    val injected =
+                        ReadiumCss(
+                            assetsBaseHref = requireNotNull(Url("https://readium_assets/")),
+                            userProperties = UserProperties(advancedSettings = true),
+                        ).injectHtml(normalized)
+                    javax.xml.parsers.DocumentBuilderFactory
+                        .newInstance()
+                        .newDocumentBuilder()
+                        .parse(injected.toByteArray().inputStream())
+                    checked++
+                }
+        }
+        assertTrue(checked > 0)
+        assertTrue(
+            before.contentEquals(
+                java.security.MessageDigest
+                    .getInstance("SHA-256")
+                    .digest(source.readBytes()),
+            ),
+        )
+    }
+
+    @Test fun publisherRootStyleSurvivesReadiumInjectionWithoutDuplicateAttributes() {
+        val normalized =
+            PublicationPolicy.sanitizeHtml(
+                """<html xmlns="http://www.w3.org/1999/xhtml" style="font-size:1.136rem;color:#352010">
+                <head><title>Publisher styles</title></head><body><p>Healthy chapter.</p></body></html>""",
+            )
+        val injected =
+            ReadiumCss(
+                assetsBaseHref = requireNotNull(Url("https://readium_assets/")),
+                userProperties = UserProperties(advancedSettings = true),
+            ).injectHtml(normalized)
+        val parsed =
+            javax.xml.parsers.DocumentBuilderFactory
+                .newInstance()
+                .newDocumentBuilder()
+                .parse(injected.toByteArray().inputStream())
+        assertTrue(parsed.documentElement.textContent.contains("Healthy chapter."))
+        assertTrue(injected.contains("font-size:1.136rem"))
+        assertTrue(injected.contains("--USER__advancedSettings"))
+    }
+
     @Test fun exportSanitizedPublicationThroughTheActualReadiumCssInjector() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val directory = File("build/browser-fixture").apply { mkdirs() }
@@ -28,7 +92,7 @@ class BrowserPublicationFixtureTest {
         }
         val original =
             """
-            <html xmlns="http://www.w3.org/1999/xhtml"><head><title>Rendering regression</title>
+            <html xmlns="http://www.w3.org/1999/xhtml" style="font-size:1.136rem"><head><title>Rendering regression</title>
             <style>@font-face {font-family:Probe;src:url('https://readium_package/__deft_fonts/probe.font')}</style>
             <script>window.bookScriptRan=true</script></head><body onload="window.bookHandlerRan=true">
             <h1>Chapter one</h1><p id="sample">A readable paragraph with a local image.</p>
@@ -38,8 +102,10 @@ class BrowserPublicationFixtureTest {
             """.trimIndent()
         val sanitized = PublicationPolicy.sanitizeHtml(original)
         val injected =
-            ReadiumCss(assetsBaseHref = requireNotNull(Url("https://readium_assets/")))
-                .injectHtml(sanitized)
+            ReadiumCss(
+                assetsBaseHref = requireNotNull(Url("https://readium_assets/")),
+                userProperties = UserProperties(advancedSettings = true),
+            ).injectHtml(sanitized)
                 .replace(
                     "</head>",
                     "<script src=\"https://readium_assets/readium/scripts/readium-reflowable.js\"></script></head>",

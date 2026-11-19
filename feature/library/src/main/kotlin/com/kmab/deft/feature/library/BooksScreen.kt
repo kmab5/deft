@@ -88,7 +88,16 @@ fun BooksScreen(
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var previousQuery by remember { mutableStateOf(query) }
-    val visibleBooks = remember(state.books, query) { state.books.searchBooks(query) }
+    var searchOptions by remember {
+        mutableStateOf(
+            com.kmab.deft.core.model
+                .SearchOptions(),
+        )
+    }
+    val activeOptions = searchOptions.enabledWhen(state.advancedSearch)
+    val searchResult =
+        remember(state.books, query, activeOptions) { runCatching { state.books.searchBooks(query, activeOptions) } }
+    val visibleBooks = searchResult.getOrDefault(emptyList())
     val scroll = rememberLibraryScrollState(state.gridView)
     LaunchedEffect(query) {
         if (query != previousQuery) {
@@ -145,10 +154,13 @@ fun BooksScreen(
             }
         }
         AnimatedVisibility(searching) {
-            LibrarySearch(query, { query = it }, {
-                searching = false
-                query = ""
-            })
+            Column {
+                LibrarySearch(query, { query = it }, {
+                    searching = false
+                    query = ""
+                })
+                LibrarySearchFilters(state.advancedSearch, searchOptions, { searchOptions = it }, searchResult)
+            }
         }
         AnimatedVisibility(state.continueReading != null && scroll.showHeader) {
             state.continueReading?.let { book -> ContinueReadingCard(book, loader) { onContinueReading(book.id) } }
@@ -241,7 +253,8 @@ private fun BooksCollection(
                 contentPadding =
                     androidx.compose.foundation.layout.PaddingValues(
                         start = 16.dp,
-                        end = 16.dp,
+                        // Keep book hit targets outside the scrollbar's dedicated 48 dp gutter.
+                        end = 56.dp,
                         top = 12.dp,
                         bottom = 144.dp,
                     ),
@@ -267,7 +280,8 @@ private fun BooksCollection(
                 contentPadding =
                     androidx.compose.foundation.layout.PaddingValues(
                         start = 16.dp,
-                        end = 16.dp,
+                        // Keep book hit targets outside the scrollbar's dedicated 48 dp gutter.
+                        end = 56.dp,
                         top = 12.dp,
                         bottom = 144.dp,
                     ),
@@ -370,3 +384,11 @@ private data class BookLayout(
     val gridSize: BookDisplaySize,
     val listSize: BookDisplaySize,
 )
+
+private fun com.kmab.deft.core.model.SearchOptions.enabledWhen(enabled: Boolean) =
+    if (enabled) {
+        this
+    } else {
+        com.kmab.deft.core.model
+            .SearchOptions()
+    }

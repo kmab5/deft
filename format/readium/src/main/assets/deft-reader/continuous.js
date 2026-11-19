@@ -131,6 +131,7 @@
       (doc.head || doc.documentElement).appendChild(style);
     }
     style.textContent = suppliedCss + "\n" + baseline;
+    root.style.color = getComputedStyle(doc.documentElement).color;
   }
 
   function configure(css) {
@@ -157,7 +158,7 @@
       if (selection() || performance.now() - selectionChangedAt < 350) return;
       if (down && (performance.now() - down.at > 450 ||
           Math.hypot(event.clientX - down.x, event.clientY - down.y) > 12)) return;
-      const image = target.closest("img,image");
+      const image = target.closest("img,image") || target.closest("svg")?.querySelector("image");
       if (image) {
         event.preventDefault();
         const source = image.currentSrc || image.getAttribute("src") || image.getAttribute("href") || image.getAttribute("xlink:href");

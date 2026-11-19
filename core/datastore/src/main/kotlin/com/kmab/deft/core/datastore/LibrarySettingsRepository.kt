@@ -27,6 +27,7 @@ class LibrarySettingsRepository
                     enabledFormats =
                         p[FORMATS]?.mapNotNull { name -> BookFormat.entries.find { it.name == name } }?.toSet()
                             ?: BookFormat.entries.toSet(),
+                    advancedSearch = p[ADVANCED_SEARCH] ?: false,
                     showMissing = p[MISSING] ?: false,
                     sort = BookSort.entries.find { it.name == p[SORT] } ?: BookSort.TITLE,
                     gridView = p[GRID] ?: true,
@@ -60,6 +61,10 @@ class LibrarySettingsRepository
             }
         }
 
+        suspend fun setAdvancedSearch(value: Boolean) {
+            store.edit { it[ADVANCED_SEARCH] = value }
+        }
+
         suspend fun setShowMissing(value: Boolean) {
             store.edit { it[MISSING] = value }
         }
@@ -91,6 +96,7 @@ class LibrarySettingsRepository
         private companion object {
             val FORMATS = stringSetPreferencesKey("enabled_formats")
             val FILTER_FORMATS = stringSetPreferencesKey("book_format_filter")
+            val ADVANCED_SEARCH = booleanPreferencesKey("advanced_search")
             val MISSING = booleanPreferencesKey("show_missing")
             val SORT = stringPreferencesKey("book_sort")
             val GRID = booleanPreferencesKey("grid_view")

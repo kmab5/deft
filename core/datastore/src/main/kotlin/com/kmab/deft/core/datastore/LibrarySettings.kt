@@ -15,4 +15,5 @@ data class LibrarySettings(
     val gridSize: BookDisplaySize = BookDisplaySize.MEDIUM,
     val listSize: BookDisplaySize = BookDisplaySize.MEDIUM,
     val formatFilter: Set<BookFormat> = BookFormat.entries.toSet(),
+    val advancedSearch: Boolean = false,
 )

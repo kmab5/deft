@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -70,6 +71,7 @@ internal fun ReaderContentsPanel(
     val bookmarks = state.bookmarks
     var editing by remember { mutableStateOf<BookmarkEntity?>(null) }
     val tree = remember(contents) { contentsTree(contents) }
+    val hasGroups = remember(tree) { tree.any { it.link.children.isNotEmpty() } }
     val active =
         remember(tree, currentHref) {
             tree.firstOrNull { it.link.url() == currentHref }
@@ -157,6 +159,7 @@ internal fun ReaderContentsPanel(
                         { state.toggle(chapter.key) },
                         { onChapter(chapter.link) },
                         Modifier.animateItem(),
+                        reserveDisclosure = hasGroups,
                     )
                 }
             }
@@ -209,6 +212,7 @@ private fun ContentsRow(
     toggle: () -> Unit,
     open: () -> Unit,
     modifier: Modifier = Modifier,
+    reserveDisclosure: Boolean = true,
 ) {
     val title = row.link.title?.takeIf(String::isNotBlank) ?: "untitled section"
     val angle by animateFloatAsState(if (expanded) EXPANDED_ROTATION else 0f, label = "chapter expansion")
@@ -227,6 +231,10 @@ private fun ContentsRow(
                     Modifier.rotate(angle),
                 )
             }
+        } else if (reserveDisclosure) {
+            // Reserve the disclosure column so a child label is genuinely indented
+            // beyond its parent, rather than jumping left when it has no chevron.
+            Spacer(Modifier.width(48.dp))
         }
         Text(
             title,
@@ -306,7 +314,7 @@ private val ContentsStateSaver =
     )
 
 private const val VISIBLE_TOC_DEPTH = 4
-private const val TOC_INDENT = 12
+private const val TOC_INDENT = 24
 private const val PERCENT_SCALE = 100
 private const val BOOKMARK_LABEL_LIMIT = 240
 private const val MAX_TOC_DEPTH = 12

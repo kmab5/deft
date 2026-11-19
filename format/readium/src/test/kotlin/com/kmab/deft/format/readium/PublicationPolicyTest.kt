@@ -8,6 +8,22 @@ import java.io.StringReader
 import javax.xml.parsers.DocumentBuilderFactory
 
 class PublicationPolicyTest {
+    @Test fun duplicateAttributesAndTruncatedMarkupPreserveHealthyPassages() {
+        val html =
+            PublicationPolicy.sanitizeHtml(
+                """<html><head><title>Damaged</title></head><body><p id="before">Before damage.</p>
+                <p style="color:red" style="color:blue">Recovered passage.</p><p id="after">After damage.""",
+            )
+        val document =
+            DocumentBuilderFactory
+                .newInstance()
+                .newDocumentBuilder()
+                .parse(html.toByteArray().inputStream())
+        assertTrue(document.documentElement.textContent.contains("Before damage."))
+        assertTrue(document.documentElement.textContent.contains("Recovered passage."))
+        assertTrue(document.documentElement.textContent.contains("After damage."))
+    }
+
     @Test fun truncatedMarkupStillProducesAReadableWellFormedChapter() {
         val html =
             PublicationPolicy.sanitizeHtml(
