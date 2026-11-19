@@ -23,6 +23,15 @@ python scripts/verify-release.py
 
 The first command creates the persistent private release identity once; subsequent runs preserve it. Back it up securely. See [release signing](plans/release-signing.md) for local and CI setup. The signed, R8-minified and resource-shrunk APK is `app/build/outputs/apk/release/app-release.apk`.
 
+After `check`, real-browser EPUB regressions can run with the already-installed Chromium and Node 22+ (no downloads):
+
+```sh
+node format/readium/src/test/browser/verify-reader.cjs
+node scripts/tests/test_continuous_reader.cjs
+```
+
+The first consumes the real publication/font fixtures exported by the unit tests; the second verifies continuous chapter scrolling and resource isolation.
+
 The foundation app has no `INTERNET` permission. `checkNetworkIsolation` rejects HTTP-client dependencies outside the future explicit matching module. The planned edition-matching feature will be the only user-requested network path.
 
 Component screenshot tests compare ink/paper galleries, dialogs and sheets with committed PNGs. To intentionally update baselines, run `./gradlew :core:designsystem:testDebugUnitTest -Pdeft.recordScreenshots=true` (quote the dotted `-P` argument in PowerShell), then inspect every changed image. Normal `check` never updates baselines.

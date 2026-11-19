@@ -247,3 +247,18 @@ Keep the original results/comments above. Record this version's results here. Th
 - [ ] Reader Page settings: disable tap-edge turns. Edge taps now toggle controls instead of turning; swipes and optional volume keys still work. Re-enable and verify left/right turns return.
 - [ ] Disable fullscreen reading: system bars remain visible when HUD hides, with no overlap over book text/status. Re-enable fullscreen and verify immersive reading and transient system bars.
 - [ ] Choose portrait, landscape, then system orientation. Each behaves as labelled; changing the setting preserves the passage and settings sheet. Close/reopen and verify the preference persists.
+
+
+## Verified 0.2.2 release
+
+- APK: `app/build/outputs/apk/release/deft-0.2.2.apk`, **5,896,135 bytes** (5.62 MiB). Install over 0.2.1 without uninstalling.
+- Version **0.2.2**, internal **0.2.2-1**, versionCode **20201**.
+- Source commit: `b37f231c3b473bdfa44b5acc601f513a9693abb8`; the APK's embedded version-control record matches it. Later handover documentation does not change application source.
+- SHA-256: `bd19df04783d188e9a9d9e971d9f1a2d8aa062d5b0d1ce0ce73818728cf1517a`.
+- Persistent certificate SHA-256: `adea6ec2edf4e9e2d809ed06300729e35ca156c06072736717b4a27449233e50`. The existing key was reused; no credentials are committed.
+- `./gradlew check assembleRelease` passed: **539 test executions, 0 failures, 0 errors, 0 skipped**, including debug/release Android variants. ktlint, detekt, Android lint, network isolation and font budget checks passed. Four Python release-tooling tests passed.
+- Installed Chromium verified actual sanitized EPUB resources and Readium scripts/styles, **33 font faces**, local images and live typography/theme changes. Reintroducing the legacy CSP in an isolated fixture reproduced the original blocked-script failure. Continuous-scroll checks passed adjacent chapters in one viewport, wheel crossing, resource/CSS isolation, repeated-search-result context, reflow, selection, missing-chapter recovery and bounded frames.
+- The whole-change audit and focused follow-ups have no remaining actionable critical/important findings. Normal/large-text book details, settings and compact reader controls were inspected; visual reference: `plans/design/m2-feedback.html`.
+- The source-stamped `:app:assembleRelease` passed after committing verified code. The release verifier confirmed certificate, application identity/version, no INTERNET permission and R8 mapping. R8 minification and resource shrinking remain enabled.
+- APK, mapping and hash/source evidence are archived locally at `.superpowers/releases/0.2.2/`. Verification logs: `.superpowers/0.2.2-verified-check-release.log`, `.superpowers/0.2.2-stamped-release.log`, `.superpowers/0.2.2-reader-browser.log`, `.superpowers/0.2.2-continuous-browser.log`.
+- No connected Android device or installed emulator was available. Actual phone gestures, rendering, lifecycle and accessibility remain unchecked until the device retest above. M2 remains on `feat/m2-epub-reader` pending acceptance; GitHub CI is not awaited.
