@@ -4,26 +4,44 @@
 
 All original 0.2.2 comments/results remain below. This section covers every new comment and the seven November 19 screenshots. Later milestone boundaries remain unchanged.
 
-- [ ] Update from 0.2.2 to **0.2.3** without uninstalling. Folders, library filters/sort, reader settings, positions and bookmarks remain.
-- [ ] Open **H Is for Homicide — Sue Grafton**. The formerly broken chapter renders without the duplicate-style error. Move through several chapters, switch paged/continuous mode and change typography. Original book files remain unchanged.
-- [ ] Open a disposable malformed or missing-chapter EPUB. Healthy text/chapters remain usable; any unreadable chapter does not trap navigation or prevent opening another book. An unreadable whole archive can still report an opening error.
-- [ ] Tap a raster image and an SVG cover. Image appears in its separate viewer; pinch zoom and pan work. Close or press Back and confirm the reading passage is unchanged. Repeat offline.
-- [ ] Long-press text, drag each selection handle, then release. Selection stays visible in paged and continuous modes; normal navigation returns after dismissing it. Copy still works.
-- [ ] In paged mode, test left/right taps across the outer **40%** on each side; the center **20%** toggles controls. Disabled tap-edge turns still toggles controls everywhere.
-- [ ] With Slide animation, slowly drag horizontally: the page follows your finger. Return more than halfway toward the drag origin and release: the turn cancels. Try both directions and chapter boundaries. Vertical drags/pinch must not turn pages.
-- [ ] Swipe from either very edge for Android Back/system bars in fullscreen. This must not also turn a page. Repeat with gesture and three-button system navigation if available, animation None and Android animations disabled.
-- [ ] Continuous reading shows a subtle horizontal divider between chapters. Scroll through boundaries and change typography without losing the nearby passage.
-- [ ] Try Light, Sepia, Dark, Black and a custom theme: HUD and sheets are visibly distinct from the book background. Hidden-HUD status text changes with the theme and has side padding. Nonfullscreen reading leaves additional space below the system status bar.
-- [ ] The taller top bar shows the **book title**; the bottom shows the **chapter name**, percentage or **page** position. Slider endpoints align with the labels. Scrubbing previews a chapter and navigates on release; Jump Back still works. EPUB pages are reflowable position estimates, not printed-page numbers.
-- [ ] Expand/collapse a nested TOC: children are clearly indented beyond their parent. Reopen after scrolling/jumping; list state and current chapter remain useful.
-- [ ] In-book search does not execute while typing. Tap the right-hand **search** action or keyboard Search/Enter to run it. Check results, no results, clearing, cancellation and Back to the original passage.
-- [ ] Settings → Library → **advanced search** starts off. Enable it; both library and book search show match-case, whole-word and regex controls. Turn it off and verify those options no longer affect results. Restart Deft and verify the global setting persists.
-- [ ] Test literal search, case-sensitive words, whole words, and regex such as `chapter [0-9]+`. An invalid pattern produces a readable error. Lookaround/backreferences are unsupported and explained. A broad pattern such as `.*` shows compact results and keeps the app responsive. Repeated matching passages navigate to their respective positions.
-- [ ] In grid and list, drag the larger scrollbar handle to the middle and bottom. After it fades, book taps and ordinary scrolling near card right edges still work. Continue and return-to-top remain usable; final books are not covered.
-- [ ] Rescan: completion notice has a readable message, distinct aligned **scan details** action and easy close control. Details still lists added/skipped/error information. Multiple notices stack and dismiss smoothly; interacting pauses dismissal.
-- [ ] Inspect icons across library, book details, settings, notices and reader: established Material outline icons are consistent and meaningful. Icon-only controls have useful TalkBack labels.
-- [ ] Repeat reader controls/search, library, notices and settings at 150% text and in landscape. Use TalkBack on the advanced-search switch, search action, TOC, bookmarks and scrollbar; no unnamed new control or unreachable action.
-- [ ] Retest cold-launch last book, rotation, background/foreground, saved position/bookmarks, brightness and volume-key turns. Confirm explicitly when M2 is accepted for merge.
+- [X] Update from 0.2.2 to **0.2.3** without uninstalling. Folders, library filters/sort, reader settings, positions and bookmarks remain.
+- [X] Open **H Is for Homicide — Sue Grafton**. The formerly broken chapter renders without the duplicate-style error. Move through several chapters, switch paged/continuous mode and change typography. Original book files remain unchanged.
+- [-] Open a disposable malformed or missing-chapter EPUB. Healthy text/chapters remain usable; any unreadable chapter does not trap navigation or prevent opening another book. An unreadable whole archive can still report an opening error.
+- [\] Tap a raster image and an SVG cover. Image appears in its separate viewer; pinch zoom and pan work. Close or press Back and confirm the reading passage is unchanged. Repeat offline.
+- [X] Long-press text, drag each selection handle, then release. Selection stays visible in paged and continuous modes; normal navigation returns after dismissing it. Copy still works.
+- [X] In paged mode, test left/right taps across the outer **40%** on each side; the center **20%** toggles controls. Disabled tap-edge turns still toggles controls everywhere.
+-- make it smaller a bit, 35% for each side, 30% for the center
+- [/] With Slide animation, slowly drag horizontally: the page follows your finger. Return more than halfway toward the drag origin and release: the turn cancels. Try both directions and chapter boundaries. Vertical drags/pinch must not turn pages.
+-- slowly dragging always cancels a page turn even if the new page is more than halfway visible on the screen
+- [X] Swipe from either very edge for Android Back/system bars in fullscreen. This must not also turn a page. Repeat with gesture and three-button system navigation if available, animation None and Android animations disabled.
+- [X] Continuous reading shows a subtle horizontal divider between chapters. Scroll through boundaries and change typography without losing the nearby passage.
+- [X] Try Light, Sepia, Dark, Black and a custom theme: HUD and sheets are visibly distinct from the book background. Hidden-HUD status text changes with the theme and has side padding. Nonfullscreen reading leaves additional space below the system status bar.
+- [X] The taller top bar shows the **book title**; the bottom shows the **chapter name**, percentage or **page** position. Slider endpoints align with the labels. Scrubbing previews a chapter and navigates on release; Jump Back still works. EPUB pages are reflowable position estimates, not printed-page numbers.
+- [X] Expand/collapse a nested TOC: children are clearly indented beyond their parent. Reopen after scrolling/jumping; list state and current chapter remain useful.
+- [X] In-book search does not execute while typing. Tap the right-hand **search** action or keyboard Search/Enter to run it. Check results, no results, clearing, cancellation and Back to the original passage.
+- [X] Settings → Library → **advanced search** starts off. Enable it; both library and book search show match-case, whole-word and regex controls. Turn it off and verify those options no longer affect results. Restart Deft and verify the global setting persists.
+- [X] Test literal search, case-sensitive words, whole words, and regex such as `chapter [0-9]+`. An invalid pattern produces a readable error. Lookaround/backreferences are unsupported and explained. A broad pattern such as `.*` shows compact results and keeps the app responsive. Repeated matching passages navigate to their respective positions.
+- [X] In grid and list, drag the larger scrollbar handle to the middle and bottom. After it fades, book taps and ordinary scrolling near card right edges still work. Continue and return-to-top remain usable; final books are not covered.
+- [/] Rescan: completion notice has a readable message, distinct aligned **scan details** action and easy close control. Details still lists added/skipped/error information. Multiple notices stack and dismiss smoothly; interacting pauses dismissal.
+- [X] Inspect icons across library, book details, settings, notices and reader: established Material outline icons are consistent and meaningful. Icon-only controls have useful TalkBack labels.
+- [-] Repeat reader controls/search, library, notices and settings at 150% text and in landscape. Use TalkBack on the advanced-search switch, search action, TOC, bookmarks and scrollbar; no unnamed new control or unreachable action.
+- [X] Retest cold-launch last book, rotation, background/foreground, saved position/bookmarks, brightness and volume-key turns. Confirm explicitly when M2 is accepted for merge.
+
+
+----
+
+- add more margin to the top of the text of the book even for full screen reading (not too much)
+- add padding above the chapter name in the bottom bar of the hud
+- Make the title in the title bar of the reader much bigger
+- the margin/padding/placement of the advanced search options is off, same with the help text that pops up, put it in an elevated card, make them align with everything else
+- the image viewer is still not working, just a blank screen with the close icon
+- it says external links stay closed ..., instead it should show a prompt asking whether the user is sure about opening a link at "domain name" then when the user confirms, open it in their default browser
+- on in book search results, show which chapter and which page the search result is found in
+- when trying to accomodate for the bigger thumb size of the scroll, you messed up the sizing of the grid/list display, i need it to be the same as before (the sizing), however, the scroll bar now works and is draggable, its okay if the scroll bar and the books overlap (scroll bar itself is higher so it takes priority)
+- the scan complete notification is still off, why does the scan details have an entire line of its own? make it directly underneath scan complete
+- i discovered a bug, when i spam clicked the back button from a book page, the screen just blanks. same with any back button. when i spam click any of them, they just blank out the screen. there is a screen recording of one of these incidents.
+
+----
 
 Coverage: corrupted content/image viewer/selection → steps 2–5; tap zones/swipe cancellation/system edges/dividers → 6–9; HUD/status/padding/progress/page wording/TOC → 10–12; explicit and advanced search → 13–15; draggable scrollbar/notices/icons → 16–18; accessibility/regression → 19–20.
 
