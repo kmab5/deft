@@ -205,48 +205,72 @@ Keep the original results/comments above. Record this version's results here. Th
 
 ### Update, library and details
 
-- [ ] Install `deft-0.2.2.apk` over 0.2.1 without uninstalling. Library folders, filters/sort, books, reader preferences, positions and bookmarks remain.
-- [ ] Search Books by title, author and words split across both. Case and surrounding spaces do not matter. Search respects current filters and sort. Clear and close restore the previous collection; an unmatched query offers a useful empty state.
-- [ ] The floating Continue opens the latest readable book at its saved position, even when search/filter results exclude that book. With no eligible book it is absent.
-- [ ] Scroll down in both grid and list: the top Continue summary hides. Scroll up: it returns and a return-to-top button appears. Press that button and verify the top is reached smoothly.
-- [ ] A scrollbar appears during scrolling and fades after stopping. Reach the final book and ensure floating buttons do not cover its actions or metadata.
-- [ ] Rescan and inspect the bottom completion notice: message, details action and close control align without crowding. Tap details and verify named added/skipped/error information still works. Notices dismiss automatically and stack safely.
-- [ ] Settings → Library: folder, add/exclude-folder and rescan icons have consistent geometry. Background scan/resume and filter/sort persistence still work.
-- [ ] Book detail: Read/Continue sits to the right of the cover at its bottom; description has its own subtle card. Repeat with a long title, absent metadata and 150% text; all content/actions remain reachable.
-- [ ] Inspect the launcher icon in a circular and rounded-square mask if available: more space surrounds the shorter book mark, with no clipping.
+- [X] Install `deft-0.2.2.apk` over 0.2.1 without uninstalling. Library folders, filters/sort, books, reader preferences, positions and bookmarks remain.
+- [X] Search Books by title, author and words split across both. Case and surrounding spaces do not matter. Search respects current filters and sort. Clear and close restore the previous collection; an unmatched query offers a useful empty state.
+-- allow users to turn on/off more advanced searching in settings (implement advanced searching into features, including regex support)
+- [X] The floating Continue opens the latest readable book at its saved position, even when search/filter results exclude that book. With no eligible book it is absent.
+- [X] Scroll down in both grid and list: the top Continue summary hides. Scroll up: it returns and a return-to-top button appears. Press that button and verify the top is reached smoothly.
+- [X] A scrollbar appears during scrolling and fades after stopping. Reach the final book and ensure floating buttons do not cover its actions or metadata.
+-- its a bit too small to actually jold and drag, give it a bit more of a handle
+- [/] Rescan and inspect the bottom completion notice: message, details action and close control align without crowding. Tap details and verify named added/skipped/error information still works. Notices dismiss automatically and stack safely.
+-- it still needs work
+- [/] Settings → Library: folder, add/exclude-folder and rescan icons have consistent geometry. Background scan/resume and filter/sort persistence still work.
+-- yes they are better now but why are we using handcrafted icons? cant we use other sources of icons? like composable icons? crafting everything by seems like asking for errors down the line and we cant make them customizable/reactive as it would take too much effort, for the entire app (here are some suggestions for vector Composable icon libraries: compose-icons (by DevSrSouza / Composable Horizons), composablehorizons/compose-icons, Material Symbols & Material Design Icons, Simple Icons (Brand/Logo Icons))
+- [X] Book detail: Read/Continue sits to the right of the cover at its bottom; description has its own subtle card. Repeat with a long title, absent metadata and 150% text; all content/actions remain reachable.
+- [X] Inspect the launcher icon in a circular and rounded-square mask if available: more space surrounds the shorter book mark, with no clipping.
 
 ### EPUB content and navigation
 
-- [ ] Open the two previously affected books and a book with images, CSS, headings, bold/italic and local links. Text and images render correctly; changing font, size, line height, margins, alignment or hyphenation visibly changes the publication body.
-- [ ] Try original, left and justified alignment, publisher-original font, several bundled families and an imported font. Close/reopen the book and open a different book: the same global preferences apply.
-- [ ] Try Light, Sepia, Dark, Black and a custom theme. Book background/text/links and native reader UI agree, including already-visited neighboring chapters. Test system day/night switching.
-- [ ] In paged mode, horizontal swipes and left/right taps turn pages. Vertical gestures do not turn pages. Pinching does not zoom the book. Repeat with page animation None and Android animations disabled.
-- [ ] In scroll mode, scroll across chapter boundaries in both directions. Adjacent chapters form one vertical reading flow, without horizontal chapter paging. Change typography near a boundary and verify the current passage remains nearby.
-- [ ] Center-tap to hide/show reader controls. Leave revealed controls idle and verify dismissal. Open a sheet and interact with it: it must stay open. The enabled status line is visible when controls hide.
-- [ ] Long-press text and drag both selection handles near page edges. Selection must remain stable without accidentally turning pages. Cancel selection and verify normal page navigation returns.
-- [ ] Expand/collapse nested TOC groups. Open a chapter, reopen contents and verify the current chapter is visible. Scroll the list, close/reopen it and verify that list position is retained.
-- [ ] Drag the progress slider: chapter/progress preview changes before release. Release to navigate. The footer has no tiny section-divider ticks and uses compact spacing.
-- [ ] Reader settings → Page → progress display: switch percentage/page number. The number denotes EPUB locations and must not claim printed page numbers. Check hidden-HUD status and visible progress controls.
-- [ ] Make several jumps using TOC, slider, search and an internal link. System Back returns through those prior positions in order. Ordinary page turns do not add extra jump entries. Sheets/search/image viewer close before Back traverses reading history.
-- [ ] Search a word appearing in multiple chapters. Inspect snippets, open a result and verify its passage. Back returns to the starting passage. Test no matches, clearing, a new query and closing during search.
-- [ ] Tap a local image. The separate viewer shows only that image and close control. Pinch, pan, close and use system Back; the reader position is unchanged. Repeat with a large image and SVG cover if present.
-- [ ] Add a bookmark from the reader, find it through the clearly labelled bookmarks entry, rename it, reopen the app, navigate to it and remove it. Notes/highlights remain outside this milestone.
+- [X] Open the two previously affected books and a book with images, CSS, headings, bold/italic and local links. Text and images render correctly; changing font, size, line height, margins, alignment or hyphenation visibly changes the publication body.
+-- some ebooks have errors and the app currently just entirely breaks, it should render all the parts EXCEPT the corrupted part (refer to screenshot, i also attached the corrupted ebook that caused that error)
+- [X] Try original, left and justified alignment, publisher-original font, several bundled families and an imported font. Close/reopen the book and open a different book: the same global preferences apply.
+- [X] Try Light, Sepia, Dark, Black and a custom theme. Book background/text/links and native reader UI agree, including already-visited neighboring chapters. Test system day/night switching.
+-- the themes are constant for the app HUD and the book reader, which makes differentiating the book bg with the app bg, keep the app bg distinct
+- [X] In paged mode, horizontal swipes and left/right taps turn pages. Vertical gestures do not turn pages. Pinching does not zoom the book. Repeat with page animation None and Android animations disabled.
+-- the tap area for the left and right are too small, make the split of the screen 2-1-2 for left-center-right tap zones
+- [X] In scroll mode, scroll across chapter boundaries in both directions. Adjacent chapters form one vertical reading flow, without horizontal chapter paging. Change typography near a boundary and verify the current passage remains nearby.
+-- between chapter breaks, add a horizontal line
+- [X] Center-tap to hide/show reader controls. Leave revealed controls idle and verify dismissal. Open a sheet and interact with it: it must stay open. The enabled status line is visible when controls hide.
+- [\] Long-press text and drag both selection handles near page edges. Selection must remain stable without accidentally turning pages. Cancel selection and verify normal page navigation returns.
+-- after long pressing and dragging the handle of the selection, it disappears automatically on release
+- [X] Expand/collapse nested TOC groups. Open a chapter, reopen contents and verify the current chapter is visible. Scroll the list, close/reopen it and verify that list position is retained.
+-- indent the nested contents a bit more
+- [X] Drag the progress slider: chapter/progress preview changes before release. Release to navigate. The footer has no tiny section-divider ticks and uses compact spacing.
+-- instead of "section .. of .." in the bottom bar, show the chapter name, and in the title bar at the top, write the title of the book and make the top bar a bit longer to distinctify it
+- [X] Reader settings → Page → progress display: switch percentage/page number. The number denotes EPUB locations and must not claim printed page numbers. Check hidden-HUD status and visible progress controls.
+-- instead of "location", use "page"
+-- the left and right ends of the progress bar arent aligned with the text above them (the section text and the page text)
+- [X] Make several jumps using TOC, slider, search and an internal link. System Back returns through those prior positions in order. Ordinary page turns do not add extra jump entries. Sheets/search/image viewer close before Back traverses reading history.
+- [X] Search a word appearing in multiple chapters. Inspect snippets, open a result and verify its passage. Back returns to the starting passage. Test no matches, clearing, a new query and closing during search.
+-- the search happens at each change, instead, only run when the user clicks a dedicated search button on the right or clicks enter on their keyboard
+- [/] Tap a local image. The separate viewer shows only that image and close control. Pinch, pan, close and use system Back; the reader position is unchanged. Repeat with a large image and SVG cover if present.
+-- a new window opens with only the close control but the image doesnt show
+- [X] Add a bookmark from the reader, find it through the clearly labelled bookmarks entry, rename it, reopen the app, navigate to it and remove it. Notes/highlights remain outside this milestone.
 
 ### Lifecycle, errors and accessibility
 
-- [ ] Enable Settings → Reader → Page → open last book. Cold-launch Deft and verify the last readable EPUB opens. Back returns to the library without reopening it. Disable the option and cold-launch: library opens normally.
-- [ ] With launch-last-book enabled, ignore/remove the latest book or revoke its folder access. Startup must remain recoverable, without crashing or looping; history stays intact.
-- [ ] Rotate while reading, with settings open, with contents open and after a jump. Passage, reading mode and relevant controls restore. Background/foreground and force-stop/reopen retain saved reading position.
-- [ ] Use a disposable truncated/corrupt EPUB and a book containing a missing chapter/resource. An actionable failure or notice appears, navigation/back remains available, and reopening a healthy book still works.
-- [ ] Airplane mode: local content, fonts, search and image viewer work. Remote images, publisher scripts and external links cannot initiate network/browser access. Original source files remain untouched.
-- [ ] At 150% or larger Android text, inspect library/detail, all reader settings tabs, contents/bookmarks/search and notices in portrait/landscape. No clipped controls or overlapping text; all long content scrolls.
-- [ ] With TalkBack, check search, Continue, return-to-top, TOC expansion, bookmarks, progress and close actions. Disable system animations and repeat navigation; no operation gets stuck waiting for animation.
-- [ ] Retest brightness, volume-key turns, keep-screen-on and status-line toggles. Leaving the reader restores system window behavior.
-- [ ] Overall: compare Deft with the supplied recordings. Note remaining abrupt motion, confusing controls, excess space or content-rendering issues with a screenshot/recording and steps. Confirm explicitly when M2 is accepted for merge.
+- [X] Enable Settings → Reader → Page → open last book. Cold-launch Deft and verify the last readable EPUB opens. Back returns to the library without reopening it. Disable the option and cold-launch: library opens normally.
+- [X] With launch-last-book enabled, ignore/remove the latest book or revoke its folder access. Startup must remain recoverable, without crashing or looping; history stays intact.
+- [X] Rotate while reading, with settings open, with contents open and after a jump. Passage, reading mode and relevant controls restore. Background/foreground and force-stop/reopen retain saved reading position.
+- [\] Use a disposable truncated/corrupt EPUB and a book containing a missing chapter/resource. An actionable failure or notice appears, navigation/back remains available, and reopening a healthy book still works.
+- [X] Airplane mode: local content, fonts, search and image viewer work. Remote images, publisher scripts and external links cannot initiate network/browser access. Original source files remain untouched.
+- [-] At 150% or larger Android text, inspect library/detail, all reader settings tabs, contents/bookmarks/search and notices in portrait/landscape. No clipped controls or overlapping text; all long content scrolls.
+- [-] With TalkBack, check search, Continue, return-to-top, TOC expansion, bookmarks, progress and close actions. Disable system animations and repeat navigation; no operation gets stuck waiting for animation.
+- [/] Retest brightness, volume-key turns, keep-screen-on and status-line toggles. Leaving the reader restores system window behavior.
+-- the status line is still not changing color with the theme (also add just a bit of padding on the right and left)
+- [X] Overall: compare Deft with the supplied recordings. Note remaining abrupt motion, confusing controls, excess space or content-rendering issues with a screenshot/recording and steps. Confirm explicitly when M2 is accepted for merge.
 
-- [ ] Reader Page settings: disable tap-edge turns. Edge taps now toggle controls instead of turning; swipes and optional volume keys still work. Re-enable and verify left/right turns return.
-- [ ] Disable fullscreen reading: system bars remain visible when HUD hides, with no overlap over book text/status. Re-enable fullscreen and verify immersive reading and transient system bars.
-- [ ] Choose portrait, landscape, then system orientation. Each behaves as labelled; changing the setting preserves the passage and settings sheet. Close/reopen and verify the preference persists.
+- [X] Reader Page settings: disable tap-edge turns. Edge taps now toggle controls instead of turning; swipes and optional volume keys still work. Re-enable and verify left/right turns return.
+- [X] Disable fullscreen reading: system bars remain visible when HUD hides, with no overlap over book text/status. Re-enable fullscreen and verify immersive reading and transient system bars.
+-- add a bit more padding on the top when fullscreen reading is turned off
+- [X] Choose portrait, landscape, then system orientation. Each behaves as labelled; changing the setting preserves the passage and settings sheet. Close/reopen and verify the preference persists.
+
+---
+
+- i have put new screenshots, use them as reference
+- the sizing and spacing of the progress bar component on the bottom HUD is off, fix it
+- swipe gestures dont actually move the page moving as i drag my finger, only when i let go does the movement actually happen, allow users to see that movement and allow them to cancel a swipe if they return more than halfway back
+- when dragging from the edges to use the android back, in fullscreen mode, it doesnt back immediately, instead it shows the notification bar, if the user does this action, dont treat this as a next/previous page swipe (i.e. if it is dragged from the very edge of the screen)
 
 
 ## Verified 0.2.2 release
