@@ -12,9 +12,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -99,29 +103,34 @@ private fun BookIdentityPanel(
     ) {
         BoxWithConstraints(Modifier.padding(16.dp)) {
             val availableWidth = maxWidth
-            if (availableWidth >= 520.dp) {
-                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    DetailCover(details, Modifier.width(112.dp))
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        BookIdentity(details)
-                        BookReadAction(details, busy, onRead)
-                        SavedProgress(details)
-                    }
-                }
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    if (availableWidth < 280.dp || fontScale >= LARGE_FONT_SCALE) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                if (availableWidth < 280.dp || fontScale > STACKED_METADATA_FONT_SCALE) {
+                    BookIdentity(details)
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.Bottom,
+                    ) {
                         DetailCover(details, Modifier.width(80.dp))
-                        BookIdentity(details)
-                    } else {
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            DetailCover(details, Modifier.width(if (fontScale > 1f) 80.dp else 104.dp))
-                            BookIdentity(details, Modifier.weight(1f))
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.BottomEnd) {
+                            BookReadAction(details, busy, onRead)
                         }
                     }
-                    BookReadAction(details, busy, onRead)
-                    SavedProgress(details)
+                } else {
+                    Row(
+                        Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.Bottom,
+                    ) {
+                        DetailCover(details, Modifier.width(104.dp))
+                        Column(Modifier.weight(1f).fillMaxHeight()) {
+                            BookIdentity(details)
+                            Spacer(Modifier.weight(1f).height(12.dp))
+                            Box(Modifier.align(Alignment.End)) { BookReadAction(details, busy, onRead) }
+                        }
+                    }
                 }
+                SavedProgress(details)
             }
         }
     }
@@ -175,7 +184,6 @@ private fun BookReadAction(
     DeftButton(
         if (details.book.currentLocator == null) "read" else "continue",
         onRead,
-        modifier = Modifier.fillMaxWidth(),
         enabled = !busy,
         icon = DeftIcons.Books,
     )
@@ -215,7 +223,16 @@ private fun BookDescription(description: String?) {
     if (plain.isNotEmpty()) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SectionTitle("about this book", DeftIcons.Books)
-            Text(plain, style = DeftTypography.body, color = LocalDeftColors.current.text)
+            val colors = LocalDeftColors.current
+            Surface(
+                modifier = Modifier.fillMaxWidth().testTag("book_description"),
+                shape = DeftShapes.card,
+                color = colors.surface,
+                border = BorderStroke(1.dp, colors.line),
+                shadowElevation = 2.dp,
+            ) {
+                Text(plain, Modifier.padding(16.dp), style = DeftTypography.body, color = colors.text)
+            }
         }
     }
 }
@@ -350,5 +367,4 @@ private fun BookDetails.displayTitle(): String = (book.titleOverride ?: book.tit
 private fun BookDetails.displayAuthors(): String = authorsDisplay.trim().ifEmpty { "<no-author>" }
 
 private const val PERCENT_SCALE = 100
-private const val LARGE_FONT_SCALE = 1.8f
 private const val STACKED_METADATA_FONT_SCALE = 1.3f

@@ -34,6 +34,16 @@ internal object LibraryIcons {
             moveTo(18f, 6f)
             lineTo(6f, 18f)
         }
+    val ToTop =
+        icon("scroll to top") {
+            moveTo(5f, 4f)
+            lineTo(19f, 4f)
+            moveTo(12f, 20f)
+            lineTo(12f, 8f)
+            moveTo(6f, 14f)
+            lineTo(12f, 8f)
+            lineTo(18f, 14f)
+        }
     val Ascending =
         icon("ascending") {
             moveTo(7f, 20f)

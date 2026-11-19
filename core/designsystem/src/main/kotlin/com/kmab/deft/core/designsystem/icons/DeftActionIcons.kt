@@ -74,23 +74,25 @@ object DeftActionIcons {
         }
     val Refresh =
         icon("Refresh") {
-            moveTo(20f, 10f)
-            curveTo(18f, 2f, 6f, 2f, 4f, 10f)
-            moveTo(20f, 4f)
-            lineTo(20f, 10f)
-            lineTo(14f, 10f)
-            moveTo(4f, 14f)
-            curveTo(6f, 22f, 18f, 22f, 20f, 14f)
-            moveTo(4f, 20f)
-            lineTo(4f, 14f)
-            lineTo(10f, 14f)
+            moveTo(21f, 10f)
+            curveTo(20.08f, 5.96f, 16.47f, 3f, 12.2f, 3f)
+            curveTo(8.8f, 3f, 5.76f, 4.9f, 4.2f, 7.8f)
+            moveTo(21f, 4f)
+            lineTo(21f, 10f)
+            lineTo(15f, 10f)
+            moveTo(3f, 14f)
+            curveTo(3.92f, 18.04f, 7.53f, 21f, 11.8f, 21f)
+            curveTo(15.2f, 21f, 18.24f, 19.1f, 19.8f, 16.2f)
+            moveTo(3f, 20f)
+            lineTo(3f, 14f)
+            lineTo(9f, 14f)
         }
 
     private fun PathBuilder.folder() {
-        moveTo(3f, 5f)
-        lineTo(9f, 5f)
-        lineTo(11f, 8f)
-        lineTo(21f, 8f)
+        moveTo(3f, 4f)
+        lineTo(9f, 4f)
+        lineTo(12f, 7f)
+        lineTo(21f, 7f)
         lineTo(21f, 20f)
         lineTo(3f, 20f)
         close()
@@ -142,8 +144,10 @@ object DeftActionIcons {
     val Info =
         icon("Info") {
             moveTo(12f, 2f)
-            curveTo(25f, 2f, 25f, 22f, 12f, 22f)
-            curveTo(-1f, 22f, -1f, 2f, 12f, 2f)
+            curveTo(17.52f, 2f, 22f, 6.48f, 22f, 12f)
+            curveTo(22f, 17.52f, 17.52f, 22f, 12f, 22f)
+            curveTo(6.48f, 22f, 2f, 17.52f, 2f, 12f)
+            curveTo(2f, 6.48f, 6.48f, 2f, 12f, 2f)
             moveTo(12f, 11f)
             lineTo(12f, 17f)
             moveTo(12f, 7f)

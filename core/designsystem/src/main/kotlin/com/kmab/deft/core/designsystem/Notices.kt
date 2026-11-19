@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -164,8 +165,8 @@ private fun NoticeCard(
                         pressed = false
                     }
                 }
-            }.padding(start = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            }.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+        verticalAlignment = Alignment.Top,
     ) {
         Icon(
             when (notice.kind) {
@@ -174,16 +175,22 @@ private fun NoticeCard(
                 DeftNoticeKind.Info -> DeftActionIcons.Info
             },
             null,
-            Modifier.size(20.dp),
+            Modifier.padding(top = 12.dp).size(20.dp),
             tint = colors.accentText,
         )
-        Column(Modifier.weight(1f).padding(start = 10.dp, top = 12.dp, bottom = 12.dp)) {
+        Column(Modifier.weight(1f).padding(start = 12.dp, top = 10.dp, bottom = 10.dp)) {
             Text(notice.message, style = DeftTypography.body, color = colors.text)
             if (notice.actionLabel != null && notice.onAction != null) {
-                DeftButton(notice.actionLabel, {
-                    state.dismiss(notice.id)
-                    notice.onAction.invoke()
-                }, style = DeftButtonStyle.Text)
+                TextButton(
+                    onClick = {
+                        state.dismiss(notice.id)
+                        notice.onAction.invoke()
+                    },
+                    modifier = Modifier.align(Alignment.End),
+                    shape = DeftShapes.small,
+                ) {
+                    Text(notice.actionLabel, style = DeftTypography.label, color = colors.accentText)
+                }
             }
         }
         IconButton(onClick = { state.dismiss(notice.id) }) {

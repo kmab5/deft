@@ -11,6 +11,10 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
+import androidx.compose.ui.test.swipeUp
 import androidx.test.core.app.ApplicationProvider
 import com.kmab.deft.core.database.model.BookListItem
 import com.kmab.deft.core.designsystem.DeftTheme
@@ -345,5 +349,81 @@ class BooksScreenTest {
         compose.onNodeWithTag("continue_reading").performClick()
         assertEquals(7L, readId)
         compose.onNodeWithText("25%").assertExists()
+        compose.onNodeWithTag("floating_continue").performClick()
+        assertEquals(7L, readId)
+    }
+
+    @Test fun searchFindsAuthorsAndClearingRestoresTheLibrary() {
+        val books =
+            listOf(
+                BookListItem(
+                    1,
+                    "Earthsea",
+                    "earthsea",
+                    "Ursula Le Guin",
+                    BookFormat.EPUB,
+                    null,
+                    Instant.EPOCH,
+                    false,
+                    false,
+                ),
+                BookListItem(2, "Dune", "dune", "Frank Herbert", BookFormat.EPUB, null, Instant.EPOCH, false, false),
+            )
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    BooksUiState(books = books, isLoading = false, hasFolders = true),
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    { _, _ -> },
+                )
+            }
+        }
+        compose.onNodeWithContentDescription("search books").performClick()
+        compose.onNodeWithTag("library_search").performTextInput("HERBERT")
+        compose.onNodeWithTag("book_2").assertExists()
+        compose.onNodeWithTag("book_1").assertDoesNotExist()
+        compose.onNodeWithContentDescription("clear search").performClick()
+        compose.onNodeWithTag("book_1").assertExists()
+        compose.onNodeWithTag("book_2").assertExists()
+        compose.onNodeWithTag("library_search").performTextInput("not in this library")
+        compose.onNodeWithText("no matching books.").assertExists()
+        compose.onNodeWithText("clear search").performClick()
+        compose.onNodeWithTag("book_1").assertExists()
+    }
+
+    @Test fun scrollingHidesContinueHeaderAndUpwardMotionOffersReturnToTop() {
+        val books =
+            (1L..60L).map {
+                BookListItem(it, "Book $it", "book $it", "Writer", BookFormat.EPUB, null, Instant.EPOCH, false, false)
+            }
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    BooksUiState(books = books, gridView = false, isLoading = false, continueReading = books.first()),
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    { _, _ -> },
+                )
+            }
+        }
+        compose.onNodeWithTag("continue_reading").assertIsDisplayed()
+        compose.onNodeWithTag("book_list").performTouchInput { swipeUp() }
+        compose.onNodeWithTag("book_list").performTouchInput { swipeUp() }
+        compose.onNodeWithTag("continue_reading").assertDoesNotExist()
+        compose.onNodeWithTag("floating_continue").assertIsDisplayed()
+        compose.onNodeWithTag("book_list").performTouchInput { swipeDown(endY = centerY, durationMillis = 800) }
+        compose.onNodeWithTag("continue_reading").assertIsDisplayed()
+        compose.onNodeWithContentDescription("scroll to top").performClick()
+        compose.onNodeWithTag("book_1").assertIsDisplayed()
+        compose.onNodeWithContentDescription("scroll to top").assertDoesNotExist()
     }
 }
