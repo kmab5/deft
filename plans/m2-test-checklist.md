@@ -313,3 +313,19 @@ Keep the original results/comments above. Record this version's results here. Th
 - The source-stamped `:app:assembleRelease` passed after committing verified code. The release verifier confirmed certificate, application identity/version, no INTERNET permission and R8 mapping. R8 minification and resource shrinking remain enabled.
 - APK, mapping and hash/source evidence are archived locally at `.superpowers/releases/0.2.2/`. Verification logs: `.superpowers/0.2.2-verified-check-release.log`, `.superpowers/0.2.2-stamped-release.log`, `.superpowers/0.2.2-reader-browser.log`, `.superpowers/0.2.2-continuous-browser.log`.
 - No connected Android device or installed emulator was available. Actual phone gestures, rendering, lifecycle and accessibility remain unchecked until the device retest above. M2 remains on `feat/m2-epub-reader` pending acceptance; GitHub CI is not awaited.
+
+
+## Verified 0.2.3 release
+
+- APK: `app/build/outputs/apk/release/deft-0.2.3.apk`, **5,967,245 bytes** (5.69 MiB). Install over 0.2.2 without uninstalling.
+- Version **0.2.3**, internal **0.2.3-1**, versionCode **20301**. Persistent release key reused; R8 minification and resource shrinking enabled.
+- Source commit: `be11b9934ff4d1114255d079664624bff2864bcd`; the APK's embedded version-control record matches. Later handover documentation does not change application source.
+- SHA-256: `a37e4a5b7ee1ff438a9ccf6fdc1109576315544be4dd2954af57343d604b36b3`.
+- Certificate SHA-256: `adea6ec2edf4e9e2d809ed06300729e35ca156c06072736717b4a27449233e50`.
+- `./gradlew check assembleRelease` passed after resuming interrupted final packaging. **603 test executions, 0 failures, 0 errors, 0 skipped**, across 132 XML reports including Android debug/release variants. ktlint, detekt, Android lint, network isolation and font budget checks passed. Four Python release-tooling tests passed.
+- Actual Homicide EPUB: all 32 HTML/XHTML resources passed production normalization and real Readium CSS injection; source-file hash was unchanged. Original source content was not committed.
+- Chromium checks passed Readium resources and all 33 font faces; continuous flow, dividers, selection, reflow, local resources and script isolation; PNG/SVG and the actual Homicide JPEG cover rendered, zoomed and panned.
+- Whole-change audit: four actionable findings fixed together; scoped re-review clean. Inspected normal/large-text notices, Material icon renders and large-text reader chrome. Details: `plans/2026-11-20-m2-0.2.3-validation.md` and `plans/design/m2-feedback.html`.
+- Source-stamped `:app:assembleRelease` passed; release verifier confirmed persistent certificate, application/version, no INTERNET permission and R8 mapping. APK/mapping/hash/source evidence archived locally at `.superpowers/releases/0.2.3/`.
+- Logs: `.superpowers/0.2.3-resumed-check-release.log`, `.superpowers/0.2.3-stamped-release.log`, `.superpowers/0.2.3-image-browser.log`. No connected Android device/emulator; native gestures, selection handles and accessibility still require the retest above.
+- Branch remains `feat/m2-epub-reader`; M2 is not merged. GitHub CI is not awaited.
