@@ -6,7 +6,7 @@
 
 **Rule for every milestone:** it ends with an installable app that is better than the previous milestone's, all tests green, CI green, and the design doc updated if a decision changed (add a row to the design doc's Decision log, §20).
 
-**Merged: M2, `v0.2.5-1`. Current handover: M3, `0.3.0-1`, awaiting device acceptance.**
+**Merged: M2, `v0.2.5-1`. Current handover: M3, `0.3.1-1`, awaiting device acceptance.**
 
 **Author-directed handover:** M1 was merged as `v0.1.2-1`. The author passed every 0.2.4 device-retest item and accepted M2, explicitly authorizing final minor polish as `0.2.5-1` followed by a verified merge/tag/push without another feedback round or waiting for GitHub CI. Offline EPUB/library search, image viewing, launch-last-book and navigation refinements are included. M3 tracking/ratings/favorite, M5 highlights/notes and M7/M8 additional formats retain their milestone boundaries. M2 merged with the accepted final version preserved; M3 is next.
 
@@ -32,7 +32,7 @@
 
 ## M3 — Tracking: sessions, read-throughs, states
 **Spec:** §8 (all), §9, §15 (`ReadThrough`, `ReadingSession`).
-**Delivers:** `SessionTracker` driven by `ReaderEvents` + lifecycle (two idle timeouts incl. Off + the 15-min keep-screen-on safety net, `browsing` sessions, min 60 s, 30 s incremental writes, screen-off/background end), read-through state machine with all §8.3 prompts, manual state changes and date editing on the book page, ratings (half-star), favorite, review, haptics (visual §10), the finish celebration + quiet version and the `celebrations` setting (visual §8.1), `feature/celebrate`. Books screen state chips become real. Settings → Tracking.
+**Delivers:** `SessionTracker` driven by `ReaderEvents` + lifecycle (two idle timeouts incl. Off + the 15-min keep-screen-on safety net, `browsing` sessions, default 30 s minimum adjustable 1–300 s, 30 s incremental writes, screen-off/background end), read-through state machine with all §8.3 prompts, manual state changes and date editing on the book page, ratings (half-star), favorite, review, haptics (visual §10), the finish celebration + quiet version and the `celebrations` setting (visual §8.1), `feature/celebrate`. Books screen state chips become real. Settings → Tracking.
 **Acceptance:** fake-clock tests cover every row of §8.3 and every idle/background edge; reading for 3 min with a 6-min idle gap records exactly 3 min.
 **Produces:** `SessionRepository`, `ReadThroughRepository`, `BookState` derivation query used by stats and library filters.
 

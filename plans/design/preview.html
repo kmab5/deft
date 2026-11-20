@@ -214,7 +214,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:square;stro
 .bright{display:flex;align-items:center;gap:10px}
 .bright .slider{flex:1}
 
-/* celebration v2: full screen, auto terminates */
+/* celebration v2: full screen, holds until tap or close */
 .cel{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
 .cel.run{pointer-events:auto}
 .cel canvas{position:absolute;inset:0;width:100%;height:100%}
@@ -247,6 +247,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:square;stro
   <span class="eyebrow">deft · visual design · living preview · v2 · 2026-11-14</span>
   <h1>read like you mean it.</h1>
   <p class="lede">The reference for Deft's look. Written spec: <span class="mono">plans/2026-11-13-deft-visual-design.md</span>; where they disagree, the spec wins.</p>
+  <p class="lede">Latest device-driven layouts: <a href="m3-feedback.html">M3 0.3.1 tracking, book history, appearance and reader status</a>. The Compose renders there supersede the early sketches below, including the held finish celebration.</p>
   <div class="changes"><span>v3: final mark (off-white book, purple ribbon, thinner strokes). v2 changes: mark (b) reworked · lighter purple accent · app type is sans only · reader gets lato, open sans, pt serif, bitter and the book's own font · calmer books screen + filter sheet + list/selection · reader settings behind one button · new full-screen finish that ends by itself · smaller type</span></div>
 </header>
 
@@ -482,7 +483,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:square;stro
       </div>
     </div></div>
 
-    <div class="ph"><span class="eyebrow">finish · full screen, ends by itself (~2.8 s)</span>
+    <div class="ph"><span class="eyebrow">finish · full screen, tap or close to continue</span>
     <div class="phone app ink" id="celphone">
       <div class="sb"><span>9:41</span><span>82%</span></div>
       <div class="scr">
@@ -492,6 +493,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:square;stro
         <div class="pad muted" style="font-size:12.5px">Press “finish” below. Tap during the animation to skip.</div>
         <div class="cel" id="cel">
           <canvas id="burst"></canvas>
+          <button id="cclose" aria-label="close celebration" style="position:absolute;right:12px;top:12px;z-index:6;width:48px;height:48px;border:0;background:none;color:#0E0E11;font-size:30px;opacity:0">×</button>
           <div class="stage">
             <div class="ccov"><div class="art" style="background:#4A2F1F"><span class="t">Middlemarch</span><span class="a">GEORGE ELIOT</span></div></div>
             <div class="word">finished.</div>
@@ -651,7 +653,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:square;stro
   $('rsetbtn').onclick=e=>{e.stopPropagation();reader.classList.add('set');reader.classList.add('hide');};
   page.onclick=()=>{ if(reader.classList.contains('set')){reader.classList.remove('set');return;} reader.classList.toggle('hide'); };
 
-  // ---- celebration v2: full-screen fields + streaks, auto ends
+  // ---- celebration v2: full-screen fields + streaks, holds until dismissed
   const cel=$('cel'), cv=$('burst'), ctx=cv.getContext('2d'), fsheet=$('fsheet');
   const cov=cel.querySelector('.ccov'), word=cel.querySelector('.word'), nums=cel.querySelector('.nums'), pb=cel.querySelector('.pbs .pb');
   const E=t=>1-Math.pow(1-t,3), EI=t=>t*t*t, C=x=>Math.max(0,Math.min(1,x)), S=(t,a,b)=>C((t-a)/(b-a));
@@ -666,8 +668,9 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:square;stro
     // 1. purple flood: diagonal sweep from left (0-380ms)
     const p1=E(S(t,0,380)); // 2. green sweep over purple (300-850ms)
     const p2=E(S(t,300,850));
-    // exit (2300-2800): green slides out to the right revealing the page
-    const px=E(S(t,2300,2800));
+    // The final composition stays in place until the reader dismisses it.
+    const px=0;
+    $('cclose').style.opacity=E(S(t,2300,2800));
     const off=px*(W+sk);
     if(p1>0){ctx.fillStyle='#C373FF';ctx.beginPath();const x=p1*(W+sk);ctx.moveTo(off,0);ctx.lineTo(x+off,0);ctx.lineTo(x-sk+off,H);ctx.lineTo(off-sk,H);ctx.closePath();ctx.fill();}
     if(p2>0){ctx.fillStyle='#3DE08A';ctx.beginPath();const x=p2*(W+sk);ctx.moveTo(off,0);ctx.lineTo(x+off,0);ctx.lineTo(x-sk+off,H);ctx.lineTo(off-sk,H);ctx.closePath();ctx.fill();}
@@ -686,11 +689,11 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:square;stro
     $('ntime').textContent=`${Math.floor(mins/60)}h ${String(mins%60).padStart(2,'0')}m`; $('nsess').textContent=Math.round(k*58); $('ndays').textContent=Math.round(k*41);
     pb.style.transform=`translateX(${(E(S(t,1400,1800))-1)*102 + px*102}%)`;
   }
-  function frame(now){const t=now-t0; draw(t); if(t<END) raf=requestAnimationFrame(frame); else finish();}
-  function finish(){running=false;cel.classList.remove('run');draw(END);fsheet.classList.add('on');}
-  function play(){cancelAnimationFrame(raf);fsheet.classList.remove('on');if(reduce){fsheet.classList.add('on');return;}running=true;cel.classList.add('run');t0=performance.now();raf=requestAnimationFrame(frame);}
+  function frame(now){const t=now-t0; draw(t); if(t<END) raf=requestAnimationFrame(frame);}
+  function finish(){cancelAnimationFrame(raf);running=false;cel.classList.remove('run');ctx.clearRect(0,0,cv.width,cv.height);[cov,word,nums,pb,$('cclose')].forEach(x=>x.style.opacity=0);fsheet.classList.add('on');}
+  function play(){cancelAnimationFrame(raf);fsheet.classList.remove('on');if(reduce){fsheet.classList.add('on');return;}running=true;pb.style.opacity=1;cel.classList.add('run');t0=performance.now();raf=requestAnimationFrame(frame);}
   $('play').onclick=play;
-  cel.onclick=()=>{ if(running){ const t=performance.now()-t0; if(t<2300){ t0=performance.now()-2300; } } };
+  cel.onclick=()=>{if(running)finish();};
   $('fdone').onclick=()=>fsheet.classList.remove('on');
 })();
 </script>
