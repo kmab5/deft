@@ -1,12 +1,19 @@
 package com.kmab.deft.feature.reader
 
 import android.app.Activity
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.os.Bundle
+import android.os.PowerManager
+import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -18,14 +25,32 @@ import dagger.hilt.android.AndroidEntryPoint
 class ReaderActivity : FragmentActivity() {
     private val model: ReaderViewModel by viewModels()
     internal var navigator: ReaderNavigator? = null
-    private val volumeKeys = ReaderVolumeKeys()
+    private val volumeKeys =
+        ReaderVolumeKeys {
+            window.decorView.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+        }
     private lateinit var readerWindow: ReaderWindow
+    private val screenReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context?,
+                intent: Intent?,
+            ) {
+                if (intent?.action == Intent.ACTION_SCREEN_OFF) model.interaction.visibility(false)
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Readium fragments require a live publication in their constructor. Rebuild that fragment
         // explicitly while retaining Compose controls and the rest of Android's saved state.
         super.onCreate(savedInstanceState?.withoutReaderFragmentState())
         readerWindow = ReaderWindow(window)
+        ContextCompat.registerReceiver(
+            this,
+            screenReceiver,
+            IntentFilter(Intent.ACTION_SCREEN_OFF),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
         enableEdgeToEdge()
         model.open(intent.getLongExtra(ReaderLauncher.BOOK_ID, -1L), savedInstanceState?.getString(LOCATION))
         setContent { ReaderScreen(model, this) }
@@ -33,7 +58,7 @@ class ReaderActivity : FragmentActivity() {
 
     override fun onResume() {
         super.onResume()
-        model.interaction.visibility(true)
+        model.interaction.visibility(getSystemService(PowerManager::class.java).isInteractive)
     }
 
     override fun onPause() {
@@ -55,6 +80,7 @@ class ReaderActivity : FragmentActivity() {
     }
 
     override fun onDestroy() {
+        unregisterReceiver(screenReceiver)
         navigator?.detach()
         navigator = null
         resetWindow()
@@ -66,7 +92,9 @@ class ReaderActivity : FragmentActivity() {
         dark: Boolean,
     ) {
         val preferences = model.preferences.value
-        readerWindow.apply(preferences)
+        val tracking = model.trackingState.value
+        val keepAwake = tracking.keepAwake && model.state.value.rendered && !tracking.finishPrompt
+        readerWindow.apply(preferences.copy(keepScreenOn = preferences.keepScreenOn && keepAwake))
         applyReaderOrientation(preferences.orientation)
         WindowCompat.getInsetsController(window, window.decorView).apply {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE

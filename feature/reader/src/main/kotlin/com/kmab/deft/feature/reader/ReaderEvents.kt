@@ -27,6 +27,11 @@ sealed interface ReaderEvent {
         override val position: ReadingPosition,
     ) : ReaderEvent
 
+    data class Location(
+        override val bookId: Long,
+        override val position: ReadingPosition,
+    ) : ReaderEvent
+
     data class Visibility(
         override val bookId: Long,
         override val position: ReadingPosition?,
@@ -34,16 +39,19 @@ sealed interface ReaderEvent {
     ) : ReaderEvent
 }
 
-/** Activity signals only. M3 will own session policy and elapsed-time recording. */
+/** Tracking receives every signal synchronously; the shared flow is diagnostic observation only. */
 @Singleton
 class ReaderEvents
     @Inject
-    constructor() {
+    internal constructor(
+        private val tracking: ReaderTracking,
+    ) {
         private val mutableEvents =
             MutableSharedFlow<ReaderEvent>(extraBufferCapacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)
         val events: SharedFlow<ReaderEvent> = mutableEvents.asSharedFlow()
 
         internal fun emit(event: ReaderEvent) {
+            tracking.accept(event)
             mutableEvents.tryEmit(event)
         }
     }

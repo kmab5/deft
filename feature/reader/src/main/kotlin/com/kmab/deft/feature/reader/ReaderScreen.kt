@@ -104,6 +104,8 @@ internal fun ReaderScreen(
     activity: ReaderActivity,
 ) {
     val state by model.state.collectAsStateWithLifecycle()
+    val tracking by model.trackingState.collectAsStateWithLifecycle()
+    val trackingPreferences by model.trackingPreferences.collectAsStateWithLifecycle()
     val preferences by model.preferences.collectAsStateWithLifecycle()
     val themes by model.themes.collectAsStateWithLifecycle()
     val systemDark = isSystemInDarkTheme()
@@ -135,6 +137,7 @@ internal fun ReaderScreen(
             }
         }
     LaunchedEffect(model) { model.notices.collect { notices.show(it) } }
+    ReaderTrackingEffects(model, activity, state, tracking, listOf(sheet, imageHref, externalHref).any { it != null })
     ReaderNavigationEffects(
         activity = activity,
         model = model,
@@ -195,6 +198,7 @@ internal fun ReaderScreen(
                             },
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                         )
+                        ReaderTrackingIndicator(trackingPreferences.showIndicator, state.rendered, tracking.active)
                         if (preferences.showStatusLine) {
                             ReaderStatus(state, progressPositions, preferences.showPageNumber, Modifier.fillMaxWidth())
                         }
@@ -244,6 +248,15 @@ internal fun ReaderScreen(
                 model.search.cancel()
                 sheet = null
             }
+            ReaderTrackingDialogs(
+                opening = state.openingChoice,
+                finishPrompt = tracking.finishPrompt,
+                busy = state.choosing,
+                choose = model::chooseReading,
+                close = activity::finish,
+                finish = model::finishReading,
+                decline = model::declineFinish,
+            )
             ReaderOverlayWindows(
                 session,
                 imageHref,
@@ -300,7 +313,14 @@ private fun ReaderNavigationEffects(
         }
     }
     val dark = Color(parseColor(theme.background)).luminance() < DARK_LUMINANCE
-    ReaderWindowEffect(activity, preferences, chrome || sheetOpen, dark)
+    val tracking by model.trackingState.collectAsStateWithLifecycle()
+    ReaderWindowEffect(
+        activity,
+        preferences,
+        chrome || sheetOpen,
+        dark,
+        tracking.keepAwake && state.rendered && !tracking.finishPrompt,
+    )
     val overlayOpen = sheetOpen || imageOpen
     val readingIdle = state.rendered && !scrubbing
     LaunchedEffect(chrome, overlayOpen, state.rendered, interaction, scrubbing) {
@@ -617,8 +637,9 @@ private fun ReaderWindowEffect(
     preferences: ReaderPreferences,
     chromeVisible: Boolean,
     dark: Boolean,
+    keepAwake: Boolean,
 ) {
-    DisposableEffect(preferences, chromeVisible, dark) {
+    DisposableEffect(preferences, chromeVisible, dark, keepAwake) {
         val observer =
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) activity.applyWindow(chromeVisible, dark)

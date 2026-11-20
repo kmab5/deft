@@ -95,6 +95,7 @@ internal class ReaderNavigator(
                             href: Url,
                             error: ReadError,
                         ) {
+                            model.interaction.renderingFailed()
                             model.notice(
                                 "A part of this book could not be displayed. Try the next chapter from Contents.",
                             )
@@ -297,6 +298,7 @@ internal class ReaderNavigator(
                         },
                         onSelection = model.interaction::selection,
                         onError = {
+                            model.interaction.renderingFailed()
                             model.notice(
                                 "A chapter is unavailable. Continue scrolling or choose another from Contents.",
                             )

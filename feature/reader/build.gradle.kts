@@ -15,6 +15,7 @@ android {
 dependencies {
     implementation("com.caverock:androidsvg-aar:1.4")
     implementation(project(":core:model"))
+    implementation(project(":tracking"))
     implementation(project(":core:database"))
     implementation(project(":core:datastore"))
     implementation(project(":core:designsystem"))
@@ -30,6 +31,8 @@ dependencies {
     androidTestImplementation(libs.junit)
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:core:1.7.0")
+    testImplementation("androidx.room:room-ktx:2.8.3")
+    testImplementation("androidx.datastore:datastore-preferences:1.1.7")
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation("androidx.test:core:1.7.0")

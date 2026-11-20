@@ -7,7 +7,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import org.readium.r2.shared.publication.Locator
 
-/** Owns navigator generations and user-interaction classification, independently of opening books. */
+/**
+ * Owns navigator generations and user-interaction classification, independently of opening books.
+ * Navigator and lifecycle callbacks share one classification and visibility state.
+ */
+@Suppress("TooManyFunctions")
 internal class ReaderInteraction(
     private val state: MutableStateFlow<ReaderState>,
     private val preferences: StateFlow<ReaderPreferences>,
@@ -16,16 +20,30 @@ internal class ReaderInteraction(
 ) {
     private val navigation = ReadingNavigation<Locator>()
     private var generation = 0L
-    private var visible = false
+    private val visibility =
+        ReaderVisibility { visible ->
+            val current = state.value
+            emitVisibility(current, events, visible)
+            if (!visible) {
+                navigation.cancelInput()
+                val position = current.locator?.toPosition()
+                val session = current.session
+                if (position != null && session != null) writer.save(session.bookId, position)
+            }
+        }
+    private val visible get() = visibility.visible
 
     fun attachNavigator(): Long {
         generation++
-        navigation.cancelInput()
+        renderingFailed()
         return generation
     }
 
     fun detachNavigator(token: Long) {
-        if (token == generation) generation++
+        if (token == generation) {
+            generation++
+            renderingFailed()
+        }
     }
 
     fun rendered(
@@ -35,8 +53,8 @@ internal class ReaderInteraction(
         if (token != generation) return
         if (!state.value.rendered) {
             state.value.session?.let { writer.save(it.bookId, locator.toPosition()) }
-            state.update { it.copy(rendered = true) }
-            if (visible) emitVisibility(state.value, events, true)
+            state.update { it.copy(rendered = true, locator = locator) }
+            visibility.rendered(true)
         }
         location(token, locator)
     }
@@ -56,7 +74,7 @@ internal class ReaderInteraction(
                 when (motion) {
                     ReadingMotion.PAGE -> events.emit(ReaderEvent.PageTurn(session.bookId, locator.toPosition()))
                     ReadingMotion.SCROLL -> events.emit(ReaderEvent.ScrollStep(session.bookId, locator.toPosition()))
-                    null -> Unit
+                    null -> events.emit(ReaderEvent.Location(session.bookId, locator.toPosition()))
                 }
             }
         }
@@ -73,30 +91,24 @@ internal class ReaderInteraction(
 
     fun returnPoint(): Locator? =
         navigation.takeReturnPoint().also {
-            state.update {
-                it.copy(
-                    canReturn =
-                        navigation.returnPoint != null,
-                )
-            }
+            state.update { it.copy(canReturn = navigation.returnPoint != null) }
         }
 
     fun selection(locator: Locator) {
-        state.value.session?.let { events.emit(ReaderEvent.Selection(it.bookId, locator.toPosition())) }
-    }
-
-    fun visibility(isVisible: Boolean) {
-        if (visible == isVisible) return
-        visible = isVisible
-        val current = state.value
-        if (current.rendered) emitVisibility(current, events, isVisible)
-        if (!isVisible) {
-            navigation.cancelInput()
-            val position = current.locator?.toPosition()
-            val session = current.session
-            if (current.rendered && position != null && session != null) writer.save(session.bookId, position)
+        if (visible && state.value.rendered) {
+            state.value.session?.let { events.emit(ReaderEvent.Selection(it.bookId, locator.toPosition())) }
         }
     }
+
+    fun renderingFailed() {
+        visibility.rendered(false)
+        state.update { it.copy(rendered = false) }
+        navigation.cancelInput()
+    }
+
+    fun obscured(value: Boolean) = visibility.obscured(value)
+
+    fun visibility(isVisible: Boolean) = visibility.resumed(isVisible)
 }
 
 private fun emitVisibility(

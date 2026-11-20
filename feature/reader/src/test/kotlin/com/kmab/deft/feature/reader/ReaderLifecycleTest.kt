@@ -53,6 +53,18 @@ class ReaderLifecycleTest {
         assertFalse(keys.handle(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_VOLUME_DOWN), false, turns::add))
     }
 
+    @Test fun volumePageHapticOccursOncePerEnabledPressAndNeverOnReleaseOrRepeat() {
+        var ticks = 0
+        val turns = mutableListOf<Boolean>()
+        val keys = ReaderVolumeKeys { ticks++ }
+        keys.handle(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_DOWN), false, turns::add)
+        keys.handle(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_DOWN), true, turns::add)
+        keys.handle(KeyEvent(0, 10, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_DOWN, 1), true, turns::add)
+        keys.handle(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_VOLUME_DOWN), true, turns::add)
+        assertEquals(1, ticks)
+        assertEquals(listOf(true), turns)
+    }
+
     @Test fun scrollWritesCoalescePerBookWithoutDroppingAnotherBooksFinalPosition() {
         val pending = PendingPositions()
         repeat(1000) { pending.offer(1, ReadingPosition("location-$it", it / 1000.0)) }

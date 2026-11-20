@@ -203,16 +203,28 @@ class ReaderContainerTest {
         assertTrue(fixture.swipes.isEmpty())
     }
 
+    @Test fun continuousScrollSignalsReadingGestureWithoutStealingTouchStream() {
+        var gestures = 0
+        val fixture = fixture(handle = false, reading = { gestures++ })
+        fixture.touch(MotionEvent.ACTION_DOWN, 250f, 350f)
+        fixture.touch(MotionEvent.ACTION_MOVE, 250f, 150f)
+        fixture.touch(MotionEvent.ACTION_UP, 250f, 150f)
+        assertTrue(gestures > 0)
+        assertEquals(listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE, MotionEvent.ACTION_UP), fixture.events)
+        assertTrue(fixture.swipes.isEmpty())
+    }
+
     private fun fixture(
         handle: Boolean = true,
         native: Boolean = true,
         handles: () -> Boolean = { handle },
+        reading: () -> Unit = {},
     ): Fixture {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val events = mutableListOf<Int>()
         val swipes = mutableListOf<Float>()
         val container =
-            ReaderContainer(context, {}, handles, { swipes += it }, { native }).apply {
+            ReaderContainer(context, reading, handles, { swipes += it }, { native }).apply {
                 addView(
                     object : View(context) {
                         override fun onTouchEvent(event: MotionEvent): Boolean {
