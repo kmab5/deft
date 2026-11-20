@@ -367,3 +367,16 @@ Keep the original results/comments above. Record this version's results here. Th
 - Source-stamped `:app:assembleRelease` passed; release verifier confirmed persistent certificate, application/version, no INTERNET permission and R8 mapping. APK/mapping/hash/source evidence archived locally at `.superpowers/releases/0.2.3/`.
 - Logs: `.superpowers/0.2.3-resumed-check-release.log`, `.superpowers/0.2.3-stamped-release.log`, `.superpowers/0.2.3-image-browser.log`. No connected Android device/emulator; native gestures, selection handles and accessibility still require the retest above.
 - Branch remains `feat/m2-epub-reader`; M2 is not merged. GitHub CI is not awaited.
+
+
+## 0.2.4 — verified handover (2026-11-20)
+
+- APK: `app/build/outputs/apk/release/deft-0.2.4.apk`, **6,079,233 bytes** (5.80 MiB). Install over your existing Deft installation without uninstalling.
+- Version: **0.2.4**, versionCode **20401** (`deft.version=0.2.4-1`). R8 minification and resource shrinking remain enabled.
+- Source commit embedded in the APK: `2ac258211401ac0fb6d45a695e9068f128dc95d5`. Subsequent handover documentation does not change its source.
+- APK SHA-256: `76d1c19874a052d3706e5f24a08c36d02c72a302bde81babe735cfd60bc74d4b`.
+- Persistent release certificate SHA-256: `adea6ec2edf4e9e2d809ed06300729e35ca156c06072736717b4a27449233e50`. Verified against the configured key and previous release identity; application ID remains `com.kmab.deft`, with no INTERNET permission.
+- Full `ktlintFormat check assembleRelease` passed, with **673 tests across 146 reports**, zero failures/errors/skips. The final source-stamped `assembleRelease` also passed. The original Homicide EPUB regression, Chromium resource/font and continuous-reader checks, and four Python release-tooling tests passed.
+- Combined audit findings were addressed, including exact slow-drag targets, TOC fragments in search labels and bounded SVG reference handling. The native image test verifies actual pixels, pinch zoom, pan and dismissal. Updated visual references are in `plans/design/m2-feedback.html`; diagnosis and limits are in `plans/2026-11-20-m2-0.2.4-validation.md`.
+- APK, R8 mapping and verification evidence are archived locally in `.superpowers/releases/0.2.4/`.
+- The USB connection was unreliable and you instructed us to assume no device access. No successful physical-device run is claimed. Start with the **0.2.4 device feedback retest** at the top; those steps remain unchecked. M2 remains on `feat/m2-epub-reader` pending your acceptance; GitHub CI is not awaited.
