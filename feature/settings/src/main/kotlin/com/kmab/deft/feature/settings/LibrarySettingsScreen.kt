@@ -4,20 +4,25 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kmab.deft.core.database.entity.LibraryFolderEntity
@@ -37,6 +43,7 @@ import com.kmab.deft.core.designsystem.DeftButton
 import com.kmab.deft.core.designsystem.DeftButtonStyle
 import com.kmab.deft.core.designsystem.DeftDialog
 import com.kmab.deft.core.designsystem.DeftNoticeKind
+import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTopBar
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
@@ -48,6 +55,7 @@ fun LibrarySettingsScreen(
     onBack: () -> Unit,
     viewModel: LibrarySettingsViewModel = hiltViewModel(),
     onScanDetails: () -> Unit = {},
+    onIgnoredBooks: () -> Unit = {},
 ) {
     val colors = LocalDeftColors.current
     val folders by viewModel.folders.folders.collectAsState(emptyList())
@@ -104,6 +112,21 @@ fun LibrarySettingsScreen(
                 },
             )
             LibraryFileTypes(settings, viewModel::format)
+            Row(
+                Modifier.fillMaxWidth().toggleable(
+                    value = settings.advancedSearch,
+                    role = Role.Switch,
+                    onValueChange = viewModel::advancedSearch,
+                ),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                    Text("advanced search", style = DeftTypography.title)
+                    Text("Case, whole words and regex in your library and books.", style = DeftTypography.body)
+                }
+                androidx.compose.material3.Switch(settings.advancedSearch, onCheckedChange = null)
+            }
+            IgnoredBooksEntry(onIgnoredBooks)
             LibraryStorageSection(scan.isScanning)
         }
     }
@@ -206,6 +229,33 @@ private fun FolderRow(
                 icon = DeftActionIcons.FolderMinus,
             )
             DeftButton("remove", onRemove, style = DeftButtonStyle.Text, icon = DeftActionIcons.Trash)
+        }
+    }
+}
+
+@Composable
+private fun IgnoredBooksEntry(onClick: () -> Unit) {
+    val colors = LocalDeftColors.current
+    Surface(
+        shape = DeftShapes.card,
+        color = colors.surface,
+        border = BorderStroke(1.dp, colors.line),
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clickable(role = Role.Button, onClick = onClick)
+                .heightIn(min = 72.dp)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(DeftActionIcons.FolderMinus, null, tint = colors.muted)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("ignored books", style = DeftTypography.label, color = colors.text)
+                Text("Hidden from your library. History stays.", style = DeftTypography.body, color = colors.muted)
+            }
+            Icon(DeftActionIcons.ChevronRight, null, tint = colors.muted)
         }
     }
 }

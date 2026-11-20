@@ -7,9 +7,9 @@ Deft is an offline Android ebook reader with a reading tracker built in. Open a 
 - **Tracker:** accurate reading time, sessions, streaks, goals, per-book/category/author stats, and a year in review.
 - **Portable:** optional edition matching, export to Goodreads/StoryGraph/Hardcover CSV, and local zip backups.
 
-Status: planning complete, implementation starting. See [`plans/`](plans/) for the design, the roadmap and the milestone plans.
+Status: M1 and the M2 EPUB reader are complete in 0.2.5. The feature list above describes the full roadmap; tracking, ratings, notes and additional reading formats remain in later milestones. M3 (reading sessions and states) is next. See [`plans/`](plans/) for the design and roadmap, and the [M2 test checklist](plans/m2-test-checklist.md) for the accepted device review and final polish.
 
-Distribution (planned): GitHub Releases and F-Droid.
+Distribution: [GitHub Releases](https://github.com/kmab5/deft/releases). F-Droid is planned.
 
 ## Building
 
@@ -22,6 +22,15 @@ python scripts/verify-release.py
 ```
 
 The first command creates the persistent private release identity once; subsequent runs preserve it. Back it up securely. See [release signing](plans/release-signing.md) for local and CI setup. The signed, R8-minified and resource-shrunk APK is `app/build/outputs/apk/release/app-release.apk`.
+
+After `check`, real-browser EPUB regressions can run with the already-installed Chromium and Node 22+ (no downloads):
+
+```sh
+node format/readium/src/test/browser/verify-reader.cjs
+node scripts/tests/test_continuous_reader.cjs
+```
+
+The first consumes the real publication/font fixtures exported by the unit tests; the second verifies continuous chapter scrolling and resource isolation.
 
 The foundation app has no `INTERNET` permission. `checkNetworkIsolation` rejects HTTP-client dependencies outside the future explicit matching module. The planned edition-matching feature will be the only user-requested network path.
 

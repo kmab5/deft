@@ -2,14 +2,14 @@ package com.kmab.deft.core.designsystem
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -19,7 +19,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -145,12 +147,10 @@ private fun NoticeCard(
             state.dismiss(notice.id)
         }
     }
-    Row(
+    Surface(
         modifier
             .fillMaxWidth()
             .graphicsLayer { translationY = slide.dp.toPx() }
-            .background(colors.surface2, DeftShapes.card)
-            .border(1.dp, colors.line2, DeftShapes.card)
             .semantics { liveRegion = LiveRegionMode.Polite }
             .onFocusChanged { focused = it.hasFocus }
             .focusGroup()
@@ -164,30 +164,49 @@ private fun NoticeCard(
                         pressed = false
                     }
                 }
-            }.padding(start = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            when (notice.kind) {
-                DeftNoticeKind.Error -> DeftActionIcons.Warning
-                DeftNoticeKind.Success -> DeftActionIcons.Check
-                DeftNoticeKind.Info -> DeftActionIcons.Info
             },
-            null,
-            Modifier.size(20.dp),
-            tint = colors.accentText,
-        )
-        Column(Modifier.weight(1f).padding(start = 10.dp, top = 12.dp, bottom = 12.dp)) {
-            Text(notice.message, style = DeftTypography.body, color = colors.text)
-            if (notice.actionLabel != null && notice.onAction != null) {
-                DeftButton(notice.actionLabel, {
-                    state.dismiss(notice.id)
-                    notice.onAction.invoke()
-                }, style = DeftButtonStyle.Text)
+        color = colors.surface2,
+        shape = DeftShapes.card,
+        border = BorderStroke(1.dp, colors.line2),
+        shadowElevation = 6.dp,
+    ) {
+        Column(Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                Icon(
+                    when (notice.kind) {
+                        DeftNoticeKind.Error -> DeftActionIcons.Warning
+                        DeftNoticeKind.Success -> DeftActionIcons.Check
+                        DeftNoticeKind.Info -> DeftActionIcons.Info
+                    },
+                    null,
+                    Modifier.padding(top = 12.dp).size(20.dp),
+                    tint =
+                        when (notice.kind) {
+                            DeftNoticeKind.Error -> colors.error
+                            DeftNoticeKind.Success -> colors.finishedText
+                            DeftNoticeKind.Info -> colors.accentText
+                        },
+                )
+                Column(Modifier.weight(1f).padding(start = 12.dp, end = 8.dp, top = 10.dp)) {
+                    Text(notice.message, style = DeftTypography.body, color = colors.text)
+                    if (notice.actionLabel != null && notice.onAction != null) {
+                        TextButton(
+                            onClick = {
+                                state.dismiss(notice.id)
+                                notice.onAction.invoke()
+                            },
+                            modifier = Modifier.heightIn(min = 48.dp),
+                            contentPadding = PaddingValues(vertical = 8.dp),
+                            shape = DeftShapes.small,
+                        ) {
+                            Text(notice.actionLabel, style = DeftTypography.label, color = colors.accentText)
+                        }
+                    }
+                }
+                IconButton(onClick = { state.dismiss(notice.id) }, modifier = Modifier.size(48.dp)) {
+                    Icon(DeftActionIcons.Close, "dismiss notice", tint = colors.muted)
+                }
             }
-        }
-        IconButton(onClick = { state.dismiss(notice.id) }) {
-            Icon(DeftActionIcons.Close, "dismiss notice", tint = colors.muted)
         }
     }
 }

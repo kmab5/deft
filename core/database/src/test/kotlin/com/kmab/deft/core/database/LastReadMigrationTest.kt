@@ -30,8 +30,11 @@ class LastReadMigrationTest {
                         context,
                         AppDatabase::class.java,
                         name,
-                    ).addMigrations(DatabaseMigrations.FROM_1_TO_2, DatabaseMigrations.FROM_2_TO_3)
-                    .build()
+                    ).addMigrations(
+                        DatabaseMigrations.FROM_1_TO_2,
+                        DatabaseMigrations.FROM_2_TO_3,
+                        DatabaseMigrations.FROM_3_TO_4,
+                    ).build()
             try {
                 assertEquals(
                     listOf(LibraryFolderEntity("root", "Books", Instant.EPOCH)),

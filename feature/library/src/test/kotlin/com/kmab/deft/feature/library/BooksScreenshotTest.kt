@@ -16,6 +16,7 @@ import com.kmab.deft.core.designsystem.DeftTheme
 import com.kmab.deft.core.model.BookDisplaySize
 import com.kmab.deft.core.model.BookFormat
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -75,6 +76,9 @@ class BooksScreenshotTest {
 
     @Test fun inkSort() = render("books-ink-sort", dark = true, sheet = "sort")
 
+    @Test fun advancedSearchAlignsWithTheLibraryField() =
+        render("books-advanced-search", dark = true, layout = PreviewLayout(advancedSearch = true))
+
     @OptIn(ExperimentalRoborazziApi::class)
     private fun render(
         name: String,
@@ -93,6 +97,7 @@ class BooksScreenshotTest {
                     gridView = layout.grid,
                     gridSize = layout.size,
                     listSize = layout.size,
+                    advancedSearch = layout.advancedSearch,
                 ),
             )
         compose.setContent {
@@ -111,6 +116,14 @@ class BooksScreenshotTest {
                     { state.value = state.value.copy(listSize = it) },
                 )
             }
+        }
+        if (layout.advancedSearch) {
+            compose.onNodeWithContentDescription("search books").performClick()
+            compose.onNodeWithText("Regex").performClick()
+            val field = compose.onNodeWithTag("library_search").fetchSemanticsNode().boundsInRoot
+            val options = compose.onNodeWithTag("search_options").fetchSemanticsNode().boundsInRoot
+            assertEquals(field.left, options.left, 1f)
+            assertEquals(field.right, options.right, 1f)
         }
         if (sheet != null) {
             val description =
@@ -193,6 +206,7 @@ class BooksScreenshotTest {
         val grid: Boolean = true,
         val size: BookDisplaySize = BookDisplaySize.MEDIUM,
         val statuses: Boolean = false,
+        val advancedSearch: Boolean = false,
         val missingMetadata: Boolean = false,
     )
 }

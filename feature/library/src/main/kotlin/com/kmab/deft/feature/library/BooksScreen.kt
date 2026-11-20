@@ -21,7 +21,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -35,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +45,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -55,6 +59,7 @@ import com.kmab.deft.core.designsystem.DeftMotion
 import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
+import com.kmab.deft.core.designsystem.icons.DeftIcons
 import com.kmab.deft.core.model.BookDisplaySize
 import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
@@ -74,10 +79,32 @@ fun BooksScreen(
     onGridSizeChange: (BookDisplaySize) -> Unit = {},
     onListSizeChange: (BookDisplaySize) -> Unit = {},
     onScanDetails: () -> Unit = {},
+    onOpenBook: (Long) -> Unit = {},
+    onContinueReading: (Long) -> Unit = {},
 ) {
     val c = LocalDeftColors.current
     var menu by remember { mutableStateOf(false) }
     var sheet by rememberSaveable { mutableStateOf<String?>(null) }
+    var searching by rememberSaveable { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var previousQuery by remember { mutableStateOf(query) }
+    var searchOptions by remember {
+        mutableStateOf(
+            com.kmab.deft.core.model
+                .SearchOptions(),
+        )
+    }
+    val activeOptions = searchOptions.enabledWhen(state.advancedSearch)
+    val searchResult =
+        remember(state.books, query, activeOptions) { runCatching { state.books.searchBooks(query, activeOptions) } }
+    val visibleBooks = searchResult.getOrDefault(emptyList())
+    val scroll = rememberLibraryScrollState(state.gridView)
+    LaunchedEffect(query) {
+        if (query != previousQuery) {
+            previousQuery = query
+            scroll.scrollToTop()
+        }
+    }
     val context = LocalContext.current.applicationContext
     val loader = remember(context) { ImageLoader.Builder(context).diskCache(null).build() }
     DisposableEffect(loader) { onDispose { loader.shutdown() } }
@@ -88,8 +115,14 @@ fun BooksScreen(
         ) {
             Text("books", style = DeftTypography.headline, color = c.text, modifier = Modifier.semantics { heading() })
             Spacer(Modifier.width(10.dp))
-            Text(state.books.size.toString(), style = DeftTypography.cardTitle, color = c.muted)
+            Text(visibleBooks.size.toString(), style = DeftTypography.cardTitle, color = c.muted)
             Spacer(Modifier.weight(1f))
+            IconButton(onClick = {
+                searching = !searching
+                if (!searching) query = ""
+            }) {
+                Icon(DeftIcons.Search, "search books", tint = if (searching) c.accentText else c.muted)
+            }
             Box {
                 IconButton(onClick = { menu = true }) { Icon(LibraryIcons.More, "more options", tint = c.muted) }
                 DropdownMenu(
@@ -120,6 +153,18 @@ fun BooksScreen(
                 }
             }
         }
+        AnimatedVisibility(searching) {
+            Column {
+                LibrarySearch(query, { query = it }, {
+                    searching = false
+                    query = ""
+                })
+                LibrarySearchFilters(state.advancedSearch, searchOptions, { searchOptions = it }, searchResult)
+            }
+        }
+        AnimatedVisibility(state.continueReading != null && scroll.showHeader) {
+            state.continueReading?.let { book -> ContinueReadingCard(book, loader) { onContinueReading(book.id) } }
+        }
         BooksToolbar(state, onFilters = { sheet = "filters" }, onSort = { sheet = "sort" }, onDisplay = {
             sheet =
                 "display"
@@ -138,22 +183,36 @@ fun BooksScreen(
                 Text(state.scanMessage ?: "scanning folders…", style = DeftTypography.cardTitle, color = c.muted)
             }
         }
-        PullToRefreshBox(isRefreshing = state.isScanning, onRefresh = onRescan, modifier = Modifier.weight(1f)) {
+        PullToRefreshBox(
+            isRefreshing = state.isScanning,
+            onRefresh = onRescan,
+            modifier = Modifier.weight(1f).nestedScroll(scroll.connection),
+        ) {
             Crossfade(
                 targetState = BookLayout(state.gridView, state.gridSize, state.listSize),
                 animationSpec = tween(DeftMotion.SHORT),
                 label = "book layout",
             ) { layout ->
                 BooksCollection(
-                    state.copy(gridView = layout.grid, gridSize = layout.gridSize, listSize = layout.listSize),
+                    state.copy(
+                        books = visibleBooks,
+                        gridView = layout.grid,
+                        gridSize = layout.gridSize,
+                        listSize = layout.listSize,
+                    ),
                     loader,
+                    scroll.list,
+                    scroll.grid,
+                    query.isNotBlank(),
                     onAddFolder,
                     onRescan,
                     onSettings,
+                    onOpenBook,
                 ) {
-                    BookFormat.entries.forEach { onFormatChange(it, true) }
+                    if (query.isNotBlank()) query = "" else BookFormat.entries.forEach { onFormatChange(it, true) }
                 }
             }
+            LibraryScrollOverlay(scroll, state.continueReading, onContinueReading)
         }
     }
     when (sheet) {
@@ -167,9 +226,13 @@ fun BooksScreen(
 private fun BooksCollection(
     state: BooksUiState,
     loader: ImageLoader,
+    listState: LazyListState,
+    gridState: LazyGridState,
+    searching: Boolean,
     onAddFolder: () -> Unit,
     onRescan: () -> Unit,
     onSettings: () -> Unit,
+    onOpenBook: (Long) -> Unit,
     onClear: () -> Unit,
 ) {
     val c = LocalDeftColors.current
@@ -179,19 +242,20 @@ private fun BooksCollection(
                 CircularProgressIndicator(color = c.accent)
                 Text("loading books…", style = DeftTypography.cardTitle, color = c.muted)
             }
-        state.books.isEmpty() -> EmptyBooks(state, onAddFolder, onRescan, onSettings, onClear)
+        state.books.isEmpty() -> EmptyBooks(state, searching, onAddFolder, onRescan, onSettings, onClear)
         state.gridView ->
             LazyVerticalGrid(
                 GridCells.Adaptive(
                     state.gridSize.gridMinimumWidth() * LocalDensity.current.fontScale.coerceAtLeast(1f),
                 ),
                 Modifier.fillMaxSize().testTag("book_grid"),
+                state = gridState,
                 contentPadding =
                     androidx.compose.foundation.layout.PaddingValues(
                         start = 16.dp,
                         end = 16.dp,
                         top = 12.dp,
-                        bottom = 24.dp,
+                        bottom = 144.dp,
                     ),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -204,16 +268,20 @@ private fun BooksCollection(
                         loader,
                         Modifier.animateItem(fadeInSpec = null, placementSpec = tween(DeftMotion.MEDIUM)),
                         size = state.gridSize,
+                        onClick = { onOpenBook(book.id) },
                     )
                 }
             }
         else ->
             LazyColumn(
                 Modifier.fillMaxSize().testTag("book_list"),
+                state = listState,
                 contentPadding =
                     androidx.compose.foundation.layout.PaddingValues(
-                        horizontal = 16.dp,
-                        vertical = 12.dp,
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 12.dp,
+                        bottom = 144.dp,
                     ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -223,6 +291,7 @@ private fun BooksCollection(
                         loader,
                         Modifier.animateItem(fadeInSpec = null, placementSpec = tween(DeftMotion.MEDIUM)),
                         size = state.listSize,
+                        onClick = { onOpenBook(book.id) },
                     )
                 }
             }
@@ -232,6 +301,7 @@ private fun BooksCollection(
 @Composable
 private fun EmptyBooks(
     state: BooksUiState,
+    searching: Boolean,
     onAdd: () -> Unit,
     onRescan: () -> Unit,
     onSettings: () -> Unit,
@@ -246,7 +316,9 @@ private fun EmptyBooks(
             ) {
                 val filtered = state.hasFolders && state.formatFilter.size != BookFormat.entries.size
                 Text(
-                    if (!state.hasFolders) {
+                    if (searching) {
+                        "no matching books."
+                    } else if (!state.hasFolders) {
                         "no books yet."
                     } else if (filtered) {
                         "no matching books."
@@ -257,7 +329,9 @@ private fun EmptyBooks(
                     color = c.text,
                 )
                 Text(
-                    if (!state.hasFolders) {
+                    if (searching) {
+                        "Try another title or author, or clear your search."
+                    } else if (!state.hasFolders) {
                         "Point Deft at a folder and it will find them."
                     } else if (filtered) {
                         "No books match these filters."
@@ -268,6 +342,7 @@ private fun EmptyBooks(
                     color = c.muted,
                 )
                 when {
+                    searching -> DeftButton("clear search", onClear)
                     !state.hasFolders -> DeftButton("add a folder", onAdd)
                     filtered -> DeftButton("clear filters", onClear)
                     else ->
@@ -307,3 +382,11 @@ private data class BookLayout(
     val gridSize: BookDisplaySize,
     val listSize: BookDisplaySize,
 )
+
+private fun com.kmab.deft.core.model.SearchOptions.enabledWhen(enabled: Boolean) =
+    if (enabled) {
+        this
+    } else {
+        com.kmab.deft.core.model
+            .SearchOptions()
+    }

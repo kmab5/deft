@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -25,13 +26,17 @@ fun BookRow(
     imageLoader: ImageLoader,
     modifier: Modifier = Modifier,
     size: BookDisplaySize = BookDisplaySize.MEDIUM,
+    onClick: (() -> Unit)? = null,
 ) {
     val c = LocalDeftColors.current
     Row(
-        modifier.fillMaxWidth().libraryBookSurface(12.dp).semantics(mergeDescendants = true) {
-            stateDescription =
-                if (book.lastReadAt == null) "not read" else "previously read"
-        },
+        modifier
+            .fillMaxWidth()
+            .testTag("book_${book.id}")
+            .libraryBookSurface(12.dp, onClick)
+            .semantics(mergeDescendants = true) {
+                stateDescription = if (book.lastReadAt == null) "not read" else "previously read"
+            },
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

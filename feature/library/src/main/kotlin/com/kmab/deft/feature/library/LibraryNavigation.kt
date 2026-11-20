@@ -13,6 +13,7 @@ import com.kmab.deft.core.designsystem.LocalDeftNoticeState
 fun NavGraphBuilder.libraryGraph(
     navController: NavController,
     onScanDetails: () -> Unit = {},
+    onRead: (Long) -> Unit = {},
 ) {
     composable("books") {
         val viewModel: BooksViewModel = hiltViewModel()
@@ -39,6 +40,8 @@ fun NavGraphBuilder.libraryGraph(
             viewModel::setGridSize,
             viewModel::setListSize,
             onScanDetails,
+            onOpenBook = { navController.navigate("book/$it") },
+            onContinueReading = onRead,
         )
     }
 }

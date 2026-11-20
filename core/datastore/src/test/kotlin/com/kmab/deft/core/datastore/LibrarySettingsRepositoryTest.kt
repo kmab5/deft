@@ -42,6 +42,7 @@ class LibrarySettingsRepositoryTest {
             )
             repository.setFormatEnabled(BookFormat.PDF, false)
             repository.setFormatFilter(BookFormat.TXT, false)
+            repository.setAdvancedSearch(true)
             repository.setShowMissing(true)
             repository.setSort(BookSort.DATE_ADDED)
             repository.setGridView(false)
@@ -67,6 +68,7 @@ class LibrarySettingsRepositoryTest {
                         gridSize = BookDisplaySize.SMALL,
                         listSize = BookDisplaySize.LARGE,
                         formatFilter = BookFormat.entries.toSet() - BookFormat.TXT,
+                        advancedSearch = true,
                     ),
                     reopened.settings.first(),
                 )

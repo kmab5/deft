@@ -9,6 +9,8 @@ import com.kmab.deft.core.database.entity.BookFileEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
+// All queries manage the source locations attached to one stable book identity.
+@Suppress("TooManyFunctions")
 abstract class BookFileDao {
     @Query("SELECT * FROM book_files")
     abstract suspend fun getAll(): List<BookFileEntity>
@@ -25,6 +27,9 @@ abstract class BookFileDao {
 
     @Query("SELECT * FROM book_files WHERE bookId = :bookId ORDER BY id")
     abstract fun observeForBook(bookId: Long): Flow<List<BookFileEntity>>
+
+    @Query("SELECT * FROM book_files WHERE bookId = :bookId ORDER BY id")
+    abstract suspend fun getForBook(bookId: Long): List<BookFileEntity>
 
     @Query("UPDATE book_files SET missing = 1 WHERE rootUri = :rootUri")
     abstract suspend fun markMissingForRoot(rootUri: String)

@@ -16,6 +16,7 @@ fun signingValue(
     variable: String,
 ): String? = providers.environmentVariable(variable).orNull ?: signing.getProperty(property)
 android {
+    compileOptions { isCoreLibraryDesugaringEnabled = true }
     defaultConfig {
         applicationId = "com.kmab.deft"
         versionName = deftVersion.name
@@ -39,6 +40,9 @@ android {
     }
 }
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    implementation(project(":feature:book"))
+    implementation(project(":feature:reader"))
     implementation(project(":feature:library"))
     implementation(project(":feature:settings"))
     implementation(project(":library:scanner"))

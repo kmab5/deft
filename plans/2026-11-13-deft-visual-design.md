@@ -103,7 +103,7 @@ Offered, in this order: **original** (the book's own fonts, i.e. publisher defau
 
 ## 5. Iconography
 
-- **Lucide** (ISC) redrawn to kmab's grammar: 24dp grid, 1.75 stroke, square caps, square joins. Ship them as Compose `ImageVector`s in `core/designsystem/icons/`. Include only the icons used.
+- **Material Outlined** vectors from AndroidX Compose Material Icons (Apache-2.0), at 24dp. Use shared aliases in `core/designsystem/icons/` and auto-mirrored directional variants. Do not handcraft action icons. R8 retains only referenced vectors. This replaces the earlier redrawn Lucide grammar following device feedback.
 - Outline only. Don't mix filled and outline icons in one group. The single exception: the **favourite heart fills** when on.
 - Sizes 16, 20, 24. Pair any icon whose meaning isn't obvious with a label.
 - Icon colour follows meaning: `accent` for active/current, `finished` for success, `paused` for non-critical; otherwise `muted`.
@@ -274,7 +274,7 @@ Vertical full-bleed pages, one stat each, swiped like a story: the big number in
 
 ### 11.8 reader
 Content full-bleed. A tap in the centre reveals two bars, coloured from the reader theme and fading over `medium`:
-- **Top bar:** back, chapter title, then four icons: contents, search, bookmark, and **one settings button** (sliders icon).
+- **Top bar:** back, book title, then search, contents, bookmark, and **one settings button** (sliders icon). Give the bar at least 72dp height and a distinct control surface. The chapter name belongs above the bottom progress track, opposite percentage or page position; align labels with the track endpoints.
 - **Bottom bar:** chapter progress slider with chapter ticks, and one mono line: "ch. 7 of 22 · 43% · 2h 10m left".
 
 **All reading settings live behind that one button** (as in Lithium): a single sheet with three tabs and a sliding 2dp indicator:
@@ -288,6 +288,8 @@ Every change previews live behind the sheet. Status line (optional): clock · ch
 Grouped list, lowercase group headers in `monoSmall` `muted`: library · reader · tracking · goals · appearance (theme, celebrations) · matching · backup & export · storage · about.
 
 **settings → reader** holds every reader setting from the in-book sheet (§11.8), in the same three groups (text · theme · page), plus the ones that only make sense app-wide: imported fonts (add and remove), custom themes (create, edit, delete), the default fit mode and dark inversion for PDF, DjVu and CBZ, and the default brightness. Reader settings are global (spec §10.1), so the in-book sheet and this screen edit the **same values**: a change in either place shows in the other. The in-book sheet is the quick path; settings is the complete one.
+
+**M2 implementation boundary:** Settings now opens a category chooser with Library and Reader. Library includes Ignored books. Book details show metadata, Read/Continue, saved percentage and files, with Ignore/Un-ignore and confirmed Forget in the action menu. The Continue card and reader display real progress only; estimated time, reading states and statistics arrive with tracking. Reader chrome has back, contents, bookmark and one settings button; search, highlighting and notes arrive in M5. Contents contains the TOC and editable bookmarks. Reader bars, sheets and notices follow its selected theme. The eleven bundled font families include regular, italic and bold in WOFF2, plus tiny native subsets for actual font-name previews; their combined size is 1,703,528 bytes. No font face was dropped. Fixed-layout settings appear with their later format milestone.
 
 ## 12. Voice and copy
 
@@ -328,3 +330,42 @@ Follow kmab's writing style (github.com/kmab5/kmab-brand, `brand-kit/08_WRITING`
 ### M1 final device-feedback layout revision (2026-11-18)
 
 Library grid/list books are contained cards with subtle lift and padded metadata; grid minimum width grows with system font scale so large text uses fewer, wider columns; empty titles/authors display `<no-title>` / `<no-author>`. Settings uses 16dp gutters, distinct scan/folders/file-types/storage groups, a contained scan-status panel, aligned controls and adaptive rows at large system text. The scanner and library-view format selections remain independent. Reader settings and book detail are revised in M2; source renders in `plans/design/m1-feedback.html` are the foundation reference.
+
+
+### M2 reader and book-detail revision (2026-11-18)
+
+Book detail has a responsive primary surface: cover and identity side by side, Read/Continue nearby, and truthful saved progress. Description remains readable prose; edition metadata has explicit labels; files occupy a separate outlined group. Narrow or very large text layouts adapt rather than squeeze controls.
+
+Reader settings retains text/theme/page tabs. Typography and paragraph controls use compact aligned groups, visible numeric values and equal-width choices. Appearance shows real theme swatches and separates system day/night selection from custom theme management and brightness. Page behavior and reading toggles form distinct groups. The reader quick panel is bounded and scrolls internally. Settings categories and ignored books share the same spacing, grouping and surfaces as the library settings. All existing controls and destructive confirmations remain available.
+
+The revised screen reference is `plans/design/m2-feedback.html`, using rendered Compose output from the local verification pass.
+
+### M2 complete device-feedback revision (2026-11-19, 0.2.2)
+
+Library search sits below the Books title and refines current format/missing filters without changing the selected sort. Continue remains available as a floating action; the existing book summary hides on downward scrolling and returns on upward scrolling. A separate return-to-top action appears when moving up away from the top. The scroll thumb fades after scrolling stops. Leave enough bottom content padding to reach the final book behind the floating actions.
+
+Book detail places Read/Continue beside the cover, aligned to its lower edge. Large-text layouts may move the identity above that row so the action never squeezes into an unreadable column. The description has its own subtle elevated, outlined surface. Scan-result notices give message, action and close control distinct space. Folder/rescan outlines use consistent geometric curves. Launcher foreground and monochrome artwork use additional inset and a shorter mark.
+
+Reader controls use a compact chapter/progress footer without decorative section ticks. Scrubbing previews the target before committing a jump. Progress can show percentage or a clearly labelled EPUB location count. Contents supports collapsed chapter groups and remembers its position; bookmarks have a clear entry point. Search results navigate to actual passages. The image viewer has only the image and a close action, with pinch zoom and pan confined to that viewer. Normal book pages do not zoom. Idle controls dismiss and center taps toggle them.
+
+The existing text/theme/page settings grouping remains, with publisher-original alignment added alongside left and justified. Font, size, line spacing, margins, themes, brightness and page behavior edit the same persistent global settings in either settings entry point. Launch-last-book appears in app-wide Reader settings. Tracking, ratings/favorite, notes/highlights and other-format reader controls remain at their confirmed roadmap milestones. The full feedback index is `plans/2026-11-19-m2-feedback-coverage.md`.
+
+The complete Lithium settings screenshot additionally informs three Page controls: tap edges to turn pages, fullscreen reading, and orientation (system/portrait/landscape). Defaults retain the current behavior. With fullscreen disabled, the publication and status line reserve system-bar space. The app theme continues to follow Android; sync/backup remain outside this patch, and external links stay closed under Deft's offline policy. Deft has no swipe-open folder drawer to disable.
+
+
+### M2 device-feedback revision (2026-11-20, 0.2.4)
+
+This revision supersedes the earlier closed-external-link behavior: explicit HTTP(S) link taps show a confirmation naming the actual destination domain, then open the default browser only after confirmation. Deft retains no network permission.
+
+Library content returns to symmetric 16dp gutters, restoring previous grid/list widths. The visible scroll handle overlays cards and takes touch priority only inside its accessible handle bounds. Advanced search options and help occupy one elevated card aligned to the field in both library and reader. Scan details sits directly under completion text within the notice text column; dismissal keeps its independent accessible target.
+
+Reader edge taps use 35/30/35 proportions. Slow drags past halfway settle on exactly the adjacent page. The title uses titleLarge typography, the footer reserves 12dp above the chapter label, and fullscreen content gains 8dp top space. Search results identify the nearest preceding contents section and actual EPUB page position. Images open on a native, bounded raster/SVG surface with focal pinch zoom, pan, a close action and visible failure recovery. Back consumes outgoing-screen repetitions and cannot pop past the library root.
+
+Updated Compose renders are linked in `plans/design/m2-feedback.html`. These are local Android layout/render checks; phone-specific gestures and system browser behavior remain device-checklist items.
+
+
+### M2 accepted final polish (2026-11-20, 0.2.5)
+
+Reader title now uses the 22sp headline token (titleLarge maps to Deft's smaller 17sp title token). Footer top spacing becomes 16dp. The 12dp circular progress thumb is centered inside a full-height 32dp slot, matching the track slot; this avoids Material 3 top-aligning the smaller dot inside its minimum-height wrapper. The visible track stays 3dp. Text, Theme and Page settings gain labelled icons and horizontal swiping in both reader and app settings; vertical scrolling and horizontal value sliders retain their own gestures.
+
+Library grid titles use their actual one/two-line height, removing the reserved blank line above authors for short titles. Scan notices retain accessible actions with less bottom padding. Scan notification permission is an elevated control with bell/bell-off state that refreshes after returning from Android settings.

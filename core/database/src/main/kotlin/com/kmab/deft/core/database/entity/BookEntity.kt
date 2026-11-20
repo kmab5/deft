@@ -1,5 +1,6 @@
 package com.kmab.deft.core.database.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -31,4 +32,6 @@ data class BookEntity(
     val addedAt: Instant,
     val lastOpenedAt: Instant? = null,
     val lastReadAt: Instant? = null,
+    val currentLocator: String? = null,
+    @ColumnInfo(defaultValue = "0.0") val totalProgression: Double = 0.0,
 )

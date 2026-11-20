@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -40,12 +41,16 @@ fun BookCard(
     imageLoader: ImageLoader,
     modifier: Modifier = Modifier,
     size: BookDisplaySize = BookDisplaySize.MEDIUM,
+    onClick: (() -> Unit)? = null,
 ) {
     val c = LocalDeftColors.current
     Column(
-        modifier.libraryBookSurface(8.dp).semantics(mergeDescendants = true) {
-            stateDescription = if (book.lastReadAt == null) "not read" else "previously read"
-        },
+        modifier
+            .testTag("book_${book.id}")
+            .libraryBookSurface(8.dp, onClick)
+            .semantics(mergeDescendants = true) {
+                stateDescription = if (book.lastReadAt == null) "not read" else "previously read"
+            },
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         LibraryCover(book, imageLoader, showBadges = size != BookDisplaySize.SMALL)
@@ -59,7 +64,6 @@ fun BookCard(
             book.displayTitle(),
             color = c.text,
             style = if (size == BookDisplaySize.LARGE) DeftTypography.label else DeftTypography.cardTitle,
-            minLines = 2,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )

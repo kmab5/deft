@@ -3,14 +3,21 @@ package com.kmab.deft.feature.library
 import android.content.Context
 import android.provider.Settings
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.test.assertHasNoClickAction
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
+import androidx.compose.ui.test.swipeDown
+import androidx.compose.ui.test.swipeUp
 import androidx.test.core.app.ApplicationProvider
 import com.kmab.deft.core.database.model.BookListItem
 import com.kmab.deft.core.designsystem.DeftTheme
@@ -73,7 +80,7 @@ class BooksScreenTest {
         }
         compose.onNodeWithText("missing", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithText("protected", useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithText("A book").assertHasNoClickAction()
+        compose.onNodeWithText("A book").assertHasClickAction()
         compose.onNodeWithContentDescription("display options").performClick()
         compose.onNodeWithText("list").performClick()
         compose.onNodeWithContentDescription("close popup").performClick()
@@ -305,5 +312,196 @@ class BooksScreenTest {
         compose.onNodeWithText("last scan").performClick()
         assertEquals(1, opens)
         compose.onNodeWithText("private-uri").assertDoesNotExist()
+    }
+
+    @Test fun bookDetailsAndContinueUseTheirOwnBookIdentity() {
+        val book =
+            BookListItem(
+                7,
+                "Earthsea",
+                "earthsea",
+                "Ursula K. Le Guin",
+                BookFormat.EPUB,
+                null,
+                Instant.EPOCH,
+                false,
+                false,
+                totalProgression = 0.25,
+            )
+        var detailId = 0L
+        var readId = 0L
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    BooksUiState(books = listOf(book), isLoading = false, continueReading = book),
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    { _, _ -> },
+                    onOpenBook = { detailId = it },
+                    onContinueReading = { readId = it },
+                )
+            }
+        }
+        compose.onNodeWithTag("book_7").performClick()
+        assertEquals(7L, detailId)
+        assertEquals(0L, readId)
+        compose.onNodeWithTag("continue_reading").performClick()
+        assertEquals(7L, readId)
+        compose.onNodeWithText("25%").assertExists()
+        compose.onNodeWithTag("floating_continue").performClick()
+        assertEquals(7L, readId)
+    }
+
+    @Test fun searchFindsAuthorsAndClearingRestoresTheLibrary() {
+        val books =
+            listOf(
+                BookListItem(
+                    1,
+                    "Earthsea",
+                    "earthsea",
+                    "Ursula Le Guin",
+                    BookFormat.EPUB,
+                    null,
+                    Instant.EPOCH,
+                    false,
+                    false,
+                ),
+                BookListItem(2, "Dune", "dune", "Frank Herbert", BookFormat.EPUB, null, Instant.EPOCH, false, false),
+            )
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    BooksUiState(books = books, isLoading = false, hasFolders = true),
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    { _, _ -> },
+                )
+            }
+        }
+        compose.onNodeWithContentDescription("search books").performClick()
+        compose.onNodeWithTag("library_search").performTextInput("HERBERT")
+        compose.onNodeWithTag("book_2").assertExists()
+        compose.onNodeWithTag("book_1").assertDoesNotExist()
+        compose.onNodeWithContentDescription("clear search").performClick()
+        compose.onNodeWithTag("book_1").assertExists()
+        compose.onNodeWithTag("book_2").assertExists()
+        compose.onNodeWithTag("library_search").performTextInput("not in this library")
+        compose.onNodeWithText("no matching books.").assertExists()
+        compose.onNodeWithText("clear search").performClick()
+        compose.onNodeWithTag("book_1").assertExists()
+    }
+
+    @Test fun scrollingHidesContinueHeaderAndUpwardMotionOffersReturnToTop() {
+        val books =
+            (1L..60L).map {
+                BookListItem(it, "Book $it", "book $it", "Writer", BookFormat.EPUB, null, Instant.EPOCH, false, false)
+            }
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    BooksUiState(books = books, gridView = false, isLoading = false, continueReading = books.first()),
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    { _, _ -> },
+                )
+            }
+        }
+        compose.onNodeWithTag("continue_reading").assertIsDisplayed()
+        compose.onNodeWithTag("book_list").performTouchInput { swipeUp() }
+        compose.onNodeWithTag("book_list").performTouchInput { swipeUp() }
+        compose.onNodeWithTag("continue_reading").assertDoesNotExist()
+        compose.onNodeWithTag("floating_continue").assertIsDisplayed()
+        compose.onNodeWithTag("book_list").performTouchInput { swipeDown(endY = centerY, durationMillis = 800) }
+        compose.onNodeWithTag("continue_reading").assertIsDisplayed()
+        compose.onNodeWithContentDescription("scroll to top").performClick()
+        compose.onNodeWithTag("book_1").assertIsDisplayed()
+        compose.onNodeWithContentDescription("scroll to top").assertDoesNotExist()
+    }
+
+    @Test fun scrollbarDragMovesList() = scrollbarDragMovesBooks(false)
+
+    @Test fun scrollbarDragMovesGrid() = scrollbarDragMovesBooks(true)
+
+    @Test fun fadedScrollbarDoesNotInterceptCardRightEdge() {
+        val books =
+            (1L..100L).map {
+                BookListItem(it, "Book $it", "book $it", "Writer", BookFormat.EPUB, null, Instant.EPOCH, false, false)
+            }
+        var opened = 0L
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    BooksUiState(books = books, gridView = false, isLoading = false),
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    { _, _ -> },
+                    onOpenBook = { opened = it },
+                )
+            }
+        }
+        compose.mainClock.advanceTimeBy(1500)
+        compose.onNodeWithTag("book_1").performTouchInput { click(Offset(width - 4f, centerY)) }
+        assertEquals(1L, opened)
+        val card = compose.onNodeWithTag("book_1").fetchSemanticsNode().boundsInRoot
+        val list = compose.onNodeWithTag("book_list").fetchSemanticsNode().boundsInRoot
+        assertEquals("Both card gutters have the same width", card.left - list.left, list.right - card.right, 1f)
+        compose.onNodeWithTag("book_list").performTouchInput {
+            val x = card.right - list.left - 4f
+            swipe(Offset(x, height * 0.7f), Offset(x, height * 0.5f), durationMillis = 800)
+        }
+        // A normal small swipe must not jump to the middle of the library like a scrollbar seek.
+        compose.onNodeWithTag("book_50").assertDoesNotExist()
+        compose.onNodeWithTag("book_3").assertExists()
+        compose.onNodeWithTag("book_3").performTouchInput { click(Offset(width - 4f, centerY)) }
+        assertEquals("The active scrollbar leaves the rest of the card edge interactive", 3L, opened)
+    }
+
+    private fun scrollbarDragMovesBooks(grid: Boolean) {
+        val books =
+            (1L..100L).map {
+                BookListItem(it, "Book $it", "book $it", "Writer", BookFormat.EPUB, null, Instant.EPOCH, false, false)
+            }
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    BooksUiState(books = books, gridView = grid, isLoading = false),
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    { _, _ -> },
+                )
+            }
+        }
+        compose.onNodeWithTag("book_1").assertExists()
+        val booksTag = if (grid) "book_grid" else "book_list"
+        compose.onNodeWithTag(booksTag).performTouchInput { swipeUp(durationMillis = 200) }
+        compose.mainClock.autoAdvance = false
+        val track = compose.onNodeWithTag(booksTag).fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithTag("library_scrollbar").performTouchInput {
+            swipe(center, Offset(centerX, track.height), durationMillis = 500)
+        }
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        compose.onNodeWithTag("book_1").assertDoesNotExist()
+        compose.onNodeWithTag("book_100").assertExists()
     }
 }
