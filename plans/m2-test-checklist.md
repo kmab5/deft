@@ -1,5 +1,9 @@
 # M2 — EPUB reader + M1 feedback test checklist
 
+## 0.2.5 — final polish and merge authorization
+
+You passed all twelve 0.2.4 checks and explicitly authorized the remaining minor fixes followed by merge/push without a further feedback round. The review below is preserved. Final changes cover the larger title, centered progress thumb and footer spacing, swipeable settings tabs with icons, adaptive grid title spacing, compact scan notices and the notification-permission control. Local verification and release evidence will be recorded in the handover entry.
+
 ## 0.2.4 — device feedback retest
 
 Your completed 0.2.3 review and comments remain below. Install this release as an update, without uninstalling.
@@ -28,7 +32,7 @@ Your completed 0.2.3 review and comments remain below. Install this release as a
 - the space between the title of a book and its author in the library grid view is a bit too big when the titles are one line, when there are two lines, yes it works perfectly but even whe there are no books on the line that dtake up two lines, the gap still exists, it should be adaptive
 - as the changes that i suggested are very minor, make these changes and merge onto main and push
 
-No later milestone features were brought forward. M2 remains pending your explicit acceptance.
+No later milestone features were brought forward. M2 is accepted for final polish and merge as directed above.
 
 ## 0.2.3 — device feedback retest
 
@@ -75,7 +79,7 @@ All original 0.2.2 comments/results remain below. This section covers every new 
 
 Coverage: corrupted content/image viewer/selection → steps 2–5; tap zones/swipe cancellation/system edges/dividers → 6–9; HUD/status/padding/progress/page wording/TOC → 10–12; explicit and advanced search → 13–15; draggable scrollbar/notices/icons → 16–18; accessibility/regression → 19–20.
 
-Install `app/build/outputs/apk/release/deft-0.2.4.apk` over the existing Deft installation. Keep app data. Start with **0.2.4 — device feedback retest** above; earlier results and your comments are preserved as history. This includes the final M1 fixes already merged into main. M2 remains unmerged until you approve this checklist. Tick only steps actually tested, and put observations/screenshots under the relevant section or in `plans/feedback/`.
+Install `app/build/outputs/apk/release/deft-0.2.5.apk` over the existing Deft installation. Keep app data. Start with **0.2.4 — device feedback retest** above; earlier results and your comments are preserved as history. This includes the final M1 fixes already merged into main. M2 merge is authorized after the final local checks. Tick only steps actually tested, and put observations/screenshots under the relevant section or in `plans/feedback/`.
 
 Suggested samples: two ordinary EPUBs with several chapters, one illustrated EPUB, a long chapter, non-Latin text, a protected EPUB if available, a damaged copy, one valid TTF/OTF and one invalid font file. Use disposable copies for missing/changed/forget checks. PDF and other formats are scanned/listed, but reading them belongs to later milestones.
 

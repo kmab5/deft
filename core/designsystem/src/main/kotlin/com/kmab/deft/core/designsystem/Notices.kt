@@ -187,7 +187,7 @@ private fun NoticeCard(
                             DeftNoticeKind.Info -> colors.accentText
                         },
                 )
-                Column(Modifier.weight(1f).padding(start = 12.dp, end = 8.dp, top = 10.dp, bottom = 10.dp)) {
+                Column(Modifier.weight(1f).padding(start = 12.dp, end = 8.dp, top = 10.dp)) {
                     Text(notice.message, style = DeftTypography.body, color = colors.text)
                     if (notice.actionLabel != null && notice.onAction != null) {
                         TextButton(

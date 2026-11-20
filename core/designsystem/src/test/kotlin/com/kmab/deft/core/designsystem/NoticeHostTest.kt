@@ -75,6 +75,8 @@ class NoticeHostTest {
         assertTrue("Action has its own row below the complete message", action.top >= text.bottom)
         assertTrue("Action follows the message without an empty header row", action.top - text.bottom <= 16f)
         assertEquals("Action text aligns with the message", text.left, action.left, 1f)
+        val actionTarget = compose.onNodeWithText("scan details").fetchSemanticsNode().boundsInRoot
+        assertTrue("Compact notices retain a 48dp action target", actionTarget.height >= 48f)
         val dismiss = compose.onAllNodesWithContentDescription("dismiss notice").fetchSemanticsNodes()
         assertEquals(2, dismiss.size)
         dismiss.forEach {

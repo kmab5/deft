@@ -362,3 +362,10 @@ Library content returns to symmetric 16dp gutters, restoring previous grid/list 
 Reader edge taps use 35/30/35 proportions. Slow drags past halfway settle on exactly the adjacent page. The title uses titleLarge typography, the footer reserves 12dp above the chapter label, and fullscreen content gains 8dp top space. Search results identify the nearest preceding contents section and actual EPUB page position. Images open on a native, bounded raster/SVG surface with focal pinch zoom, pan, a close action and visible failure recovery. Back consumes outgoing-screen repetitions and cannot pop past the library root.
 
 Updated Compose renders are linked in `plans/design/m2-feedback.html`. These are local Android layout/render checks; phone-specific gestures and system browser behavior remain device-checklist items.
+
+
+### M2 accepted final polish (2026-11-20, 0.2.5)
+
+Reader title now uses the 22sp headline token (titleLarge maps to Deft's smaller 17sp title token). Footer top spacing becomes 16dp. The 12dp circular progress thumb is centered inside a full-height 32dp slot, matching the track slot; this avoids Material 3 top-aligning the smaller dot inside its minimum-height wrapper. The visible track stays 3dp. Text, Theme and Page settings gain labelled icons and horizontal swiping in both reader and app settings; vertical scrolling and horizontal value sliders retain their own gestures.
+
+Library grid titles use their actual one/two-line height, removing the reserved blank line above authors for short titles. Scan notices retain accessible actions with less bottom padding. Scan notification permission is an elevated control with bell/bell-off state that refreshes after returning from Android settings.

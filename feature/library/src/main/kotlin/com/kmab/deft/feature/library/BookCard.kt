@@ -64,7 +64,6 @@ fun BookCard(
             book.displayTitle(),
             color = c.text,
             style = if (size == BookDisplaySize.LARGE) DeftTypography.label else DeftTypography.cardTitle,
-            minLines = 2,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )

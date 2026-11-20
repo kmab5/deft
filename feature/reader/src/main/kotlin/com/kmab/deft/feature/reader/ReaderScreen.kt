@@ -71,6 +71,7 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -451,7 +452,7 @@ internal fun ReaderChrome(
                         ),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.headlineSmall,
                     )
                     IconButton(onClick = onSearch) { Icon(ReaderIcons.Search, "Search this book") }
                     IconButton(onClick = onContents) { Icon(ReaderIcons.Contents, "Contents and bookmarks") }
@@ -477,7 +478,7 @@ internal fun ReaderChrome(
                     Modifier.fillMaxWidth().navigationBarsPadding().padding(
                         start = 18.dp,
                         end = 18.dp,
-                        top = 12.dp,
+                        top = 16.dp,
                         bottom = 4.dp,
                     ),
                 ) {
@@ -527,22 +528,25 @@ internal fun ReaderChrome(
                         enabled = state.rendered,
                         interactionSource = sliderInteraction,
                         thumb = {
-                            Surface(
-                                Modifier.size(12.dp),
-                                shape = androidx.compose.foundation.shape.CircleShape,
-                                color = MaterialTheme.colorScheme.primary,
-                            ) {}
+                            // Center the dot inside the full-height, top-aligned slider thumb wrapper.
+                            Box(Modifier.size(width = 12.dp, height = 32.dp), contentAlignment = Alignment.Center) {
+                                Surface(
+                                    Modifier.size(12.dp).testTag("reader-progress-thumb"),
+                                    shape = androidx.compose.foundation.shape.CircleShape,
+                                    color = MaterialTheme.colorScheme.primary,
+                                ) {}
+                            }
                         },
                         track = { sliderState ->
                             val active = MaterialTheme.colorScheme.primary
                             val inactive = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
-                            Canvas(Modifier.fillMaxWidth().height(3.dp)) {
-                                drawLine(inactive, Offset(0f, center.y), Offset(size.width, center.y), size.height)
+                            Canvas(Modifier.fillMaxWidth().height(32.dp).testTag("reader-progress-track")) {
+                                drawLine(inactive, Offset(0f, center.y), Offset(size.width, center.y), 3.dp.toPx())
                                 drawLine(
                                     active,
                                     Offset(0f, center.y),
                                     Offset(size.width * sliderState.value, center.y),
-                                    size.height,
+                                    3.dp.toPx(),
                                 )
                             }
                         },

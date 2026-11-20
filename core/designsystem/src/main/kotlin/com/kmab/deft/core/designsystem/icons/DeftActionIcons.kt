@@ -22,6 +22,9 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.InsertDriveFile
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.NotificationsOff
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.Title
@@ -58,4 +61,7 @@ object DeftActionIcons {
     val Bookmark get() = Icons.Outlined.BookmarkBorder
     val Rename get() = Icons.Outlined.Edit
     val Return get() = Icons.AutoMirrored.Outlined.Undo
+    val Notifications get() = Icons.Outlined.Notifications
+    val NotificationsOff get() = Icons.Outlined.NotificationsOff
+    val Palette get() = Icons.Outlined.Palette
 }

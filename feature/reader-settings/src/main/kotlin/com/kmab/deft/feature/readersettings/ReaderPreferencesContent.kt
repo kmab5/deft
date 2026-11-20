@@ -1,14 +1,16 @@
 package com.kmab.deft.feature.readersettings
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -16,10 +18,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -27,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
+import com.kmab.deft.core.designsystem.icons.DeftIcons
 import com.kmab.deft.core.model.PageAnimation
 import com.kmab.deft.core.model.ReaderAlignment
 import com.kmab.deft.core.model.ReaderFont
@@ -34,6 +34,7 @@ import com.kmab.deft.core.model.ReaderMargins
 import com.kmab.deft.core.model.ReaderOrientation
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReaderTheme
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 internal typealias PreferenceUpdate = ((ReaderPreferences) -> ReaderPreferences) -> Unit
@@ -50,29 +51,53 @@ internal fun ReaderPreferencesContent(
     modifier: Modifier = Modifier,
     manageAssets: Boolean = false,
 ) {
-    val colors = LocalDeftColors.current
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    val pager = rememberPagerState { READER_SETTINGS_PAGE_COUNT }
+    val scope = rememberCoroutineScope()
+    val scrollStates = listOf(rememberScrollState(), rememberScrollState(), rememberScrollState())
     Column(modifier.fillMaxWidth().then(if (manageAssets) Modifier else Modifier.heightIn(max = 560.dp))) {
-        TabRow(selectedTabIndex = tab, containerColor = colors.surface, contentColor = colors.accentText) {
-            listOf("text", "theme", "page").forEachIndexed { index, label ->
-                Tab(
-                    selected = tab == index,
-                    onClick = { tab = index },
-                    selectedContentColor = colors.accentText,
-                    unselectedContentColor = colors.muted,
-                    text = { Text(label, style = DeftTypography.label) },
-                )
-            }
-        }
-        AnimatedContent(tab, label = "reader settings tab", modifier = Modifier.weight(1f, fill = false)) { selected ->
+        ReaderPreferenceTabs(pager.currentPage) { index -> scope.launch { pager.animateScrollToPage(index) } }
+        HorizontalPager(
+            state = pager,
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.Top,
+        ) { selected ->
             Column(
-                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
+                Modifier.fillMaxSize().verticalScroll(scrollStates[selected]).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 when (selected) {
                     0 -> TextPreferences(preferences, fonts, update, onChooseFont)
                     1 -> ThemePreferences(preferences, themes, update, onEditTheme, onDeleteTheme, manageAssets)
                     else -> PagePreferences(preferences, update, manageAssets)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReaderPreferenceTabs(
+    selected: Int,
+    select: (Int) -> Unit,
+) {
+    val colors = LocalDeftColors.current
+    val tabs = listOf("text" to DeftActionIcons.Title, "theme" to DeftActionIcons.Palette, "page" to DeftIcons.Books)
+    TabRow(selectedTabIndex = selected, containerColor = colors.surface, contentColor = colors.accentText) {
+        tabs.forEachIndexed { index, (label, icon) ->
+            Tab(
+                selected = selected == index,
+                onClick = { select(index) },
+                modifier = Modifier.heightIn(min = 48.dp),
+                selectedContentColor = colors.accentText,
+                unselectedContentColor = colors.muted,
+            ) {
+                Row(
+                    Modifier.padding(horizontal = 4.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(icon, null, Modifier.size(18.dp))
+                    Text(label, style = DeftTypography.label, maxLines = 1)
                 }
             }
         }
@@ -177,5 +202,6 @@ private fun PagePreferences(
     }
 }
 
+private const val READER_SETTINGS_PAGE_COUNT = 3
 private const val STEP = 0.1
 internal const val PERCENT = 100

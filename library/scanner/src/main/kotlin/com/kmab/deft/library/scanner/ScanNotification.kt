@@ -10,6 +10,8 @@ import android.os.Build
 import androidx.work.ForegroundInfo
 import kotlinx.coroutines.CancellationException
 
+const val SCAN_NOTIFICATION_CHANNEL_ID = "library-scan"
+
 internal class ScanNotification(
     private val context: Context,
     private val cancel: PendingIntent,
@@ -17,11 +19,11 @@ internal class ScanNotification(
     fun foregroundInfo(processedFiles: Int): ForegroundInfo {
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL, "Library scans", NotificationManager.IMPORTANCE_LOW),
+            NotificationChannel(SCAN_NOTIFICATION_CHANNEL_ID, "Library scans", NotificationManager.IMPORTANCE_LOW),
         )
         val builder =
             Notification
-                .Builder(context, CHANNEL)
+                .Builder(context, SCAN_NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_scan_notification)
                 .setContentTitle("scanning your library")
                 .setContentText("${checkedFiles(processedFiles)} · you can leave Deft")
@@ -48,7 +50,6 @@ internal class ScanNotification(
     }
 
     private companion object {
-        const val CHANNEL = "library-scan"
         const val NOTIFICATION_ID = 1001
     }
 }
