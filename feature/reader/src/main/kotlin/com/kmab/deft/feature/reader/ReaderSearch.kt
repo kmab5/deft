@@ -181,28 +181,35 @@ internal fun ReaderSearchPanel(
         )
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             itemsIndexed(state.results) { _, locator ->
-                Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceVariant) {
-                    Column(Modifier.fillMaxWidth().clickable { select(locator) }.padding(14.dp)) {
-                        locator.title?.takeIf(String::isNotBlank)?.let {
-                            Text(
-                                it,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                        Text(
-                            buildAnnotatedString {
-                                append(locator.text.before.orEmpty())
-                                withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                                    append(locator.text.highlight.orEmpty())
-                                }
-                                append(locator.text.after.orEmpty())
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
+                ReaderSearchResult(locator, select)
             }
+        }
+    }
+}
+
+@Composable
+private fun ReaderSearchResult(
+    locator: Locator,
+    select: (Locator) -> Unit,
+) {
+    Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceVariant) {
+        Column(Modifier.fillMaxWidth().clickable { select(locator) }.padding(14.dp)) {
+            Text(
+                "${locator.title ?: "chapter"} · " +
+                    (locator.locations.position?.let { "page $it" } ?: "page unavailable"),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                buildAnnotatedString {
+                    append(locator.text.before.orEmpty())
+                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                        append(locator.text.highlight.orEmpty())
+                    }
+                    append(locator.text.after.orEmpty())
+                },
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
     }
 }

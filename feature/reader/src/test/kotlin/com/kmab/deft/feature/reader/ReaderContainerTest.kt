@@ -31,8 +31,28 @@ class ReaderContainerTest {
         fixture.touch(MotionEvent.ACTION_MOVE, 300f, 200f)
         assertEquals(listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE), fixture.events)
         fixture.touch(MotionEvent.ACTION_MOVE, 180f, 200f)
-        fixture.touch(MotionEvent.ACTION_UP, 100f, 200f)
+        fixture.touch(MotionEvent.ACTION_UP, 180f, 200f)
         assertFalse(fixture.events.contains(MotionEvent.ACTION_CANCEL))
+        assertEquals(MotionEvent.ACTION_UP, fixture.events.last())
+        assertTrue(fixture.swipes.isEmpty())
+    }
+
+    @Test fun slowDragPastHalfWidthCommitsOnceAfterNativeFingerFollowing() {
+        val fixture = fixture()
+        fixture.touch(MotionEvent.ACTION_DOWN, 430f, 200f)
+        fixture.touch(MotionEvent.ACTION_MOVE, 390f, 200f, 500)
+        fixture.touch(MotionEvent.ACTION_MOVE, 160f, 200f, 2000)
+        assertEquals(listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE, MotionEvent.ACTION_MOVE), fixture.events)
+        fixture.touch(MotionEvent.ACTION_UP, 160f, 200f, 1000)
+        fixture.assertCancelled()
+        assertEquals(listOf(-270f), fixture.swipes)
+    }
+
+    @Test fun slowDragUnderHalfWidthKeepsNativeReleaseAndDoesNotForceTurn() {
+        val fixture = fixture()
+        fixture.touch(MotionEvent.ACTION_DOWN, 400f, 200f)
+        fixture.touch(MotionEvent.ACTION_MOVE, 160f, 200f, 2000)
+        fixture.touch(MotionEvent.ACTION_UP, 160f, 200f, 1000)
         assertEquals(MotionEvent.ACTION_UP, fixture.events.last())
         assertTrue(fixture.swipes.isEmpty())
     }
@@ -222,8 +242,9 @@ class ReaderContainerTest {
             action: Int,
             x: Float,
             y: Float,
+            elapsed: Long = 10,
         ) {
-            time += 10
+            time += elapsed
             val event = MotionEvent.obtain(0, time, action, x, y, 0)
             container.dispatchTouchEvent(event)
             event.recycle()

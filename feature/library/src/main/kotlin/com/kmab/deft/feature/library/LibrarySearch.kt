@@ -100,7 +100,7 @@ internal fun LibrarySearchFilters(
 ) {
     if (advanced) {
         com.kmab.deft.core.designsystem
-            .SearchOptionsControls(options, onOptions)
+            .SearchOptionsControls(options, onOptions, Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
     }
     result.exceptionOrNull()?.message?.let { Text(it, Modifier.padding(horizontal = 16.dp)) }
 }

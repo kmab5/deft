@@ -351,3 +351,14 @@ Reader controls use a compact chapter/progress footer without decorative section
 The existing text/theme/page settings grouping remains, with publisher-original alignment added alongside left and justified. Font, size, line spacing, margins, themes, brightness and page behavior edit the same persistent global settings in either settings entry point. Launch-last-book appears in app-wide Reader settings. Tracking, ratings/favorite, notes/highlights and other-format reader controls remain at their confirmed roadmap milestones. The full feedback index is `plans/2026-11-19-m2-feedback-coverage.md`.
 
 The complete Lithium settings screenshot additionally informs three Page controls: tap edges to turn pages, fullscreen reading, and orientation (system/portrait/landscape). Defaults retain the current behavior. With fullscreen disabled, the publication and status line reserve system-bar space. The app theme continues to follow Android; sync/backup remain outside this patch, and external links stay closed under Deft's offline policy. Deft has no swipe-open folder drawer to disable.
+
+
+### M2 device-feedback revision (2026-11-20, 0.2.4)
+
+This revision supersedes the earlier closed-external-link behavior: explicit HTTP(S) link taps show a confirmation naming the actual destination domain, then open the default browser only after confirmation. Deft retains no network permission.
+
+Library content returns to symmetric 16dp gutters, restoring previous grid/list widths. The visible scroll handle overlays cards and takes touch priority only inside its accessible handle bounds. Advanced search options and help occupy one elevated card aligned to the field in both library and reader. Scan details sits directly under completion text within the notice text column; dismissal keeps its independent accessible target.
+
+Reader edge taps use 35/30/35 proportions. Slow drags past halfway settle on exactly the adjacent page. The title uses titleLarge typography, the footer reserves 12dp above the chapter label, and fullscreen content gains 8dp top space. Search results identify the nearest preceding contents section and actual EPUB page position. Images open on a native, bounded raster/SVG surface with focal pinch zoom, pan, a close action and visible failure recovery. Back consumes outgoing-screen repetitions and cannot pop past the library root.
+
+Updated Compose renders are linked in `plans/design/m2-feedback.html`. These are local Android layout/render checks; phone-specific gestures and system browser behavior remain device-checklist items.

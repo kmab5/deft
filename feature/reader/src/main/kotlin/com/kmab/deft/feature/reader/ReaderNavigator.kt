@@ -37,6 +37,7 @@ internal class ReaderNavigator(
     private val model: ReaderViewModel,
     private val session: ReaderSession,
     private val onImage: (Url) -> Unit = {},
+    private val onExternalLink: (String) -> Unit = {},
     private val toggleChrome: () -> Unit,
 ) {
     private var fragment: EpubNavigatorFragment? = null
@@ -79,7 +80,7 @@ internal class ReaderNavigator(
                 listener =
                     object : EpubNavigatorFragment.Listener {
                         override fun onExternalLinkActivated(url: AbsoluteUrl) {
-                            model.notice("External links stay closed while reading offline.")
+                            onExternalLink(url.toString())
                         }
 
                         override fun shouldFollowInternalLink(
@@ -277,7 +278,11 @@ internal class ReaderNavigator(
                             val link = resource?.let { session.opened.publication.linkWithHref(it) }
                             val point = link?.let { session.opened.publication.locatorFromLink(it) }
                             if (point == null) {
-                                model.notice("External links stay closed while reading offline.")
+                                if (resource == null) {
+                                    onExternalLink(href)
+                                } else {
+                                    model.notice("That location is unavailable in this book.")
+                                }
                             } else {
                                 val fragment = href.substringAfter('#', "")
                                 go(

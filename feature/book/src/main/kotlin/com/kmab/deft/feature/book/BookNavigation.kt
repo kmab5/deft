@@ -11,12 +11,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.kmab.deft.core.designsystem.DeftNoticeKind
 import com.kmab.deft.core.designsystem.LocalDeftNoticeState
+import com.kmab.deft.core.designsystem.popDestination
+import com.kmab.deft.core.designsystem.rememberDestinationBack
 
 fun NavGraphBuilder.bookGraph(
     navController: NavController,
     onRead: (Long) -> Unit,
 ) {
-    composable("book/{bookId}", arguments = listOf(navArgument("bookId") { type = NavType.LongType })) {
+    composable("book/{bookId}", arguments = listOf(navArgument("bookId") { type = NavType.LongType })) { entry ->
+        val onBack = rememberDestinationBack(navController, entry)
         val viewModel: BookDetailViewModel = hiltViewModel()
         val state by viewModel.state.collectAsStateWithLifecycle()
         val notices = LocalDeftNoticeState.current
@@ -29,10 +32,10 @@ fun NavGraphBuilder.bookGraph(
             }
             if (state.forgotten) {
                 notices?.show("Book forgotten. Its original file is unchanged.")
-                navController.popBackStack()
+                navController.popDestination(entry)
             }
         }
-        BookDetailScreen(state, { navController.popBackStack() }, {
+        BookDetailScreen(state, onBack, {
             state.details
                 ?.book
                 ?.id

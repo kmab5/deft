@@ -73,6 +73,7 @@ class NoticeHostTest {
         val text = compose.onNodeWithText(message, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         val action = compose.onNodeWithText("scan details", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         assertTrue("Action has its own row below the complete message", action.top >= text.bottom)
+        assertTrue("Action follows the message without an empty header row", action.top - text.bottom <= 16f)
         assertEquals("Action text aligns with the message", text.left, action.left, 1f)
         val dismiss = compose.onAllNodesWithContentDescription("dismiss notice").fetchSemanticsNodes()
         assertEquals(2, dismiss.size)

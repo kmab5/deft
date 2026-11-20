@@ -4,15 +4,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ReaderTapZoneTest {
-    @Test fun outerFortyPercentTurnsAndMiddleTwentyPercentTogglesControls() {
+    @Test fun outerThirtyFivePercentTurnsAndMiddleThirtyPercentTogglesControls() {
         val cases =
             listOf(
                 0f to ReaderTapAction.LEFT,
-                199f to ReaderTapAction.LEFT,
-                200f to ReaderTapAction.CHROME,
+                174f to ReaderTapAction.LEFT,
+                175f to ReaderTapAction.CHROME,
                 250f to ReaderTapAction.CHROME,
-                300f to ReaderTapAction.CHROME,
-                301f to ReaderTapAction.RIGHT,
+                325f to ReaderTapAction.CHROME,
+                326f to ReaderTapAction.RIGHT,
                 500f to ReaderTapAction.RIGHT,
             )
         cases.forEach { (x, action) -> assertEquals(action, readerTapAction(x, 500, true)) }

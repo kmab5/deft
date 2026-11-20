@@ -189,22 +189,22 @@ private fun NoticeCard(
                 )
                 Column(Modifier.weight(1f).padding(start = 12.dp, end = 8.dp, top = 10.dp, bottom = 10.dp)) {
                     Text(notice.message, style = DeftTypography.body, color = colors.text)
+                    if (notice.actionLabel != null && notice.onAction != null) {
+                        TextButton(
+                            onClick = {
+                                state.dismiss(notice.id)
+                                notice.onAction.invoke()
+                            },
+                            modifier = Modifier.heightIn(min = 48.dp),
+                            contentPadding = PaddingValues(vertical = 8.dp),
+                            shape = DeftShapes.small,
+                        ) {
+                            Text(notice.actionLabel, style = DeftTypography.label, color = colors.accentText)
+                        }
+                    }
                 }
                 IconButton(onClick = { state.dismiss(notice.id) }, modifier = Modifier.size(48.dp)) {
                     Icon(DeftActionIcons.Close, "dismiss notice", tint = colors.muted)
-                }
-            }
-            if (notice.actionLabel != null && notice.onAction != null) {
-                TextButton(
-                    onClick = {
-                        state.dismiss(notice.id)
-                        notice.onAction.invoke()
-                    },
-                    modifier = Modifier.padding(start = 24.dp).heightIn(min = 48.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
-                    shape = DeftShapes.small,
-                ) {
-                    Text(notice.actionLabel, style = DeftTypography.label, color = colors.accentText)
                 }
             }
         }

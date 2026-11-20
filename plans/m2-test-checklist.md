@@ -1,5 +1,25 @@
 # M2 — EPUB reader + M1 feedback test checklist
 
+## 0.2.4 — device feedback retest
+
+Your completed 0.2.3 review and comments remain below. Install this release as an update, without uninstalling.
+
+- [ ] Update to **0.2.4**. Library folders, display sizes, filters, reader preferences, positions and bookmarks remain.
+- [ ] Open the image that previously showed a blank viewer in The Tainted Cup, a cover, a large raster image and an SVG. Images appear on the native zoom surface. Pinch around different points, pan when enlarged, close and press Back; return to the same passage. Malformed/unsupported images show a readable error and a working close button.
+- [ ] Slowly drag forward and backward until the next page is more than halfway visible, pause, then release: exactly one page turns. Return more than halfway toward the drag origin to cancel. Repeat at chapter boundaries, with quick flicks, with animation None and with system animations disabled. No page is skipped.
+- [ ] Verify tap zones are **35% left / 30% center / 35% right**. Center toggles HUD. System-edge Back swipes and text selection still work without unintended page turns.
+- [ ] Fullscreen book text has modest additional top space. The reader title is visibly larger, and the footer has space above the chapter name. Repeat with a long book title, landscape and 150% text; all controls remain reachable.
+- [ ] Advanced search controls and regex help sit together in an elevated card, aligned with the search field in both Books and the reader. Toggle options and type an invalid expression; text wraps within the same gutters without pushing controls offscreen.
+- [ ] In-book search results each show **chapter and page** above the snippet. Open results from different chapters and different sections sharing one file if available; labels and passage navigation agree. Back returns to the original passage.
+- [ ] Tap an external website link in paged and continuous modes. A prompt names its actual domain. Cancel or Back stays in Deft. Confirm opens that URL in your browser; return to Deft without losing the passage. No website opens automatically and local/internal links still navigate within the book.
+- [ ] Grid/list Small, Medium and Large match their earlier widths and column counts; no reserved blank scrollbar gutter. Drag the visible thumb: it takes priority over the overlapped book area. Taps/ordinary scrolling away from the handle and after it fades still work. Continue and return-to-top remain accessible.
+- [ ] Rescan: **scan details** sits directly beneath the completion message, without the large empty gap. Message, status icon and close control align. Check multiple stacked notices and 150% text; details and dismissal still work.
+- [ ] Rapidly press the toolbar Back button on book details, Settings, Library settings, Reader settings and Ignored books. Repeat with system Back and transitions in progress. The app must never show an empty screen or pop past its library root. Normal Back from the library can still leave the app.
+- [ ] Repeat Back with reader contents/search/settings, the image viewer and external-link prompt open: close the top overlay first. Reopen Deft, rotate and background/foreground; reading position and previous successful 0.2.3 behavior remain intact.
+
+No later milestone features were brought forward. M2 remains pending your explicit acceptance.
+
+
 ## 0.2.3 — device feedback retest
 
 All original 0.2.2 comments/results remain below. This section covers every new comment and the seven November 19 screenshots. Later milestone boundaries remain unchanged.
@@ -45,7 +65,7 @@ All original 0.2.2 comments/results remain below. This section covers every new 
 
 Coverage: corrupted content/image viewer/selection → steps 2–5; tap zones/swipe cancellation/system edges/dividers → 6–9; HUD/status/padding/progress/page wording/TOC → 10–12; explicit and advanced search → 13–15; draggable scrollbar/notices/icons → 16–18; accessibility/regression → 19–20.
 
-Install `app/build/outputs/apk/release/deft-0.2.3.apk` over the existing Deft installation. Keep app data. Start with **0.2.3 — device feedback retest** below; earlier results and your comments are preserved as history. This includes the final M1 fixes already merged into main. M2 remains unmerged until you approve this checklist. Tick only steps actually tested, and put observations/screenshots under the relevant section or in `plans/feedback/`.
+Install `app/build/outputs/apk/release/deft-0.2.4.apk` over the existing Deft installation. Keep app data. Start with **0.2.4 — device feedback retest** above; earlier results and your comments are preserved as history. This includes the final M1 fixes already merged into main. M2 remains unmerged until you approve this checklist. Tick only steps actually tested, and put observations/screenshots under the relevant section or in `plans/feedback/`.
 
 Suggested samples: two ordinary EPUBs with several chapters, one illustrated EPUB, a long chapter, non-Latin text, a protected EPUB if available, a damaged copy, one valid TTF/OTF and one invalid font file. Use disposable copies for missing/changed/forget checks. PDF and other formats are scanned/listed, but reading them belongs to later milestones.
 

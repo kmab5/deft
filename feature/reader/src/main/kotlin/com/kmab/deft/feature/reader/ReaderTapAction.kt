@@ -15,4 +15,4 @@ internal fun readerTapAction(
     }
 }
 
-private const val TAP_EDGE_FRACTION = 0.4f
+private const val TAP_EDGE_FRACTION = 0.35f

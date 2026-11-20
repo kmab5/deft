@@ -460,6 +460,7 @@ class BooksScreenTest {
         assertEquals(1L, opened)
         val card = compose.onNodeWithTag("book_1").fetchSemanticsNode().boundsInRoot
         val list = compose.onNodeWithTag("book_list").fetchSemanticsNode().boundsInRoot
+        assertEquals("Both card gutters have the same width", card.left - list.left, list.right - card.right, 1f)
         compose.onNodeWithTag("book_list").performTouchInput {
             val x = card.right - list.left - 4f
             swipe(Offset(x, height * 0.7f), Offset(x, height * 0.5f), durationMillis = 800)
@@ -467,6 +468,8 @@ class BooksScreenTest {
         // A normal small swipe must not jump to the middle of the library like a scrollbar seek.
         compose.onNodeWithTag("book_50").assertDoesNotExist()
         compose.onNodeWithTag("book_3").assertExists()
+        compose.onNodeWithTag("book_3").performTouchInput { click(Offset(width - 4f, centerY)) }
+        assertEquals("The active scrollbar leaves the rest of the card edge interactive", 3L, opened)
     }
 
     private fun scrollbarDragMovesBooks(grid: Boolean) {
@@ -489,15 +492,16 @@ class BooksScreenTest {
             }
         }
         compose.onNodeWithTag("book_1").assertExists()
+        val booksTag = if (grid) "book_grid" else "book_list"
+        compose.onNodeWithTag(booksTag).performTouchInput { swipeUp(durationMillis = 200) }
+        compose.mainClock.autoAdvance = false
+        val track = compose.onNodeWithTag(booksTag).fetchSemanticsNode().boundsInRoot
         compose.onNodeWithTag("library_scrollbar").performTouchInput {
-            swipeDown(
-                startY = height * 0.15f,
-                endY =
-                    height * 0.9f,
-                durationMillis = 500,
-            )
+            swipe(center, Offset(centerX, track.height), durationMillis = 500)
         }
+        compose.mainClock.autoAdvance = true
         compose.waitForIdle()
         compose.onNodeWithTag("book_1").assertDoesNotExist()
+        compose.onNodeWithTag("book_100").assertExists()
     }
 }

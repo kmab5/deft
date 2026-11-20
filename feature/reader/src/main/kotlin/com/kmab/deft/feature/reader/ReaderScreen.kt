@@ -115,12 +115,19 @@ internal fun ReaderScreen(
     val contentsState = rememberReaderContentsState()
     val progressPositions = remember(session) { session?.progressPositions().orEmpty() }
     var imageHref by rememberSaveable { mutableStateOf<String?>(null) }
+    var externalHref by rememberSaveable { mutableStateOf<String?>(null) }
     var chromeInteraction by remember { mutableStateOf(0) }
     var scrubbing by remember { mutableStateOf(false) }
     val navigator =
         remember(session) {
             session?.let {
-                ReaderNavigator(activity, model, it, onImage = { url -> imageHref = url.toString() }) {
+                ReaderNavigator(
+                    activity,
+                    model,
+                    it,
+                    onImage = { url -> imageHref = url.toString() },
+                    onExternalLink = { url -> externalHref = url },
+                ) {
                     chrome = !chrome
                     chromeInteraction++
                 }
@@ -136,7 +143,7 @@ internal fun ReaderScreen(
         theme = theme,
         chrome = chrome,
         sheetOpen = sheet != null,
-        imageOpen = imageHref != null,
+        imageOpen = imageHref != null || externalHref != null,
         scrubbing = scrubbing,
         interaction = chromeInteraction,
         hideChrome = { chrome = false },
@@ -156,7 +163,7 @@ internal fun ReaderScreen(
                             .displayCutoutPadding()
                             .then(
                                 if (preferences.fullScreen) {
-                                    Modifier
+                                    Modifier.padding(top = 8.dp)
                                 } else {
                                     Modifier.systemBarsPadding().padding(
                                         top = 12.dp,
@@ -236,13 +243,33 @@ internal fun ReaderScreen(
                 model.search.cancel()
                 sheet = null
             }
-            imageHref?.let { href ->
-                session?.opened?.publication?.let { publication ->
-                    Url(href)?.let { ReaderImageViewer(publication, it) { imageHref = null } }
-                }
-            }
+            ReaderOverlayWindows(
+                session,
+                imageHref,
+                externalHref,
+                closeImage = { imageHref = null },
+                closeExternal = { externalHref = null },
+                unavailable = { notices.show("This link could not be opened. Check that a browser is installed.") },
+            )
         }
     }
+}
+
+@Composable
+private fun ReaderOverlayWindows(
+    session: ReaderSession?,
+    imageHref: String?,
+    externalHref: String?,
+    closeImage: () -> Unit,
+    closeExternal: () -> Unit,
+    unavailable: () -> Unit,
+) {
+    imageHref?.let { href ->
+        session?.opened?.publication?.let { publication ->
+            Url(href)?.let { ReaderImageViewer(publication, it, closeImage) }
+        }
+    }
+    externalHref?.let { ReaderExternalLinkDialog(it, closeExternal, unavailable) }
 }
 
 @Composable
@@ -424,7 +451,7 @@ internal fun ReaderChrome(
                         ),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.titleLarge,
                     )
                     IconButton(onClick = onSearch) { Icon(ReaderIcons.Search, "Search this book") }
                     IconButton(onClick = onContents) { Icon(ReaderIcons.Contents, "Contents and bookmarks") }
@@ -446,7 +473,14 @@ internal fun ReaderChrome(
                 fadeOut() + slideOutVertically { it },
         ) {
             Surface(shadowElevation = 3.dp) {
-                Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 18.dp, vertical = 4.dp)) {
+                Column(
+                    Modifier.fillMaxWidth().navigationBarsPadding().padding(
+                        start = 18.dp,
+                        end = 18.dp,
+                        top = 12.dp,
+                        bottom = 4.dp,
+                    ),
+                ) {
                     if (state.canReturn) {
                         TextButton(onClick = {
                             onInteraction()

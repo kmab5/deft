@@ -25,12 +25,14 @@ internal class ReaderContainer(
     private var startY = 0f
     private var furthestOffset = 0f
     private var systemEdge = false
+    private var nativePageDrag: ReaderNativePageDrag? = null
 
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
             startX = event.x
             startY = event.y
             furthestOffset = 0f
+            nativePageDrag = captureNativePageDrag(this, event.rawX, event.rawY)
             systemEdge = startsAtSystemEdge(event)
             route = if (handlesSwipes()) Route.PENDING else Route.CONTENT
         }
@@ -88,16 +90,31 @@ internal class ReaderContainer(
             isVertical(abs(offset), abs(event.y - startY)) ||
                 offset * furthestOffset <= 0f || abs(offset) < abs(furthestOffset) / 2f
         when (route) {
-            Route.NATIVE_PAGE ->
-                if (cancelled) {
-                    cancelContent(event)
-                    route = Route.BLOCKED
-                }
+            Route.NATIVE_PAGE -> finishNativePage(event, offset, cancelled)
             Route.IMMEDIATE_PAGE ->
                 if (!cancelled && abs(offset) >= MINIMUM_SWIPE_DP * resources.displayMetrics.density) {
                     onSwipe(offset)
                 }
             else -> Unit
+        }
+        nativePageDrag = null
+    }
+
+    private fun finishNativePage(
+        event: MotionEvent,
+        offset: Float,
+        cancelled: Boolean,
+    ) {
+        val crossedHalfPage = abs(offset) > width / 2f
+        if (cancelled || crossedHalfPage) {
+            // Readium 3.2 only commits a release above its fling-velocity threshold.
+            // Keep native finger-following moves, but settle a long drag by distance.
+            // Cancel its release first so it cannot also turn and skip a page.
+            cancelContent(event)
+            route = Route.BLOCKED
+            if (!cancelled) {
+                nativePageDrag?.commit(offset, onSwipe) ?: onSwipe(offset)
+            }
         }
     }
 

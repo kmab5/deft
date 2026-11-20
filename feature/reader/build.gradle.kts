@@ -5,10 +5,15 @@ plugins {
 }
 
 android {
+    defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        targetSdk = 36
+    }
     compileOptions { isCoreLibraryDesugaringEnabled = true }
 }
 
 dependencies {
+    implementation("com.caverock:androidsvg-aar:1.4")
     implementation(project(":core:model"))
     implementation(project(":core:database"))
     implementation(project(":core:datastore"))
@@ -22,6 +27,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    androidTestImplementation(libs.junit)
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:core:1.7.0")
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation("androidx.test:core:1.7.0")

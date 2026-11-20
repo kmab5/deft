@@ -7,9 +7,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
@@ -27,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +45,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kmab.deft.core.database.model.BookListItem
 import com.kmab.deft.core.designsystem.DeftShapes
@@ -49,6 +54,7 @@ import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.icons.DeftIcons
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Stable
 internal class LibraryScrollState(
@@ -175,47 +181,51 @@ private fun LibraryScrollbar(
                 (fraction * last).toInt().coerceIn(0, (total - 1).coerceAtLeast(0))
             }
     }
-    Canvas(
-        modifier
-            .width(48.dp)
-            .testTag("library_scrollbar")
-            .semantics { contentDescription = "drag to scroll library" }
-            .onSizeChanged { trackHeight = it.height.toFloat().coerceAtLeast(1f) }
-            .pointerInput(scroll) {
-                detectVerticalDragGestures(
-                    onDragStart = {
-                        dragging = true
-                        pointer = it.y
-                        seek(pointer)
+    val metrics = scroll.metrics()
+    val thumb =
+        (trackHeight * metrics.visible / metrics.total.coerceAtLeast(1)).coerceIn(
+            minimumThumb.coerceAtMost(trackHeight),
+            trackHeight,
+        )
+    val fraction = (metrics.first / (metrics.total - metrics.visible).coerceAtLeast(1f)).coerceIn(0f, 1f)
+    val top = (trackHeight - thumb) * fraction
+    val currentTop by rememberUpdatedState(top)
+    val thumbHeight = with(LocalDensity.current) { thumb.toDp() }
+    val showHandle = visible || dragging || opacity > 0f
+    Box(modifier.width(48.dp).onSizeChanged { trackHeight = it.height.toFloat().coerceAtLeast(1f) }) {
+        if (metrics.visible < metrics.total && showHandle) {
+            Canvas(
+                Modifier
+                    .offset { IntOffset(0, top.roundToInt()) }
+                    .width(48.dp)
+                    .height(thumbHeight)
+                    .testTag("library_scrollbar")
+                    .semantics { contentDescription = "drag to scroll library" }
+                    .pointerInput(scroll) {
+                        detectVerticalDragGestures(
+                            onDragStart = {
+                                dragging = true
+                                pointer = currentTop + it.y
+                                seek(pointer)
+                            },
+                            onDragEnd = { dragging = false },
+                            onDragCancel = { dragging = false },
+                            onVerticalDrag = { change, amount ->
+                                change.consume()
+                                pointer += amount
+                                seek(pointer)
+                            },
+                        )
                     },
-                    onDragEnd = { dragging = false },
-                    onDragCancel = { dragging = false },
-                    onVerticalDrag = { change, amount ->
-                        change.consume()
-                        pointer += amount
-                        seek(pointer)
-                    },
+            ) {
+                val width = 8.dp.toPx()
+                drawRoundRect(
+                    color.copy(alpha = opacity),
+                    Offset(size.width - width - 4.dp.toPx(), 0f),
+                    Size(width, size.height),
+                    CornerRadius(width),
                 )
-            },
-    ) {
-        val metrics = scroll.metrics()
-        if (metrics.total > 0 && metrics.visible < metrics.total) {
-            val thumb =
-                (size.height * metrics.visible / metrics.total).coerceIn(
-                    48.dp.toPx().coerceAtMost(size.height),
-                    size.height,
-                )
-            val fraction = (metrics.first / (metrics.total - metrics.visible)).coerceIn(0f, 1f)
-            val width = 8.dp.toPx()
-            drawRoundRect(
-                color.copy(alpha = opacity),
-                Offset(
-                    size.width - width - 4.dp.toPx(),
-                    (size.height - thumb) * fraction,
-                ),
-                Size(width, thumb),
-                CornerRadius(width),
-            )
+            }
         }
     }
 }

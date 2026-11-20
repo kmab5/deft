@@ -253,8 +253,7 @@ private fun BooksCollection(
                 contentPadding =
                     androidx.compose.foundation.layout.PaddingValues(
                         start = 16.dp,
-                        // Keep book hit targets outside the scrollbar's dedicated 48 dp gutter.
-                        end = 56.dp,
+                        end = 16.dp,
                         top = 12.dp,
                         bottom = 144.dp,
                     ),
@@ -280,8 +279,7 @@ private fun BooksCollection(
                 contentPadding =
                     androidx.compose.foundation.layout.PaddingValues(
                         start = 16.dp,
-                        // Keep book hit targets outside the scrollbar's dedicated 48 dp gutter.
-                        end = 56.dp,
+                        end = 16.dp,
                         top = 12.dp,
                         bottom = 144.dp,
                     ),
