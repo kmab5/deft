@@ -33,4 +33,13 @@ class TrackingModelsTest {
         assertEquals(BookState.NOT_STARTED, BookTrackingSnapshot(1).state)
         assertEquals(BookState.PAUSED, BookTrackingSnapshot(1, listOf(old, latest)).state)
     }
+
+    @Test fun `minimum session duration accepts one through three hundred seconds`() {
+        listOf(1, 300).forEach { TrackingPreferences(minimumSessionSeconds = it) }
+        listOf(0, 301).forEach { seconds ->
+            assertThrows(IllegalArgumentException::class.java) {
+                TrackingPreferences(minimumSessionSeconds = seconds)
+            }
+        }
+    }
 }

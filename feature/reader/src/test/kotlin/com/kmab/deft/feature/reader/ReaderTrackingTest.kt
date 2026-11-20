@@ -39,6 +39,7 @@ class ReaderTrackingTest {
     @get:Rule val temp = TemporaryFolder()
     private lateinit var database: AppDatabase
     private lateinit var reads: ReadThroughRepository
+    private lateinit var settings: TrackingSettingsRepository
     private lateinit var tracking: ReaderTracking
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var book = 0L
@@ -77,7 +78,7 @@ class ReaderTrackingTest {
                         addedAt = epoch,
                     ),
                 )
-            val settings =
+            settings =
                 TrackingSettingsRepository(
                     PreferenceDataStoreFactory.create(scope = scope) {
                         temp.root.resolve("tracking.preferences_pb")
@@ -228,5 +229,20 @@ class ReaderTrackingTest {
             tracking.accept(ReaderEvent.Visibility(book, end, true))
             withTimeout(5_000) { tracking.state.first { it.active } }
             assertFalse(tracking.state.value.finishPrompt)
+        }
+
+    @Test fun finishPromptWaitsForTheConfiguredMinimum() =
+        runBlocking {
+            settings.update { it.copy(minimumSessionSeconds = 20) }
+            tracking.prepare(book)
+            val end = ReadingPosition("end", 0.99, 100)
+            tracking.accept(ReaderEvent.Visibility(book, end, true))
+            elapsed = 19_000
+            tracking.accept(ReaderEvent.Location(book, end))
+            tracking.navigation(100, false)
+            elapsed = 20_000
+            tracking.accept(ReaderEvent.Location(book, end))
+            withTimeout(5_000) { tracking.state.first { it.finishPrompt } }
+            assertEquals(20L, reads.get(book).activeSeconds)
         }
 }

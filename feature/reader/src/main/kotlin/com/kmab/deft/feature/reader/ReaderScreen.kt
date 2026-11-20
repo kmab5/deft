@@ -2,11 +2,7 @@
 
 package com.kmab.deft.feature.reader
 
-import android.content.Intent
-import android.content.IntentFilter
 import android.graphics.Color.parseColor
-import android.os.BatteryManager
-import android.text.format.DateFormat
 import android.view.View
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -58,7 +54,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -70,7 +65,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -94,7 +88,6 @@ import com.kmab.deft.feature.readersettings.ReaderPreferencesPanel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.readium.r2.shared.util.Url
-import java.util.Date
 
 private enum class ReaderSheet { CONTENTS, SETTINGS, SEARCH }
 
@@ -198,10 +191,7 @@ internal fun ReaderScreen(
                             },
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                         )
-                        ReaderTrackingIndicator(trackingPreferences.showIndicator, state.rendered, tracking.active)
-                        if (preferences.showStatusLine) {
-                            ReaderStatus(state, progressPositions, preferences.showPageNumber, Modifier.fillMaxWidth())
-                        }
+                        ReaderStatusFooter(state, progressPositions, preferences, trackingPreferences, tracking)
                     }
                     ReaderChrome(
                         visible = chrome,
@@ -604,34 +594,6 @@ private fun sectionLabel(state: ReaderState): String =
     )
 
 @Composable
-private fun ReaderStatus(
-    state: ReaderState,
-    positions: List<org.readium.r2.shared.publication.Locator>,
-    showLocations: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    val status by produceState(initialValue = "") {
-        while (true) {
-            val battery = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-            val level = battery?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
-            val scale = battery?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
-            val percentage = if (level >= 0 && scale > 0) "${level * PERCENT_SCALE / scale}%" else ""
-            value = "${DateFormat.getTimeFormat(context).format(Date())}  ·  $percentage"
-            delay(STATUS_REFRESH_MILLIS)
-        }
-    }
-    Row(modifier.padding(horizontal = 24.dp, vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(
-            progressLabel((state.locator?.locations?.totalProgression ?: 0.0).toFloat(), positions, showLocations),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Text(status, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onBackground)
-    }
-}
-
-@Composable
 private fun ReaderWindowEffect(
     activity: ReaderActivity,
     preferences: ReaderPreferences,
@@ -715,7 +677,5 @@ private const val SURFACE_TINT_ALPHA = 0.12f
 private const val MIN_CONTROL_CONTRAST = 4.5f
 private const val CONTROL_COLOR_STEPS = 20
 private const val WCAG_LUMINANCE_OFFSET = 0.05f
-private const val PERCENT_SCALE = 100
-private const val STATUS_REFRESH_MILLIS = 30_000L
 
 private const val CHROME_TIMEOUT_MILLIS = 4_000L

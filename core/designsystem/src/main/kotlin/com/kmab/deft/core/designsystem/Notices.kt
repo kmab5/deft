@@ -171,7 +171,7 @@ private fun NoticeCard(
         shadowElevation = 6.dp,
     ) {
         Column(Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     when (notice.kind) {
                         DeftNoticeKind.Error -> DeftActionIcons.Warning
@@ -179,7 +179,7 @@ private fun NoticeCard(
                         DeftNoticeKind.Info -> DeftActionIcons.Info
                     },
                     null,
-                    Modifier.padding(top = 12.dp).size(20.dp),
+                    Modifier.size(20.dp),
                     tint =
                         when (notice.kind) {
                             DeftNoticeKind.Error -> colors.error
@@ -187,7 +187,7 @@ private fun NoticeCard(
                             DeftNoticeKind.Info -> colors.accentText
                         },
                 )
-                Column(Modifier.weight(1f).padding(start = 12.dp, end = 8.dp, top = 10.dp)) {
+                Column(Modifier.weight(1f).padding(start = 12.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)) {
                     Text(notice.message, style = DeftTypography.body, color = colors.text)
                     if (notice.actionLabel != null && notice.onAction != null) {
                         TextButton(

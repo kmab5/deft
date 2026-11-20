@@ -33,8 +33,8 @@ import com.kmab.deft.core.database.model.BookListItem
 import com.kmab.deft.core.designsystem.DeftButton
 import com.kmab.deft.core.designsystem.DeftButtonStyle
 import com.kmab.deft.core.designsystem.DeftNoticeKind
+import com.kmab.deft.core.designsystem.DeftSettingsTopBar
 import com.kmab.deft.core.designsystem.DeftShapes
-import com.kmab.deft.core.designsystem.DeftTopBar
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.LocalDeftNoticeState
@@ -69,7 +69,7 @@ internal fun IgnoredBooksContent(
 ) {
     val colors = LocalDeftColors.current
     Scaffold(containerColor = colors.bg, contentColor = colors.text, topBar = {
-        DeftTopBar("ignored books", navigationIcon = {
+        DeftSettingsTopBar("ignored books", navigationIcon = {
             IconButton(onBack) { Icon(DeftActionIcons.Back, "back", tint = colors.text) }
         })
     }) { padding ->

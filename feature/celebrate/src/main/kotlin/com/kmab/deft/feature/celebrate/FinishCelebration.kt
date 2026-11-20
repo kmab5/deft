@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -59,6 +60,7 @@ import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import com.kmab.deft.core.designsystem.CoverImage
 import com.kmab.deft.core.designsystem.DeftButton
+import com.kmab.deft.core.designsystem.DeftMotion
 import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.GeneratedCover
@@ -128,7 +130,6 @@ fun FinishCelebration(
                 )
             }
         }
-        phase = "rating"
     }
     if (phase == "animation") {
         Dialog(onDismissRequest = {
@@ -142,15 +143,16 @@ fun FinishCelebration(
                     .semantics { contentDescription = "skip celebration" },
                 contentAlignment = Alignment.Center,
             ) {
-                val exit = fraction(t, 2300f, 2800f)
                 val compactCover = maxHeight < 500.dp
                 Canvas(
-                    Modifier.fillMaxSize().graphicsLayer { translationX = size.width * exit },
+                    Modifier.fillMaxSize(),
                 ) { finishFields(bookId, t) }
                 Column(
-                    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp).graphicsLayer {
-                        translationX = size.width * exit
-                    },
+                    Modifier
+                        .fillMaxWidth()
+                        .safeDrawingPadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
@@ -193,6 +195,16 @@ fun FinishCelebration(
                         (days * count).toInt(),
                         Modifier.graphicsLayer { alpha = fraction(t, 1000f, 1150f) },
                     )
+                }
+                if (t > 2300f) {
+                    IconButton(
+                        { phase = "rating" },
+                        Modifier.align(Alignment.TopEnd).safeDrawingPadding().padding(12.dp).graphicsLayer {
+                            alpha = DeftMotion.enter.transform(fraction(t, 2300f, FINISH_DURATION))
+                        },
+                    ) {
+                        Icon(DeftActionIcons.Close, "close celebration", tint = Ink)
+                    }
                 }
             }
         }
@@ -241,7 +253,11 @@ private fun FinishCounters(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         listOf(
-            (if (seconds >= 3600) "${seconds / 3600}h ${seconds % 3600 / 60}m" else "${seconds / 60}m") to "time read",
+            when {
+                seconds >= 3600 -> "${seconds / 3600}h ${seconds % 3600 / 60}m"
+                seconds in 1..59 -> "${seconds}s"
+                else -> "${seconds / 60}m"
+            } to "time read",
             sessions.toString() to "sessions",
             days.toString() to "days",
         ).forEach { (value, label) ->

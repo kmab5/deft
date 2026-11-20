@@ -1,12 +1,12 @@
 package com.kmab.deft.feature.book
 
+import android.app.DatePickerDialog
+import android.os.Looper
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -26,8 +26,12 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowDialog
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -48,7 +52,7 @@ class BookHistoryTest {
 
     @Test fun historyLabelsBrowsingWithoutAddingItToTotals() {
         show()
-        compose.onNodeWithText("sessions").performScrollTo().performClick()
+        compose.onNodeWithText("2m · 1 session").performScrollTo().performClick()
         compose.onNodeWithText("just browsing · excluded from totals").assertExists()
         compose.onNodeWithText("10m · 0 page turns").assertExists()
         compose.onNodeWithContentDescription("close popup").performClick()
@@ -60,7 +64,8 @@ class BookHistoryTest {
     @Test fun deletionWaitsForSpecificHistoryConfirmation() {
         var deleted: Long? = null
         show(BookTrackingActions(delete = { deleted = it }))
-        compose.onNodeWithText("delete").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("read-through options", substring = true).performScrollTo().performClick()
+        compose.onNodeWithText("delete").performClick()
         assertNull(deleted)
         compose.onNodeWithText("delete read-through").performClick()
         compose.waitForIdle()
@@ -70,14 +75,29 @@ class BookHistoryTest {
     @Test fun dateEditorRejectsInvalidDatesBeforeSaving() {
         var saved: Instant? = null
         show(BookTrackingActions(editDates = { _, at, _ -> saved = at }))
-        compose.onNodeWithText("edit dates").performScrollTo().performClick()
-        compose.onNodeWithText("started").performTextReplacement("bad date")
+        compose.onNodeWithContentDescription("read-through options", substring = true).performScrollTo().performClick()
+        compose.onNodeWithText("edit dates").performClick()
+        pickStart(20)
         compose.onNodeWithText("save date").performClick()
-        compose.onNodeWithText("Enter a valid date as YYYY-MM-DD.").assertExists()
+        compose.onNodeWithText("The end date must be on or after the start date.").assertExists()
         assertNull(saved)
-        compose.onNodeWithText("started").performTextReplacement("2026-11-18")
+        pickStart(18)
         compose.onNodeWithText("save date").performClick()
         assertEquals("2026-11-18", saved?.localDate())
+    }
+
+    @Test fun sameDayEditAcceptsAnEveningStartAndMorningEnd() {
+        val zone = ZoneId.systemDefault()
+        val evening = LocalDateTime.parse("2026-11-19T20:00").atZone(zone).toInstant()
+        val morning = LocalDateTime.parse("2026-11-20T09:00").atZone(zone).toInstant()
+        var result: Pair<Instant, Instant?>? = null
+        compose.setContent {
+            DeftTheme { TrackingDates(evening, morning, {}) { start, end -> result = start to end } }
+        }
+        pickStart(20)
+        compose.onNodeWithText("save date").performClick()
+        val expected = LocalDateTime.parse("2026-11-20T20:00").atZone(zone).toInstant()
+        assertEquals(expected to expected, result)
     }
 
     @Test fun ratingSupportsHalfStarsAndClearAndReviewSavesText() {
@@ -86,7 +106,7 @@ class BookHistoryTest {
         show(BookTrackingActions(rating = { rating = it }, review = { review = it }))
         compose.onNodeWithContentDescription("rating").performSemanticsAction(SemanticsActions.SetProgress) { it(4.5f) }
         assertEquals(4.5, rating)
-        compose.onNodeWithText("clear rating").performClick()
+        compose.onNodeWithContentDescription("clear rating").performClick()
         assertNull(rating)
         compose.onNodeWithText("edit review").performScrollTo().performClick()
         compose.onNodeWithText("review").performTextReplacement("My own words.")
@@ -102,12 +122,33 @@ class BookHistoryTest {
                 if (state == com.kmab.deft.core.model.BookState.FINISHED) finishedAt = at
             }),
         )
-        compose.onNodeWithText("change state").performScrollTo().performClick()
-        compose.onNode(hasText("finished") and hasClickAction()).performClick()
-        compose.onNodeWithText("finish date").assertExists()
+        compose.onNodeWithContentDescription("change reading state").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("mark as finished").performClick()
         assertNull(finishedAt)
-        compose.onNodeWithText("save date").performClick()
+        compose.runOnIdle {
+            val picker = ShadowDialog.getLatestDialog() as DatePickerDialog
+            picker.getButton(DatePickerDialog.BUTTON_NEGATIVE).performClick()
+        }
+        compose.waitForIdle()
+        assertNull(finishedAt)
+        compose.onNodeWithContentDescription("change reading state").performClick()
+        compose.onNodeWithContentDescription("mark as finished").performClick()
+        compose.runOnIdle {
+            val picker = ShadowDialog.getLatestDialog() as DatePickerDialog
+            picker.getButton(DatePickerDialog.BUTTON_POSITIVE).performClick()
+        }
+        // AlertDialog posts its button listener after performClick returns.
+        shadowOf(Looper.getMainLooper()).idle()
         org.junit.Assert.assertTrue(checkNotNull(finishedAt) >= before)
+    }
+
+    private fun pickStart(day: Int) {
+        compose.onNodeWithText("started").performClick()
+        compose.runOnIdle {
+            val picker = ShadowDialog.getLatestDialog() as DatePickerDialog
+            picker.updateDate(2026, 10, day)
+            picker.getButton(DatePickerDialog.BUTTON_POSITIVE).performClick()
+        }
     }
 
     private fun show(actions: BookTrackingActions = BookTrackingActions()) {

@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.outlined.ViewList
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
+import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
@@ -34,6 +35,7 @@ import androidx.compose.material.icons.outlined.WarningAmber
 
 /** Established Material outlined vectors; directional actions mirror in RTL layouts. */
 object DeftActionIcons {
+    val Charging get() = Icons.Outlined.Bolt
     val More get() = Icons.Outlined.MoreVert
     val Back get() = Icons.AutoMirrored.Outlined.ArrowBack
     val Close get() = Icons.Outlined.Close

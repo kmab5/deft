@@ -140,8 +140,8 @@ Offered, in this order: **original** (the book's own fonts, i.e. publisher defau
 
 Setting **"celebrations"** (Settings → Appearance), **on** by default. When it's off, or the system has animations turned off, every celebration falls back to its **quiet version**.
 
-### 8.1 Finishing a book: full-screen, ends by itself (~2.8 s)
-The whole screen takes part, and the moment ends on its own: no tap needed. A tap skips straight to the exit. Colours are the vivid ink-mode values in both app themes.
+### 8.1 Finishing a book: full-screen, dismiss on tap
+The introduction settles into the finished cover and counters, then holds until a tap or the close control. The close control eases in after the introduction. A tap during the introduction skips to the rating sheet. Colours are the vivid ink-mode values in both app themes.
 | t (ms) | What happens |
 |---|---|
 | 0–380 | A **purple field** sweeps across the full screen from the left, with a diagonal leading edge. |
@@ -152,8 +152,8 @@ The whole screen takes part, and the moment ends on its own: no tap needed. A ta
 | 850–1300 | **"finished."** in `celebrate` (ink on green) rises 18dp into place. |
 | 1000–1900 | Three numbers **count up** in Space Mono: time read, sessions, days. |
 | 1400–1800 | If it's a personal best, an **ink strip** with purple text slides in across the full width: "personal best · longest book". |
-| 2300–2800 | **Exit:** everything slides off to the right with the green field, revealing the book page (now finished). |
-| 2800 | The **"how was it?" sheet** rises (rating, favourite, done). |
+| after introduction | **Hold:** cover, finished label and counters remain. The close control eases in. |
+| tap or close | Reveal the book page and the **"how was it?" sheet** (rating, favourite, done). |
 
 Draw the fields, lines and sparks in one `Canvas`, with the cover and text as `graphicsLayer`-animated composables. Hold 60 fps on a mid-range phone.
 
@@ -378,3 +378,13 @@ Book details gains grouped cards for reading state/assessment, private review an
 Books uses actual read-through-derived states in existing cards and compact filter sheets. Tracking settings joins the existing category chooser with independently editable reflowable/fixed idle timeouts (1–60 minutes or Off), a quiet-indicator toggle and a clear minimum-session explanation. Appearance exposes celebrations. The finish flow follows §8.1 with real book cover/counters and a rating/favorite sheet; disabled celebrations or system animations use the quiet sheet. No invented statistics or personal bests appear before M6.
 
 The M3 rendered reference is `plans/design/m3-feedback.html`; device acceptance remains recorded in `plans/m3-test-checklist.md`.
+
+### M3 first device-feedback revision (2026-11-20, 0.3.1)
+
+The book assessment card uses a direct state selector and favorite heart, an aligned rating group and consistent padding. Private review has one clear edit action. History groups each read-through outcome, dates and totals, with secondary management in a menu and calendar date selection. Heart state changes have a small pop in either direction. Half-star fill shares the outline geometry.
+
+The full finish celebration holds its final composition until tap or close; the close control eases in after the introduction. Quiet mode and disabled system motion still go directly to the rating sheet.
+
+Reader status uses three aligned areas: page left, optional reading/paused state centered, clock and battery right with a charging bolt. At large text the side labels may wrap within their columns without overlapping the center. Disabling status details still allows the separately enabled tracking indicator to remain centered. Notices align text, icon and close vertically.
+
+Settings titles gain 8dp vertical padding on each side. All switches use a visible off thumb and distinct track/outline in the active palette. Appearance offers System, Light and Dark for the app independently of reader themes, and celebrations. About shows the installed version, GPL license, source, author and offline privacy statement. Tracking exposes a 30-second default minimum, editable from 1 to 300 seconds, explained as applying to new sessions.

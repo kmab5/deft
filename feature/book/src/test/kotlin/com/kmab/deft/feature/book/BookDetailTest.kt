@@ -3,8 +3,6 @@ package com.kmab.deft.feature.book
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -150,8 +148,8 @@ class BookDetailTest {
                 )
             }
         }
-        compose.onNodeWithText("change state").performScrollTo().performClick()
-        compose.onNode(hasText("not read") and hasClickAction()).performClick()
+        compose.onNodeWithContentDescription("change reading state").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("mark as not read").performClick()
         assertEquals(false, reset)
         compose.onNodeWithText("erase reading history").performClick()
         compose.waitForIdle()

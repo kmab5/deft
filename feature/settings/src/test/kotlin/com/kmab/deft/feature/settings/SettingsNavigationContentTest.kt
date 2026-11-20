@@ -5,6 +5,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.RoborazziTaskType
@@ -33,7 +34,13 @@ class SettingsNavigationContentTest {
         var selected = ""
         compose.setContent {
             DeftTheme {
-                SettingsHomeScreen({ selected = "back" }, { selected = "library" }, { selected = "reader" })
+                SettingsHomeScreen(
+                    onBack = { selected = "back" },
+                    onLibrary = { selected = "library" },
+                    onReader = { selected = "reader" },
+                    onAppearance = { selected = "appearance" },
+                    onAbout = { selected = "about" },
+                )
             }
         }
         capture("settings-home")
@@ -43,6 +50,10 @@ class SettingsNavigationContentTest {
         assertEquals("library", selected)
         compose.onNodeWithText("reader").performClick()
         assertEquals("reader", selected)
+        compose.onNodeWithText("appearance").performScrollTo().performClick()
+        assertEquals("appearance", selected)
+        compose.onNodeWithText("about").performScrollTo().performClick()
+        assertEquals("about", selected)
         compose.onNodeWithContentDescription("back").performClick()
         assertEquals("back", selected)
     }

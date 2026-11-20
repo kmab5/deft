@@ -25,14 +25,14 @@ class TrackingMigrationTest {
             val context = ApplicationProvider.getApplicationContext<Context>()
             val name = "tracking-migration-test.db"
             context.deleteDatabase(name)
-            createVersionFour(context, name)
+            createDatabase(context, name, 4)
             val db =
                 Room
                     .databaseBuilder(
                         context,
                         AppDatabase::class.java,
                         name,
-                    ).addMigrations(DatabaseMigrations.FROM_4_TO_5)
+                    ).addMigrations(DatabaseMigrations.FROM_4_TO_5, DatabaseMigrations.FROM_5_TO_6)
                     .build()
             try {
                 val book = db.bookDao().getById(1)!!
@@ -59,13 +59,60 @@ class TrackingMigrationTest {
             }
         }
 
-    private fun createVersionFour(
+    @Test fun versionFiveKeepsTheOriginalMinimumForExistingSessions() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val name = "session-minimum-migration-test.db"
+            context.deleteDatabase(name)
+            createDatabase(context, name, 5)
+            context.openOrCreateDatabase(name, Context.MODE_PRIVATE, null).use { old ->
+                old.execSQL(
+                    "INSERT INTO read_throughs (id, bookId, startedAt, outcome, finishPromptShown) " +
+                        "VALUES (1, 1, 0, 'IN_PROGRESS', 0)",
+                )
+                old.execSQL(
+                    "INSERT INTO reading_sessions (id, bookId, readThroughId, startedAt, endedAt, activeSeconds, " +
+                        "startProgression, endProgression, pagesTurned, browsing, " +
+                        "zoneOffsetSeconds, finalized) VALUES " +
+                        "('accepted', 1, 1, 0, 60000, 60, 0, 0, 0, 0, 0, 1), " +
+                        "('short', 1, 1, 0, 30000, 30, 0, 0, 0, 0, 0, 0)",
+                )
+            }
+            val db =
+                Room
+                    .databaseBuilder(context, AppDatabase::class.java, name)
+                    .addMigrations(DatabaseMigrations.FROM_5_TO_6)
+                    .build()
+            try {
+                val sessions = db.trackingDao().getSessions(1)
+                assertEquals(listOf("accepted", "short"), sessions.map { it.id })
+                assertEquals(listOf(60, 60), sessions.map { it.minimumSessionSeconds })
+                assertTrue(sessions.first().finalized)
+                assertFalse(sessions.last().finalized)
+                db.trackingDao().discardInterruptedShortSessions()
+                db.trackingDao().finalizeInterruptedSessions()
+                assertEquals(
+                    "accepted",
+                    db
+                        .trackingDao()
+                        .getSessions(1)
+                        .single()
+                        .id,
+                )
+            } finally {
+                db.close()
+                context.deleteDatabase(name)
+            }
+        }
+
+    private fun createDatabase(
         context: Context,
         name: String,
+        version: Int,
     ) {
         val schema =
             JSONObject(
-                File("schemas/com.kmab.deft.core.database.AppDatabase/4.json").readText(),
+                File("schemas/com.kmab.deft.core.database.AppDatabase/$version.json").readText(),
             ).getJSONObject("database")
         context.openOrCreateDatabase(name, Context.MODE_PRIVATE, null).use { old ->
             val entities = schema.getJSONArray("entities")
@@ -91,7 +138,7 @@ class TrackingMigrationTest {
                 "INSERT INTO bookmarks (id, bookId, locator, totalProgression, label, " +
                     "createdAt) VALUES (1, 1, 'bookmark', 0.2, 'kept bookmark', 0)",
             )
-            old.version = 4
+            old.version = version
         }
     }
 }

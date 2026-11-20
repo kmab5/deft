@@ -30,13 +30,34 @@ class SessionTrackerTest {
         assertEquals(60L, tracker.hide().single().activeSeconds)
     }
 
-    @Test fun fiftyNineSecondsIsDiscardedButSixtyQualifies() {
+    @Test fun twentyNineSecondsDoesNotQualifyButThirtyDoesByDefault() {
         show()
-        clock.advance(59)
-        assertEquals(59L, tracker.hide().single().activeSeconds)
+        clock.advance(29)
+        assertFalse(tracker.hide().single().qualifies)
         show()
+        clock.advance(30)
+        assertTrue(tracker.hide().single().qualifies)
+    }
+
+    @Test fun changingTheMinimumAppliesToTheNextSessionAfterIdle() {
+        tracker.show(1, null, false, start, 60_000, minimumSessionSeconds = 10)
+        clock.advance(10)
+        tracker.interact(start, ReadingActivity.PAGE)
+        tracker.timeout(60_000, minimumSessionSeconds = 20)
         clock.advance(60)
-        assertEquals(60L, tracker.hide().single().activeSeconds)
+        val old = tracker.interact(start, ReadingActivity.PAGE).single()
+        assertTrue(old.qualifies)
+        clock.advance(10)
+        assertFalse(tracker.qualifiesActiveSession)
+        clock.advance(10)
+        assertTrue(tracker.qualifiesActiveSession)
+    }
+
+    @Test fun idleTimeCannotTriggerQualificationAtTheTimeoutBoundary() {
+        tracker.show(1, null, false, start, 60_000, minimumSessionSeconds = 60)
+        clock.advance(60)
+        assertFalse(tracker.qualifiesActiveSession)
+        assertFalse(tracker.tick().single().qualifies)
     }
 
     @Test fun checkpointsAreEveryThirtySecondsAndDoNotPersistUnconfirmedIdleTail() {

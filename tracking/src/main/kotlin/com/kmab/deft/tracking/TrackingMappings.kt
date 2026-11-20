@@ -29,6 +29,7 @@ internal fun ReadingSessionEntity.model() =
         browsing,
         zoneOffsetSeconds,
         finalized,
+        minimumSessionSeconds,
     )
 
 internal fun ReadingSession.entity() =
@@ -49,4 +50,5 @@ internal fun ReadingSession.entity() =
         browsing,
         zoneOffsetSeconds,
         finalized,
+        minimumSessionSeconds,
     )

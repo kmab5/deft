@@ -52,7 +52,10 @@ class FinishCelebrationRenderTest {
                 )
             }
         }
-        compose.mainClock.advanceTimeBy(1900)
+        compose.mainClock.advanceTimeBy(3200)
+        restoration.emulateSavedInstanceStateRestore()
+        compose.mainClock.advanceTimeBy(500)
+        compose.onNodeWithContentDescription("close celebration").assertExists()
         val file = File("build/reports/screenshots/finish-full.png").also { it.parentFile?.mkdirs() }
         compose.onNodeWithContentDescription("skip celebration").captureRoboImage(
             file.path,

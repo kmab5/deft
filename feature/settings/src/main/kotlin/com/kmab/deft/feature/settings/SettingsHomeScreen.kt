@@ -22,8 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.kmab.deft.core.designsystem.DeftSettingsTopBar
 import com.kmab.deft.core.designsystem.DeftShapes
-import com.kmab.deft.core.designsystem.DeftTopBar
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
@@ -36,10 +36,11 @@ fun SettingsHomeScreen(
     onReader: () -> Unit,
     onTracking: () -> Unit = {},
     onAppearance: () -> Unit = {},
+    onAbout: () -> Unit = {},
 ) {
     val colors = LocalDeftColors.current
     Scaffold(containerColor = colors.bg, contentColor = colors.text, topBar = {
-        DeftTopBar("settings", navigationIcon = {
+        DeftSettingsTopBar("settings", navigationIcon = {
             IconButton(onBack) { Icon(DeftActionIcons.Back, "back", tint = colors.text) }
         })
     }) { padding ->
@@ -62,7 +63,9 @@ fun SettingsHomeScreen(
                         onTracking,
                     )
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = colors.line)
-                    SettingsCategory("appearance", "Celebrations and motion.", DeftActionIcons.Palette, onAppearance)
+                    SettingsCategory("appearance", "App theme and celebrations.", DeftActionIcons.Palette, onAppearance)
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = colors.line)
+                    SettingsCategory("about", "Version, license and privacy.", DeftActionIcons.Info, onAbout)
                 }
             }
         }

@@ -21,7 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kmab.deft.core.designsystem.DeftDialog
 import com.kmab.deft.core.designsystem.DeftNoticeHost
 import com.kmab.deft.core.designsystem.DeftNoticeKind
-import com.kmab.deft.core.designsystem.DeftTopBar
+import com.kmab.deft.core.designsystem.DeftSettingsTopBar
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
 import com.kmab.deft.core.designsystem.rememberDeftNoticeState
@@ -32,7 +32,7 @@ import com.kmab.deft.core.model.ReaderTheme
 fun ReaderSettingsScreen(onBack: () -> Unit) {
     val colors = LocalDeftColors.current
     Scaffold(containerColor = colors.bg, contentColor = colors.text, topBar = {
-        DeftTopBar("reader", navigationIcon = {
+        DeftSettingsTopBar("reader", navigationIcon = {
             IconButton(onClick = onBack) { Icon(DeftActionIcons.Back, "back") }
         })
     }) { padding -> ReaderPreferencesPanel(Modifier.fillMaxSize().padding(padding), manageAssets = true) }

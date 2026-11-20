@@ -1,6 +1,7 @@
 package com.kmab.deft.feature.reader
 
 import android.os.SystemClock
+import android.util.Log
 import com.kmab.deft.core.datastore.TrackingSettingsRepository
 import com.kmab.deft.core.model.BookState
 import com.kmab.deft.core.model.BookTrackingSnapshot
@@ -40,8 +41,8 @@ internal data class ReaderTrackingState(
 
 /** Application-owned FIFO: lifecycle timestamps are captured before asynchronous database work. */
 @Singleton
-// One coordinator owns the ordering of lifecycle, repository and prompt mutations.
-@Suppress("TooManyFunctions")
+// One coordinator orders lifecycle/repository mutations and keeps its actor alive for retryable failures.
+@Suppress("TooManyFunctions", "TooGenericExceptionCaught")
 internal class ReaderTracking(
     private val sessions: SessionRepository,
     private val readThroughs: ReadThroughRepository,
@@ -95,8 +96,8 @@ internal class ReaderTracking(
                 sessions.recoverInterrupted()
             } catch (cancel: CancellationException) {
                 throw cancel
-            } catch (_: Exception) {
-                failed()
+            } catch (error: Exception) {
+                failed("Reading history could not be recovered.", error)
             }
             for (work in queue) {
                 clock.time = work.time
@@ -104,8 +105,8 @@ internal class ReaderTracking(
                     work.action()
                 } catch (cancel: CancellationException) {
                     throw cancel
-                } catch (_: Exception) {
-                    failed()
+                } catch (error: Exception) {
+                    failed("Reading history could not be updated.", error)
                 }
                 publish()
             }
@@ -114,7 +115,7 @@ internal class ReaderTracking(
             settings.preferences.collect { value ->
                 enqueue {
                     preferences = value
-                    save(tracker.timeout(idleMillis()))
+                    save(tracker.timeout(idleMillis(), preferences.minimumSessionSeconds))
                 }
             }
         }
@@ -179,7 +180,7 @@ internal class ReaderTracking(
                         if (event.visible && !state.value.finishPrompt) {
                             event.position
                                 ?.let {
-                                    tracker.show(event.bookId, readThroughId, browsing, it, idleMillis())
+                                    show(event.bookId, it)
                                 }.orEmpty()
                         } else {
                             tracker.hide()
@@ -218,7 +219,7 @@ internal class ReaderTracking(
         val unavailable = gated || browsing || !canPrompt
         val reachedEnd = location?.let { reachedReadingEnd(it.totalProgression, it.position, totalPositions) } == true
         if (unavailable || state.value.finishPrompt || !reachedEnd) return
-        if (qualificationNeeded && tracker.activeSeconds >= MINIMUM_SESSION_SECONDS) {
+        if (qualificationNeeded && tracker.qualifiesActiveSession) {
             // The prompt obscures reading. Close the qualifying visible dwell before claiming it.
             awaitingEndPrompt = true
             save(tracker.hide())
@@ -235,7 +236,7 @@ internal class ReaderTracking(
             mutableState.value = mutableState.value.copy(finishPrompt = true)
         } else if (awaitingEndPrompt) {
             // A paused read-through may already have declined its prompt before it was paused.
-            position?.let { tracker.show(checkNotNull(bookId), readThroughId, browsing, it, idleMillis()) }
+            position?.let { show(checkNotNull(bookId), it) }
         }
         awaitingEndPrompt = false
     }
@@ -251,8 +252,8 @@ internal class ReaderTracking(
                 retire(row)
             } catch (cancel: CancellationException) {
                 throw cancel
-            } catch (_: Exception) {
-                failed()
+            } catch (error: Exception) {
+                failed("Reading history could not be saved. Deft will retry.", error)
                 break
             }
         }
@@ -265,7 +266,7 @@ internal class ReaderTracking(
         saved?.readThroughId?.let { sessionReadThroughs[row.id] = it }
         val assigned = saved?.readThroughId?.takeIf { row.bookId == bookId }
         readThroughId = assigned ?: readThroughId
-        val qualified = assigned != null && (saved?.activeSeconds ?: 0) >= MINIMUM_SESSION_SECONDS
+        val qualified = assigned != null && saved?.qualifies == true
         qualificationNeeded = qualificationNeeded && !qualified
         pending.remove(row.id)
         if (row.finalized) sessionReadThroughs.remove(row.id)
@@ -285,12 +286,22 @@ internal class ReaderTracking(
         return minutes?.toLong()?.times(MINUTE_MILLIS)
     }
 
+    private fun show(
+        book: Long,
+        location: ReadingPosition,
+    ): List<ReadingSession> =
+        tracker.show(book, readThroughId, browsing, location, idleMillis(), preferences.minimumSessionSeconds)
+
     private fun publish() {
         mutableState.value = mutableState.value.copy(active = tracker.active, keepAwake = tracker.keepAwake)
     }
 
-    private fun failed() {
-        errors.tryEmit("Reading history could not be saved. Check available storage; Deft will retry.")
+    private fun failed(
+        message: String,
+        cause: Exception,
+    ) {
+        Log.w(TAG, message, cause)
+        errors.tryEmit(message)
     }
 
     private fun enqueue(action: suspend () -> Unit) {
@@ -308,6 +319,7 @@ internal class ReaderTracking(
                 result.cancel(cancel)
                 throw cancel
             } catch (error: Exception) {
+                Log.w(TAG, "Reading history action failed.", error)
                 result.completeExceptionally(error)
             }
         }
@@ -317,7 +329,7 @@ internal class ReaderTracking(
     private companion object {
         const val MINUTE_MILLIS = 60_000L
         const val TICK_MILLIS = 1_000L
-        const val MINIMUM_SESSION_SECONDS = 60L
+        const val TAG = "ReaderTracking"
     }
 }
 

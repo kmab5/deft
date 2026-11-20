@@ -7,7 +7,6 @@ import com.kmab.deft.core.model.BookAssessment
 import com.kmab.deft.core.model.BookState
 import com.kmab.deft.core.model.BookTrackingSnapshot
 import com.kmab.deft.core.model.BookTrackingSummary
-import com.kmab.deft.core.model.MIN_SESSION_SECONDS
 import com.kmab.deft.core.model.ReadThrough
 import com.kmab.deft.core.model.ReadThroughOutcome
 import com.kmab.deft.core.model.ReaderOpenChoice
@@ -60,7 +59,7 @@ class ReadThroughRepository
                 BookTrackingSnapshot(
                     bookId,
                     dao.getReadThroughs(bookId).map { it.model() },
-                    dao.getSessions(bookId).filter { it.activeSeconds >= MIN_SESSION_SECONDS }.map { it.model() },
+                    dao.getSessions(bookId).map { it.model() }.filter { it.qualifies },
                     database.bookDao().getById(bookId)?.assessment() ?: BookAssessment(),
                 )
             }

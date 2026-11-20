@@ -71,16 +71,40 @@ class TrackingRepositoryTest {
 
     @Test fun firstQualifyingSessionCreatesAttemptAndCheckpointIsIdempotent() =
         runBlocking {
-            sessions.checkpoint(session(seconds = 30))
+            sessions.checkpoint(session(seconds = 29))
             assertEquals(BookState.NOT_STARTED, reads.get(book).state)
-            val saved = sessions.checkpoint(session())
-            sessions.checkpoint(session())
+            val saved = sessions.checkpoint(session(seconds = 30))
             assertNotNull(saved.readThroughId)
+            sessions.checkpoint(session())
+            sessions.checkpoint(session())
             assertEquals(1, reads.get(book).readThroughs.size)
             assertEquals(60L, sessions.aggregateSeconds())
             sessions.finish(session(seconds = 90))
             sessions.checkpoint(session(seconds = 60))
             assertEquals(90L, reads.get(book).activeSeconds)
+        }
+
+    @Test fun cumulativeCheckpointsMatchAcrossRoomsMillisecondTimestampRoundTrip() =
+        runBlocking {
+            val startedAt = now.plusNanos(123_456_789)
+            val first = session(seconds = 60).copy(startedAt = startedAt)
+            sessions.checkpoint(first)
+            sessions.checkpoint(first.copy(activeSeconds = 90, endedAt = startedAt.plusSeconds(90)))
+            sessions.finish(first.copy(activeSeconds = 120, endedAt = startedAt.plusSeconds(120)))
+
+            val saved = reads.get(book).sessions.single()
+            assertEquals(120L, saved.activeSeconds)
+            assertTrue(saved.finalized)
+        }
+
+    @Test fun aLateShortFinalizationKeepsTheAlreadyQualifiedCheckpoint() =
+        runBlocking {
+            sessions.checkpoint(session(seconds = 45))
+            sessions.finish(session(seconds = 20))
+
+            val saved = reads.get(book).sessions.single()
+            assertEquals(45L, saved.activeSeconds)
+            assertTrue(saved.finalized)
         }
 
     @Test fun pausedAndAbandonedResumeButStartOverCreatesNewAttempt() =
@@ -139,13 +163,14 @@ class TrackingRepositoryTest {
 
     @Test fun crashRecoveryNeverAddsTimeAndForgetCascadesHistory() =
         runBlocking {
-            sessions.checkpoint(session("short", 30))
-            sessions.checkpoint(session("kept", 90))
+            sessions.checkpoint(session("short", 39).copy(minimumSessionSeconds = 40))
+            sessions.checkpoint(session("kept", 20).copy(minimumSessionSeconds = 20))
             sessions.recoverInterrupted()
             val snapshot = reads.get(book)
             assertEquals(listOf("kept"), snapshot.sessions.map { it.id })
             assertTrue(snapshot.sessions.single().finalized)
-            assertEquals(90L, snapshot.activeSeconds)
+            assertEquals(20L, snapshot.activeSeconds)
+            assertEquals(20L, sessions.aggregateSeconds())
             db.bookDao().forget(book)
             assertTrue(reads.get(book).sessions.isEmpty())
             assertTrue(reads.get(book).readThroughs.isEmpty())
@@ -184,12 +209,24 @@ class TrackingRepositoryTest {
 
     @Test fun shortVisitsNeitherCreateHistoryNorResumePausedReadThrough() =
         runBlocking {
-            assertNull(sessions.finish(session(seconds = 59)))
+            assertNull(sessions.finish(session(seconds = 29)))
             assertEquals(BookState.NOT_STARTED, reads.get(book).state)
             reads.setState(book, BookState.PAUSED, now)
-            assertNull(sessions.finish(session("paused-short", 59)))
+            assertNull(sessions.finish(session("paused-short", 89).copy(minimumSessionSeconds = 90)))
             assertEquals(BookState.PAUSED, reads.get(book).state)
             assertTrue(reads.get(book).sessions.isEmpty())
+        }
+
+    @Test fun raisingMinimumKeepsPreviouslyAcceptedHistoryAndDiscardsNewShortSessions() =
+        runBlocking {
+            sessions.finish(session("first", 1).copy(minimumSessionSeconds = 1))
+            assertNull(sessions.finish(session("second", 299).copy(minimumSessionSeconds = 300)))
+            sessions.finish(session("third", 300).copy(minimumSessionSeconds = 300))
+
+            val snapshot = reads.get(book)
+            assertEquals(setOf("first", "third"), snapshot.sessions.map { it.id }.toSet())
+            assertEquals(301L, snapshot.activeSeconds)
+            assertEquals(301L, sessions.aggregateSeconds())
         }
 
     @Test fun concurrentEndEventsClaimOnlyOnePrompt() =

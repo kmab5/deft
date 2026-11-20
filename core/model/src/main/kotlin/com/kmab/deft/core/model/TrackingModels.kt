@@ -35,12 +35,16 @@ data class ReadingSession(
     val browsing: Boolean = false,
     val zoneOffsetSeconds: Int = 0,
     val finalized: Boolean = false,
+    val minimumSessionSeconds: Int = TrackingPreferences.DEFAULT_MINIMUM_SESSION_SECONDS,
 ) {
     init {
         require(id.isNotBlank())
         require(activeSeconds >= 0 && pagesTurned >= 0)
         require(startProgression in 0.0..1.0 && endProgression in 0.0..1.0)
+        require(minimumSessionSeconds in TrackingPreferences.MINIMUM_SESSION_RANGE)
     }
+
+    val qualifies: Boolean get() = activeSeconds >= minimumSessionSeconds
 }
 
 data class BookAssessment(
@@ -78,26 +82,28 @@ data class BookTrackingSnapshot(
         }
     val activeSeconds: Long get() = countedSessions.sumOf { it.activeSeconds }
     val sessionCount: Int get() = countedSessions.size
-    private val countedSessions get() = sessions.filter { !it.browsing && it.activeSeconds >= MIN_SESSION_SECONDS }
+    private val countedSessions get() = sessions.filter { !it.browsing && it.qualifies }
 }
-
-const val MIN_SESSION_SECONDS = 60L
 
 data class TrackingPreferences(
     val reflowableIdleMinutes: Int? = DEFAULT_REFLOWABLE_MINUTES,
     val fixedLayoutIdleMinutes: Int? = DEFAULT_FIXED_MINUTES,
     val showIndicator: Boolean = false,
     val celebrations: Boolean = true,
+    val minimumSessionSeconds: Int = DEFAULT_MINIMUM_SESSION_SECONDS,
 ) {
     init {
         require(reflowableIdleMinutes == null || reflowableIdleMinutes in 1..MAX_IDLE_MINUTES)
         require(fixedLayoutIdleMinutes == null || fixedLayoutIdleMinutes in 1..MAX_IDLE_MINUTES)
+        require(minimumSessionSeconds in MINIMUM_SESSION_RANGE)
     }
 
     companion object {
         const val DEFAULT_REFLOWABLE_MINUTES = 5
         const val DEFAULT_FIXED_MINUTES = 10
         const val MAX_IDLE_MINUTES = 60
+        const val DEFAULT_MINIMUM_SESSION_SECONDS = 30
+        val MINIMUM_SESSION_RANGE = 1..300
     }
 }
 

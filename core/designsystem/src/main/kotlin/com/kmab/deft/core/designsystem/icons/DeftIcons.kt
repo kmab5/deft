@@ -2,6 +2,7 @@ package com.kmab.deft.core.designsystem.icons
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Notes
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -22,6 +23,7 @@ object DeftIcons {
     val Search get() = Icons.Outlined.Search
     val Filter get() = Icons.Outlined.FilterList
     val Lock get() = Icons.Outlined.Lock
+    val HeartFilled get() = Icons.Filled.Favorite
     val Heart get() = Icons.Outlined.FavoriteBorder
     val Star get() = Icons.Outlined.StarBorder
 }

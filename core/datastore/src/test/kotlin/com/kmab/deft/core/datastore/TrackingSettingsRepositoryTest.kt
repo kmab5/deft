@@ -28,7 +28,8 @@ class TrackingSettingsRepositoryTest {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             val repository = TrackingSettingsRepository(PreferenceDataStoreFactory.create(scope = scope) { file })
             assertEquals(TrackingPreferences(), repository.preferences.first())
-            val changed = TrackingPreferences(null, 60, true, false)
+            assertEquals(30, repository.preferences.first().minimumSessionSeconds)
+            val changed = TrackingPreferences(null, 60, true, false, minimumSessionSeconds = 300)
             repository.update { changed }
             scope.coroutineContext.job.cancelAndJoin()
             val reopenedScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

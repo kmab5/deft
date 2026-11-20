@@ -26,6 +26,7 @@ class TrackingSettingsRepository
                 saved[FIXED] = value.fixedLayoutIdleMinutes ?: OFF
                 saved[INDICATOR] = value.showIndicator
                 saved[CELEBRATIONS] = value.celebrations
+                saved[MINIMUM_SESSION] = value.minimumSessionSeconds
             }
         }
 
@@ -35,6 +36,9 @@ class TrackingSettingsRepository
                 fixedLayoutIdleMinutes = timeout(saved[FIXED], TrackingPreferences.DEFAULT_FIXED_MINUTES),
                 showIndicator = saved[INDICATOR] ?: false,
                 celebrations = saved[CELEBRATIONS] ?: true,
+                minimumSessionSeconds =
+                    saved[MINIMUM_SESSION]?.takeIf { it in TrackingPreferences.MINIMUM_SESSION_RANGE }
+                        ?: TrackingPreferences.DEFAULT_MINIMUM_SESSION_SECONDS,
             )
 
         private fun timeout(
@@ -53,5 +57,6 @@ class TrackingSettingsRepository
             val FIXED = intPreferencesKey("tracking_fixed_layout_idle_minutes")
             val INDICATOR = booleanPreferencesKey("tracking_indicator")
             val CELEBRATIONS = booleanPreferencesKey("appearance_celebrations")
+            val MINIMUM_SESSION = intPreferencesKey("tracking_minimum_session_seconds")
         }
     }

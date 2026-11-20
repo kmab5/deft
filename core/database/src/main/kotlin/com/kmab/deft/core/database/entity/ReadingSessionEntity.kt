@@ -1,5 +1,6 @@
 package com.kmab.deft.core.database.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -41,4 +42,5 @@ data class ReadingSessionEntity(
     val browsing: Boolean,
     val zoneOffsetSeconds: Int,
     val finalized: Boolean,
+    @ColumnInfo(defaultValue = "60") val minimumSessionSeconds: Int,
 )

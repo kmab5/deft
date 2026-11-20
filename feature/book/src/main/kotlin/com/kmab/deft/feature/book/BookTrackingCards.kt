@@ -2,17 +2,21 @@ package com.kmab.deft.feature.book
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -30,6 +34,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.kmab.deft.core.designsystem.DeftButton
 import com.kmab.deft.core.designsystem.DeftButtonStyle
@@ -39,15 +47,14 @@ import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.StateChip
+import com.kmab.deft.core.designsystem.color
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
+import com.kmab.deft.core.designsystem.icons.DeftIcons
 import com.kmab.deft.core.model.BookState
 import com.kmab.deft.core.model.BookTrackingSnapshot
-import com.kmab.deft.core.model.MIN_SESSION_SECONDS
 import com.kmab.deft.core.model.ReadThroughOutcome
 import com.kmab.deft.feature.celebrate.AssessmentControls
 import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
@@ -72,15 +79,23 @@ internal fun BookTrackingCards(
             },
         )
     }
-    TrackingCard("your reading", DeftActionIcons.History) {
+    TrackingCard("your reading", DeftIcons.Books) {
         Row(
-            Modifier.fillMaxWidth(),
+            Modifier
+                .fillMaxWidth()
+                .clickable(enabled = !busy, role = Role.Button) { sheet = "state" }
+                .semantics {
+                    contentDescription = "change reading state"
+                    stateDescription = snapshot.state.appearance().label
+                },
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            Text("reading state", Modifier.weight(1f), style = DeftTypography.label)
             StateChip(snapshot.state.appearance())
-            DeftButton("change state", { sheet = "state" }, style = DeftButtonStyle.Text, enabled = !busy)
+            Icon(DeftActionIcons.ChevronRight, null, tint = LocalDeftColors.current.accentText)
         }
+        HorizontalDivider(color = LocalDeftColors.current.line)
         AssessmentControls(
             snapshot.assessment.rating,
             snapshot.assessment.favorite,
@@ -88,19 +103,25 @@ internal fun BookTrackingCards(
             actions.favorite,
             !busy,
         )
-    }
-    TrackingCard("your review", DeftActionIcons.Rename) {
-        Text(
-            snapshot.assessment.review?.takeIf { it.isNotBlank() } ?: "Keep your thoughts here. Only you can see them.",
-            style = DeftTypography.body,
-        )
-        DeftButton(
-            if (snapshot.assessment.review.isNullOrEmpty()) "write a review" else "edit review",
-            { sheet = "review" },
-            style = DeftButtonStyle.Text,
-            enabled = !busy,
-            icon = DeftActionIcons.Rename,
-        )
+        HorizontalDivider(color = LocalDeftColors.current.line)
+        val review = snapshot.assessment.review.orEmpty()
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clickable(enabled = !busy, role = Role.Button) { sheet = "review" },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text("your review", Modifier.weight(1f), style = DeftTypography.label)
+            Text(
+                if (review.isBlank()) "write a review" else "edit review",
+                style = DeftTypography.label,
+                color = LocalDeftColors.current.accentText,
+            )
+            Icon(DeftActionIcons.Rename, null, Modifier.size(18.dp), tint = LocalDeftColors.current.accentText)
+        }
+        if (review.isNotBlank()) Text(review, style = DeftTypography.body)
     }
     ReadingHistoryCard(snapshot, busy) { id, action ->
         selectedId = id
@@ -111,17 +132,26 @@ internal fun BookTrackingCards(
         "state" ->
             TrackingSheet("reading state", { sheet = null }) {
                 BookState.entries.forEach { target ->
-                    DeftButton(target.appearance().label, {
-                        when (target) {
-                            BookState.NOT_STARTED -> sheet = "reset"
-                            BookState.FINISHED -> sheet = "finish"
-                            else -> {
-                                actions.setState(target, Instant.now(), false)
-                                confirm()
-                                sheet = null
+                    DeftButton(
+                        target.appearance().label,
+                        {
+                            when (target) {
+                                BookState.NOT_STARTED -> sheet = "reset"
+                                BookState.FINISHED -> sheet = "finish"
+                                else -> {
+                                    actions.setState(target, Instant.now(), false)
+                                    confirm()
+                                    sheet = null
+                                }
                             }
-                        }
-                    }, Modifier.fillMaxWidth(), style = DeftButtonStyle.Text, enabled = !busy)
+                        },
+                        Modifier.fillMaxWidth().semantics {
+                            contentDescription = "mark as ${target.appearance().label}"
+                        },
+                        style = DeftButtonStyle.Text,
+                        enabled = !busy,
+                        icon = if (target == snapshot.state) DeftActionIcons.Check else null,
+                    )
                 }
             }
         "reset" ->
@@ -139,19 +169,19 @@ internal fun BookTrackingCards(
                         null
                 },
             )
-        "finish" ->
-            TrackingDates("finish date", null, Instant.now(), { sheet = null }) { _, end ->
-                actions.setState(BookState.FINISHED, checkNotNull(end), false)
+        "finish" -> {
+            val reference by rememberSaveable { mutableStateOf(Instant.now().toString()) }
+            val original = Instant.parse(reference)
+            CalendarDialog(original.localDate(), { sheet = null }) { date ->
+                actions.setState(BookState.FINISHED, dateInstant(date, original), false)
                 confirm()
                 sheet = null
             }
+        }
         "dates" ->
             selected?.let { attempt ->
-                TrackingDates("edit dates", attempt.startedAt, attempt.endedAt, {
-                    sheet =
-                        null
-                }) { start, end ->
-                    actions.editDates(attempt.id, checkNotNull(start), end)
+                TrackingDates(attempt.startedAt, attempt.endedAt, { sheet = null }) { start, end ->
+                    actions.editDates(attempt.id, start, end)
                     sheet = null
                 }
             }
@@ -205,12 +235,6 @@ private fun TrackingCard(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun FlowRowActions(content: @Composable () -> Unit) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) { content() }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TrackingSheet(
@@ -254,74 +278,6 @@ private fun ReviewEditor(
     }
 }
 
-@Composable
-private fun TrackingDates(
-    title: String,
-    initialStart: Instant?,
-    initialEnd: Instant?,
-    dismiss: () -> Unit,
-    save: (Instant?, Instant?) -> Unit,
-) {
-    var start by rememberSaveable { mutableStateOf(initialStart?.localDate().orEmpty()) }
-    var end by rememberSaveable { mutableStateOf(initialEnd?.localDate().orEmpty()) }
-    var error by rememberSaveable { mutableStateOf<String?>(null) }
-    TrackingSheet(title, dismiss) {
-        Text("Use YYYY-MM-DD. Session timestamps stay unchanged.", style = DeftTypography.body)
-        if (initialStart != null) {
-            OutlinedTextField(
-                start,
-                {
-                    start = it
-                    error = null
-                },
-                Modifier.fillMaxWidth(),
-                label = { Text("started") },
-                singleLine = true,
-            )
-        }
-        if (initialEnd != null) {
-            OutlinedTextField(
-                end,
-                {
-                    end = it
-                    error = null
-                },
-                Modifier.fillMaxWidth(),
-                label = { Text("finished / ended") },
-                singleLine = true,
-            )
-        }
-        error?.let { Text(it, style = DeftTypography.body, color = LocalDeftColors.current.abandoned) }
-        DeftButton("save date", {
-            try {
-                val parsedStart = initialStart?.let { dateInstant(start, it) }
-                val parsedEnd = initialEnd?.let { dateInstant(end, it) }
-                require(parsedStart == null || parsedEnd == null || !parsedEnd.isBefore(parsedStart))
-                save(parsedStart, parsedEnd)
-            } catch (
-                _: java.time.DateTimeException,
-            ) {
-                error = "Enter a valid date as YYYY-MM-DD."
-            } catch (
-                _: IllegalArgumentException,
-            ) {
-                error = "The end date must be on or after the start date."
-            }
-        }, icon = DeftActionIcons.Check)
-    }
-}
-
-internal fun dateInstant(
-    text: String,
-    original: Instant,
-): Instant {
-    val date = LocalDate.parse(text)
-    val zone = ZoneId.systemDefault()
-    return date.atTime(original.atZone(zone).toLocalTime()).atZone(zone).toInstant()
-}
-
-internal fun Instant.localDate(): String = atZone(ZoneId.systemDefault()).toLocalDate().toString()
-
 private const val SECONDS_PER_HOUR = 3600
 private const val SECONDS_PER_MINUTE = 60
 
@@ -330,6 +286,8 @@ private fun sessionCountLabel(count: Int): String = if (count == 1) "1 session" 
 internal fun durationLabel(seconds: Long): String =
     if (seconds >= SECONDS_PER_HOUR) {
         "${seconds / SECONDS_PER_HOUR}h ${seconds % SECONDS_PER_HOUR / SECONDS_PER_MINUTE}m"
+    } else if (seconds in 1 until SECONDS_PER_MINUTE) {
+        "${seconds}s"
     } else {
         "${seconds / SECONDS_PER_MINUTE}m"
     }
@@ -343,12 +301,12 @@ internal fun BookState.appearance(): DeftReadingState =
         BookState.ABANDONED -> DeftReadingState.Abandoned
     }
 
-private fun ReadThroughOutcome.label(): String =
+private fun ReadThroughOutcome.appearance(): DeftReadingState =
     when (this) {
-        ReadThroughOutcome.IN_PROGRESS -> "reading"
-        ReadThroughOutcome.FINISHED -> "finished"
-        ReadThroughOutcome.PAUSED -> "paused"
-        ReadThroughOutcome.ABANDONED -> "abandoned"
+        ReadThroughOutcome.IN_PROGRESS -> DeftReadingState.Reading
+        ReadThroughOutcome.FINISHED -> DeftReadingState.Finished
+        ReadThroughOutcome.PAUSED -> DeftReadingState.Paused
+        ReadThroughOutcome.ABANDONED -> DeftReadingState.Abandoned
     }
 
 @Composable
@@ -358,58 +316,79 @@ private fun ReadingHistoryCard(
     onAction: (Long, String) -> Unit,
 ) {
     TrackingCard("reading history", DeftActionIcons.History) {
-        Text(
-            "${durationLabel(snapshot.activeSeconds)} · ${sessionCountLabel(snapshot.sessionCount)}",
-            style = DeftTypography.mono,
-        )
+        val c = LocalDeftColors.current
         if (snapshot.readThroughs.isEmpty()) {
-            Text(
-                "No read-throughs yet. A minute of reading starts one.",
-                style = DeftTypography.body,
-            )
+            Text("Your read-throughs will appear here.", style = DeftTypography.body, color = c.muted)
         }
-        snapshot.readThroughs.sortedByDescending { it.id }.forEach { attempt ->
-            HorizontalDivider(color = LocalDeftColors.current.line)
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(attempt.outcome.label(), style = DeftTypography.title)
-                Text(
-                    "${attempt.startedAt.localDate()} — ${attempt.endedAt?.localDate() ?: "ongoing"}",
-                    style = DeftTypography.mono,
-                )
-                val sessions =
-                    snapshot.sessions.filter {
-                        it.readThroughId == attempt.id &&
-                            it.activeSeconds >= MIN_SESSION_SECONDS
+        if (snapshot.readThroughs.size > 1) {
+            Text(
+                "${durationLabel(snapshot.activeSeconds)} · ${sessionCountLabel(snapshot.sessionCount)} in total",
+                style = DeftTypography.mono,
+            )
+            HorizontalDivider(color = c.line)
+        }
+        snapshot.readThroughs.sortedByDescending { it.startedAt }.forEachIndexed { index, attempt ->
+            if (index > 0) HorizontalDivider(color = c.line)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp)
+                        .clickable(
+                            role = Role.Button,
+                            onClickLabel = "view sessions",
+                        ) { onAction(attempt.id, "sessions") },
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    val state = attempt.outcome.appearance()
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Box(Modifier.size(6.dp).background(state.color(c)))
+                        Text(state.label, style = DeftTypography.title)
                     }
-                val counted = sessions.filterNot { it.browsing }
-                Text(
-                    "${durationLabel(counted.sumOf { it.activeSeconds })} · ${sessionCountLabel(counted.size)}",
-                    style = DeftTypography.body,
-                )
-                FlowRowActions {
-                    DeftButton("sessions", {
-                        onAction(attempt.id, "sessions")
-                    }, style = DeftButtonStyle.Text)
-                    DeftButton(
-                        "edit dates",
-                        {
-                            onAction(attempt.id, "dates")
-                        },
-                        style = DeftButtonStyle.Text,
-                        enabled = !busy,
-                        icon = DeftActionIcons.Rename,
+                    Text(
+                        "${attempt.startedAt.localDate()} — ${attempt.endedAt?.localDate() ?: "ongoing"}",
+                        style = DeftTypography.mono,
+                        color = c.muted,
                     )
-                    DeftButton(
-                        "delete",
-                        {
-                            onAction(attempt.id, "delete")
-                        },
-                        style = DeftButtonStyle.Text,
-                        enabled = !busy,
-                        icon = DeftActionIcons.Trash,
-                    )
+                    val counted = snapshot.sessions.filter { it.readThroughId == attempt.id && !it.browsing }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "${durationLabel(counted.sumOf { it.activeSeconds })} · ${sessionCountLabel(counted.size)}",
+                            style = DeftTypography.label,
+                            color = c.accentText,
+                        )
+                        Icon(DeftActionIcons.ChevronRight, null, Modifier.size(18.dp), tint = c.accentText)
+                    }
                 }
+                HistoryOptions(attempt.startedAt.localDate(), busy) { onAction(attempt.id, it) }
             }
+        }
+    }
+}
+
+@Composable
+private fun HistoryOptions(
+    date: String,
+    busy: Boolean,
+    select: (String) -> Unit,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    Box {
+        IconButton({ open = true }, enabled = !busy) {
+            Icon(DeftActionIcons.More, "read-through options, $date", tint = LocalDeftColors.current.muted)
+        }
+        DropdownMenu(open, { open = false }) {
+            DropdownMenuItem(text = { Text("edit dates") }, onClick = {
+                open = false
+                select("dates")
+            })
+            DropdownMenuItem(text = { Text("delete") }, onClick = {
+                open = false
+                select("delete")
+            })
         }
     }
 }
@@ -424,7 +403,7 @@ private fun SessionHistory(
         val sessions =
             snapshot.sessions
                 .filter {
-                    it.readThroughId == readThroughId && it.activeSeconds >= MIN_SESSION_SECONDS
+                    it.readThroughId == readThroughId
                 }.sortedByDescending { it.startedAt }
         if (sessions.isEmpty()) {
             Text(

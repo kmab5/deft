@@ -75,4 +75,12 @@ object DatabaseMigrations {
                 )
             }
         }
+
+    @Suppress("MagicNumber") // Literal schema versions identify this migration.
+    val FROM_5_TO_6 =
+        object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE reading_sessions ADD COLUMN minimumSessionSeconds INTEGER NOT NULL DEFAULT 60")
+            }
+        }
 }

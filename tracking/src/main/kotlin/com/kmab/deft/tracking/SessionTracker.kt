@@ -2,6 +2,7 @@ package com.kmab.deft.tracking
 
 import com.kmab.deft.core.model.ReadingPosition
 import com.kmab.deft.core.model.ReadingSession
+import com.kmab.deft.core.model.TrackingPreferences
 import java.time.Instant
 import java.util.UUID
 
@@ -31,6 +32,7 @@ class SessionTracker(
         val browsing: Boolean,
         var idleMillis: Long?,
         var position: ReadingPosition,
+        var minimumSessionSeconds: Int,
     )
 
     private data class OpenSession(
@@ -41,38 +43,54 @@ class SessionTracker(
         var end: ReadingPosition,
         var pages: Int = 0,
         var confirmedThrough: Long = started,
-    )
+    ) {
+        fun isIdle(
+            elapsed: Long,
+            timeout: Long?,
+        ): Boolean = timeout != null && elapsed - lastInteraction >= timeout
+    }
 
     private var context: Context? = null
     private var current: OpenSession? = null
     val active: Boolean get() = current != null
     val activeSeconds: Long
         get() = current?.let { (clock.elapsedMillis() - it.started).coerceAtLeast(0) / MILLIS_PER_SECOND } ?: 0
+    val qualifiesActiveSession: Boolean
+        get() =
+            current?.let {
+                activeSeconds >= it.row.minimumSessionSeconds && !it.isIdle(clock.elapsedMillis(), context?.idleMillis)
+            } == true
     val keepAwake: Boolean
         get() =
             context?.idleMillis != null || current?.let {
                 clock.elapsedMillis() - it.lastInteraction < OFF_AWAKE_MILLIS
             } == true
 
+    @Suppress("LongParameterList") // The visibility event supplies the book, position and tracking preferences.
     fun show(
         bookId: Long,
         readThroughId: Long?,
         browsing: Boolean,
         position: ReadingPosition,
         idleMillis: Long?,
+        minimumSessionSeconds: Int = TrackingPreferences.DEFAULT_MINIMUM_SESSION_SECONDS,
     ): List<ReadingSession> {
         require(idleMillis == null || idleMillis > 0)
         if (context?.bookId == bookId) return expire()
         val ended = hide()
-        context = Context(bookId, readThroughId, browsing, idleMillis, position)
+        context = Context(bookId, readThroughId, browsing, idleMillis, position, minimumSessionSeconds)
         start()
         return ended
     }
 
-    fun timeout(idleMillis: Long?): List<ReadingSession> {
+    fun timeout(
+        idleMillis: Long?,
+        minimumSessionSeconds: Int? = null,
+    ): List<ReadingSession> {
         require(idleMillis == null || idleMillis > 0)
         if (context?.idleMillis == null) current?.confirmedThrough = clock.elapsedMillis()
         context?.idleMillis = idleMillis
+        if (minimumSessionSeconds != null) context?.minimumSessionSeconds = minimumSessionSeconds
         return expire()
     }
 
@@ -125,6 +143,7 @@ class SessionTracker(
                         startPosition = book.position.position,
                         browsing = book.browsing,
                         zoneOffsetSeconds = clock.zoneOffsetSeconds(),
+                        minimumSessionSeconds = book.minimumSessionSeconds,
                     ),
                 started = now,
                 lastInteraction = now,
@@ -135,10 +154,7 @@ class SessionTracker(
 
     private fun expire(): List<ReadingSession> {
         val session = current
-        val timeout = context?.idleMillis
-        if (session == null || timeout == null || clock.elapsedMillis() - session.lastInteraction < timeout) {
-            return emptyList()
-        }
+        if (session == null || !session.isIdle(clock.elapsedMillis(), context?.idleMillis)) return emptyList()
         current = null
         return listOf(snapshot(session, session.lastInteraction, finalized = true))
     }

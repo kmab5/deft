@@ -19,8 +19,6 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,6 +29,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.kmab.deft.core.designsystem.DeftShapes
+import com.kmab.deft.core.designsystem.DeftSwitch
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
 
@@ -115,7 +114,6 @@ internal fun PreferenceToggle(
     checked: Boolean,
     onChange: (Boolean) -> Unit,
 ) {
-    val colors = LocalDeftColors.current
     Row(
         Modifier
             .fillMaxWidth()
@@ -126,17 +124,9 @@ internal fun PreferenceToggle(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(label, Modifier.weight(1f), style = DeftTypography.body)
-        Switch(
+        DeftSwitch(
             checked = checked,
             onCheckedChange = null,
-            colors =
-                SwitchDefaults.colors(
-                    checkedThumbColor = colors.onAccent,
-                    checkedTrackColor = colors.accent,
-                    uncheckedThumbColor = colors.muted,
-                    uncheckedTrackColor = colors.surface2,
-                    uncheckedBorderColor = colors.line2,
-                ),
         )
     }
 }

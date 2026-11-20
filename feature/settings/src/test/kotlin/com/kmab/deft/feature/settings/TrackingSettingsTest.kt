@@ -62,23 +62,30 @@ class TrackingSettingsTest {
     @Test fun largeTextTrackingSettingsRemainScrollable() {
         RuntimeEnvironment.setFontScale(1.5f)
         compose.setContent { DeftTheme(darkTheme = true) { TrackingSettingsContent(TrackingPreferences(), {}, {}) } }
+        compose.onNodeWithText("minimum session · 30 seconds").performScrollTo().assertExists()
         capture("tracking-settings-ink-large")
-        compose.onNodeWithText("minimum session · 60 seconds").performScrollTo().assertExists()
     }
 
-    @Test fun appearanceToggleHasQuietFallbackExplanation() {
+    @Test fun validatesMinimumSessionSecondsAndAppliesTheBoundary() {
         val preferences = mutableStateOf(TrackingPreferences())
         compose.setContent {
             DeftTheme {
                 TrackingSettingsContent(preferences.value, {}, {
                     preferences.value =
                         it(preferences.value)
-                }, true)
+                })
             }
         }
-        capture("appearance-settings-paper")
-        compose.onNodeWithContentDescription("celebrations").performClick()
-        assertEquals(false, preferences.value.celebrations)
+        val field = compose.onNodeWithContentDescription("minimum session · seconds")
+        val apply = compose.onNodeWithContentDescription("apply minimum session")
+        field.performScrollTo().performTextReplacement("301")
+        apply.performScrollTo().performClick()
+        compose.onNodeWithText("Enter a whole number from 1 to 300.").performScrollTo().assertExists()
+        assertEquals(30, preferences.value.minimumSessionSeconds)
+        field.performScrollTo().performTextReplacement("1")
+        apply.performScrollTo().performClick()
+        assertEquals(1, preferences.value.minimumSessionSeconds)
+        capture("tracking-settings-paper")
     }
 
     private fun capture(name: String) {

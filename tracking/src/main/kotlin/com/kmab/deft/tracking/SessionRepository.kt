@@ -3,7 +3,6 @@ package com.kmab.deft.tracking
 import androidx.room.withTransaction
 import com.kmab.deft.core.database.AppDatabase
 import com.kmab.deft.core.database.entity.ReadThroughEntity
-import com.kmab.deft.core.model.MIN_SESSION_SECONDS
 import com.kmab.deft.core.model.ReadThroughOutcome
 import com.kmab.deft.core.model.ReadingSession
 import javax.inject.Inject
@@ -20,17 +19,11 @@ class SessionRepository
 
         suspend fun checkpoint(session: ReadingSession): ReadingSession =
             database.withTransaction {
-                persist(session.copy(finalized = false))
+                checkNotNull(persist(session.copy(finalized = false)))
             }
 
         suspend fun finish(session: ReadingSession): ReadingSession? =
             database.withTransaction {
-                val existing = dao.session(session.id)
-                if (existing?.finalized == true) return@withTransaction existing.model()
-                if (session.activeSeconds < MIN_SESSION_SECONDS) {
-                    dao.deleteSession(session.id)
-                    return@withTransaction null
-                }
                 persist(session.copy(finalized = true))
             }
 
@@ -42,32 +35,41 @@ class SessionRepository
 
         suspend fun aggregateSeconds(): Long = dao.aggregateSeconds()
 
-        private suspend fun persist(session: ReadingSession): ReadingSession {
+        private suspend fun persist(session: ReadingSession): ReadingSession? {
             val book = database.bookDao().getById(session.bookId) ?: throw SessionTargetRemovedException()
             require(!book.drmProtected) { "Protected books cannot have reading sessions." }
-            val existing = dao.session(session.id)
-            if (existing != null) {
+            val existing = findMatchingSession(session)
+            val olderCheckpoint = !session.finalized && (existing?.activeSeconds ?: -1) > session.activeSeconds
+            if (existing != null && (existing.finalized || olderCheckpoint)) {
+                return existing
+            }
+            val latest =
+                if (existing != null && existing.activeSeconds > session.activeSeconds) {
+                    existing.copy(finalized = session.finalized)
+                } else {
+                    session
+                }
+            return if (latest.finalized && !latest.qualifies) {
+                dao.deleteSession(latest.id)
+                null
+            } else {
+                val linked = existing?.readThroughId ?: session.readThroughId
+                val readId = if (latest.qualifies) resolveReadThrough(latest, linked) else linked
+                latest.copy(readThroughId = readId).also { dao.upsertSession(it.entity()) }
+            }
+        }
+
+        private suspend fun findMatchingSession(session: ReadingSession): ReadingSession? =
+            dao.session(session.id)?.model()?.also { existing ->
                 require(
-                    existing.bookId == session.bookId && existing.startedAt == session.startedAt &&
-                        existing.browsing == session.browsing,
+                    existing.bookId == session.bookId &&
+                        existing.startedAt.toEpochMilli() == session.startedAt.toEpochMilli() &&
+                        existing.browsing == session.browsing &&
+                        existing.minimumSessionSeconds == session.minimumSessionSeconds,
                 ) {
                     "A session ID cannot be reused for a different reading session."
                 }
-                if (existing.finalized || session.activeSeconds < existing.activeSeconds) return existing.model()
             }
-            val linked = existing?.readThroughId ?: session.readThroughId
-            val readId =
-                if (session.activeSeconds >=
-                    MIN_SESSION_SECONDS
-                ) {
-                    resolveReadThrough(session, linked)
-                } else {
-                    linked
-                }
-            val saved = session.copy(readThroughId = readId)
-            dao.upsertSession(saved.entity())
-            return saved
-        }
 
         private suspend fun resolveReadThrough(
             session: ReadingSession,

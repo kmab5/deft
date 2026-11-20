@@ -58,15 +58,15 @@ interface TrackingDao {
     )
     suspend fun claimFinishPrompt(id: Long): Int
 
-    @Query("DELETE FROM reading_sessions WHERE finalized = 0 AND activeSeconds < 60")
+    @Query("DELETE FROM reading_sessions WHERE finalized = 0 AND activeSeconds < minimumSessionSeconds")
     suspend fun discardInterruptedShortSessions()
 
-    @Query("UPDATE reading_sessions SET finalized = 1 WHERE finalized = 0 AND activeSeconds >= 60")
+    @Query("UPDATE reading_sessions SET finalized = 1 WHERE finalized = 0 AND activeSeconds >= minimumSessionSeconds")
     suspend fun finalizeInterruptedSessions()
 
     @Query(
         "SELECT COALESCE(SUM(s.activeSeconds), 0) FROM reading_sessions s JOIN books b ON " +
-            "b.id = s.bookId WHERE s.browsing = 0 AND s.activeSeconds >= 60 AND b.ignored = 0",
+            "b.id = s.bookId WHERE s.browsing = 0 AND s.activeSeconds >= s.minimumSessionSeconds AND b.ignored = 0",
     )
     suspend fun aggregateSeconds(): Long
 

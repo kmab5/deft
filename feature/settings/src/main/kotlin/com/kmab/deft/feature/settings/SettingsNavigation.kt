@@ -18,13 +18,17 @@ fun NavGraphBuilder.settingsGraph(
             { navController.navigate("settings/reader") },
             { navController.navigate("settings/tracking") },
             { navController.navigate("settings/appearance") },
+            { navController.navigate("settings/about") },
         )
     }
     composable("settings/tracking") { entry ->
         TrackingSettingsScreen(rememberDestinationBack(navController, entry))
     }
     composable("settings/appearance") { entry ->
-        TrackingSettingsScreen(rememberDestinationBack(navController, entry), appearance = true)
+        AppearanceSettingsScreen(rememberDestinationBack(navController, entry))
+    }
+    composable("settings/about") { entry ->
+        AboutScreen(rememberDestinationBack(navController, entry))
     }
     composable("settings/library") { entry ->
         LibrarySettingsScreen(
