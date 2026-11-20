@@ -4,21 +4,31 @@
 
 Your completed 0.2.3 review and comments remain below. Install this release as an update, without uninstalling.
 
-- [ ] Update to **0.2.4**. Library folders, display sizes, filters, reader preferences, positions and bookmarks remain.
-- [ ] Open the image that previously showed a blank viewer in The Tainted Cup, a cover, a large raster image and an SVG. Images appear on the native zoom surface. Pinch around different points, pan when enlarged, close and press Back; return to the same passage. Malformed/unsupported images show a readable error and a working close button.
-- [ ] Slowly drag forward and backward until the next page is more than halfway visible, pause, then release: exactly one page turns. Return more than halfway toward the drag origin to cancel. Repeat at chapter boundaries, with quick flicks, with animation None and with system animations disabled. No page is skipped.
-- [ ] Verify tap zones are **35% left / 30% center / 35% right**. Center toggles HUD. System-edge Back swipes and text selection still work without unintended page turns.
-- [ ] Fullscreen book text has modest additional top space. The reader title is visibly larger, and the footer has space above the chapter name. Repeat with a long book title, landscape and 150% text; all controls remain reachable.
-- [ ] Advanced search controls and regex help sit together in an elevated card, aligned with the search field in both Books and the reader. Toggle options and type an invalid expression; text wraps within the same gutters without pushing controls offscreen.
-- [ ] In-book search results each show **chapter and page** above the snippet. Open results from different chapters and different sections sharing one file if available; labels and passage navigation agree. Back returns to the original passage.
-- [ ] Tap an external website link in paged and continuous modes. A prompt names its actual domain. Cancel or Back stays in Deft. Confirm opens that URL in your browser; return to Deft without losing the passage. No website opens automatically and local/internal links still navigate within the book.
-- [ ] Grid/list Small, Medium and Large match their earlier widths and column counts; no reserved blank scrollbar gutter. Drag the visible thumb: it takes priority over the overlapped book area. Taps/ordinary scrolling away from the handle and after it fades still work. Continue and return-to-top remain accessible.
-- [ ] Rescan: **scan details** sits directly beneath the completion message, without the large empty gap. Message, status icon and close control align. Check multiple stacked notices and 150% text; details and dismissal still work.
-- [ ] Rapidly press the toolbar Back button on book details, Settings, Library settings, Reader settings and Ignored books. Repeat with system Back and transitions in progress. The app must never show an empty screen or pop past its library root. Normal Back from the library can still leave the app.
-- [ ] Repeat Back with reader contents/search/settings, the image viewer and external-link prompt open: close the top overlay first. Reopen Deft, rotate and background/foreground; reading position and previous successful 0.2.3 behavior remain intact.
+- [X] Update to **0.2.4**. Library folders, display sizes, filters, reader preferences, positions and bookmarks remain.
+- [X] Open the image that previously showed a blank viewer in The Tainted Cup, a cover, a large raster image and an SVG. Images appear on the native zoom surface. Pinch around different points, pan when enlarged, close and press Back; return to the same passage. Malformed/unsupported images show a readable error and a working close button.
+- [X] Slowly drag forward and backward until the next page is more than halfway visible, pause, then release: exactly one page turns. Return more than halfway toward the drag origin to cancel. Repeat at chapter boundaries, with quick flicks, with animation None and with system animations disabled. No page is skipped.
+- [X] Verify tap zones are **35% left / 30% center / 35% right**. Center toggles HUD. System-edge Back swipes and text selection still work without unintended page turns.
+- [X] Fullscreen book text has modest additional top space. The reader title is visibly larger, and the footer has space above the chapter name. Repeat with a long book title, landscape and 150% text; all controls remain reachable.
+-- the title is not Large enough (the proportion between the back icon and the text isnt right, so make the text bigger)
+- [X] Advanced search controls and regex help sit together in an elevated card, aligned with the search field in both Books and the reader. Toggle options and type an invalid expression; text wraps within the same gutters without pushing controls offscreen.
+- [X] In-book search results each show **chapter and page** above the snippet. Open results from different chapters and different sections sharing one file if available; labels and passage navigation agree. Back returns to the original passage.
+- [X] Tap an external website link in paged and continuous modes. A prompt names its actual domain. Cancel or Back stays in Deft. Confirm opens that URL in your browser; return to Deft without losing the passage. No website opens automatically and local/internal links still navigate within the book.
+- [X] Grid/list Small, Medium and Large match their earlier widths and column counts; no reserved blank scrollbar gutter. Drag the visible thumb: it takes priority over the overlapped book area. Taps/ordinary scrolling away from the handle and after it fades still work. Continue and return-to-top remain accessible.
+- [X] Rescan: **scan details** sits directly beneath the completion message, without the large empty gap. Message, status icon and close control align. Check multiple stacked notices and 150% text; details and dismissal still work.
+-- make bottom padding of the scan notification smaller
+-- in the library settings, when scanning, "allow scan notifications" is written, make it elevated and put a muted notification icon next to it if notification is not allowed and a normal icon if it is allowed.
+- [X] Rapidly press the toolbar Back button on book details, Settings, Library settings, Reader settings and Ignored books. Repeat with system Back and transitions in progress. The app must never show an empty screen or pop past its library root. Normal Back from the library can still leave the app.
+- [X] Repeat Back with reader contents/search/settings, the image viewer and external-link prompt open: close the top overlay first. Reopen Deft, rotate and background/foreground; reading position and previous successful 0.2.3 behavior remain intact.
+
+----
+
+- swiping in the reader settings sideways moves between the settings (text - theme - page), and add icons next to the names of these settings
+- the circle in the progress bar that indicates current position isnt fully centered vertically on the bar itself, fix that
+- add just a bit more padding to the top of the progress bar above the chapter indicator
+- the space between the title of a book and its author in the library grid view is a bit too big when the titles are one line, when there are two lines, yes it works perfectly but even whe there are no books on the line that dtake up two lines, the gap still exists, it should be adaptive
+- as the changes that i suggested are very minor, make these changes and merge onto main and push
 
 No later milestone features were brought forward. M2 remains pending your explicit acceptance.
-
 
 ## 0.2.3 — device feedback retest
 
