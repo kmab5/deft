@@ -41,4 +41,38 @@ object DatabaseMigrations {
                 )
             }
         }
+
+    @Suppress("MagicNumber") // Literal schema versions identify this migration.
+    val FROM_4_TO_5 =
+        object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE books ADD COLUMN rating REAL")
+                db.execSQL("ALTER TABLE books ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE books ADD COLUMN review TEXT")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS read_throughs (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "bookId INTEGER NOT NULL, startedAt INTEGER NOT NULL, endedAt " +
+                        "INTEGER, outcome TEXT NOT NULL, " +
+                        "finishPromptShown INTEGER NOT NULL, " +
+                        "FOREIGN KEY(bookId) REFERENCES books(id) ON UPDATE NO ACTION ON DELETE CASCADE)",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_read_throughs_bookId ON read_throughs(bookId)")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS reading_sessions (id TEXT NOT NULL, bookId INTEGER NOT NULL, " +
+                        "readThroughId INTEGER, startedAt INTEGER NOT NULL, endedAt INTEGER NOT NULL, " +
+                        "activeSeconds INTEGER NOT NULL, startLocator TEXT, endLocator TEXT, " +
+                        "startProgression REAL NOT NULL, endProgression REAL NOT NULL, pagesTurned INTEGER NOT NULL, " +
+                        "startPosition INTEGER, endPosition INTEGER, browsing INTEGER NOT NULL, " +
+                        "zoneOffsetSeconds INTEGER NOT NULL, finalized INTEGER NOT NULL, PRIMARY KEY(id), " +
+                        "FOREIGN KEY(bookId) REFERENCES books(id) ON UPDATE NO ACTION ON DELETE CASCADE, " +
+                        "FOREIGN KEY(readThroughId) REFERENCES read_throughs(id) ON UPDATE " +
+                        "NO ACTION ON DELETE CASCADE)",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_reading_sessions_bookId ON reading_sessions(bookId)")
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_reading_sessions_readThroughId ON " +
+                        "reading_sessions(readThroughId)",
+                )
+            }
+        }
 }
