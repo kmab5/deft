@@ -2,7 +2,7 @@
 
 ## 0.2.5 — final polish and merge authorization
 
-You passed all twelve 0.2.4 checks and explicitly authorized the remaining minor fixes followed by merge/push without a further feedback round. The review below is preserved. Final changes cover the larger title, centered progress thumb and footer spacing, swipeable settings tabs with icons, adaptive grid title spacing, compact scan notices and the notification-permission control. Local verification and release evidence will be recorded in the handover entry.
+You passed all twelve 0.2.4 checks and explicitly authorized the remaining minor fixes followed by merge/push without a further feedback round. The review below is preserved. Final changes cover the larger title, centered progress thumb and footer spacing, swipeable settings tabs with icons, adaptive grid title spacing, compact scan notices and the notification-permission control. Local verification passed; release evidence is recorded below.
 
 ## 0.2.4 — device feedback retest
 
@@ -394,3 +394,13 @@ Keep the original results/comments above. Record this version's results here. Th
 - Combined audit findings were addressed, including exact slow-drag targets, TOC fragments in search labels and bounded SVG reference handling. The native image test verifies actual pixels, pinch zoom, pan and dismissal. Updated visual references are in `plans/design/m2-feedback.html`; diagnosis and limits are in `plans/2026-11-20-m2-0.2.4-validation.md`.
 - APK, R8 mapping and verification evidence are archived locally in `.superpowers/releases/0.2.4/`.
 - The USB connection was unreliable and you instructed us to assume no device access. No successful physical-device run is claimed. Start with the **0.2.4 device feedback retest** at the top; those steps remain unchecked. M2 remains on `feat/m2-epub-reader` pending your acceptance; GitHub CI is not awaited.
+
+## Final M2 handover — 0.2.5
+
+- Author acceptance: all twelve 0.2.4 device checks passed; final minor fixes and merge explicitly authorized without another feedback round.
+- Final `check assembleRelease`: passed, 695 tests / 154 reports, no failures, errors or skips. Combined audit closed.
+- Tag: `v0.2.5-1`; merge/source: `21685c1b021884f52d4d1f6554172b24ad324f77`.
+- Release APK: `D:/Code/deft/deft-0.2.5.apk`, 6095617 bytes, versionCode20501. R8 minification/resource shrinking enabled; persistent release key reused.
+- APK SHA-256: `348840145b5fc698df692c6370f45cbd00a526eda19656191965340d4d4aa28a`.
+- Certificate SHA-256: `adea6ec2edf4e9e2d809ed06300729e35ca156c06072736717b4a27449233e50`.
+- [GitHub release](https://github.com/kmab5/deft/releases/tag/v0.2.5-1). No CI wait or additional author feedback gate. New fixes verified locally; no new phone run claimed.
