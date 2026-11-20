@@ -3,6 +3,7 @@ package com.kmab.deft.core.datastore
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -10,11 +11,13 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.kmab.deft.core.model.BookDisplaySize
 import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
+import com.kmab.deft.core.model.BookState
 import kotlinx.coroutines.flow.map
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@Suppress("TooManyFunctions") // Independent settings retain explicit typed update methods.
 @Singleton
 class LibrarySettingsRepository
     @Inject
@@ -28,6 +31,15 @@ class LibrarySettingsRepository
                         p[FORMATS]?.mapNotNull { name -> BookFormat.entries.find { it.name == name } }?.toSet()
                             ?: BookFormat.entries.toSet(),
                     advancedSearch = p[ADVANCED_SEARCH] ?: false,
+                    stateFilter =
+                        p[STATES]?.mapNotNull { name -> BookState.entries.find { it.name == name } }?.toSet()
+                            ?: BookState.entries.toSet(),
+                    favoritesOnly = p[FAVORITES] ?: false,
+                    minimumRating =
+                        p[MIN_RATING]?.takeIf {
+                            it in MIN_RATING_VALUE..MAX_RATING_VALUE &&
+                                it * 2 == (it * 2).toInt().toDouble()
+                        },
                     showMissing = p[MISSING] ?: false,
                     sort = BookSort.entries.find { it.name == p[SORT] } ?: BookSort.TITLE,
                     gridView = p[GRID] ?: true,
@@ -59,6 +71,28 @@ class LibrarySettingsRepository
                 val current = p[FILTER_FORMATS] ?: BookFormat.entries.map { it.name }.toSet()
                 p[FILTER_FORMATS] = if (enabled) current + format.name else current - format.name
             }
+        }
+
+        suspend fun setStateFilter(
+            state: BookState,
+            enabled: Boolean,
+        ) {
+            store.edit { p ->
+                val current = p[STATES] ?: BookState.entries.map { it.name }.toSet()
+                p[STATES] = if (enabled) current + state.name else current - state.name
+            }
+        }
+
+        suspend fun setFavoritesOnly(value: Boolean) {
+            store.edit { it[FAVORITES] = value }
+        }
+
+        suspend fun setMinimumRating(value: Double?) {
+            require(
+                value == null ||
+                    value in MIN_RATING_VALUE..MAX_RATING_VALUE && value * 2 == (value * 2).toInt().toDouble(),
+            )
+            store.edit { if (value == null) it.remove(MIN_RATING) else it[MIN_RATING] = value }
         }
 
         suspend fun setAdvancedSearch(value: Boolean) {
@@ -94,6 +128,11 @@ class LibrarySettingsRepository
         }
 
         private companion object {
+            const val MIN_RATING_VALUE = 0.5
+            const val MAX_RATING_VALUE = 5.0
+            val STATES = stringSetPreferencesKey("book_state_filter")
+            val FAVORITES = booleanPreferencesKey("book_favorites_only")
+            val MIN_RATING = doublePreferencesKey("book_minimum_rating")
             val FORMATS = stringSetPreferencesKey("enabled_formats")
             val FILTER_FORMATS = stringSetPreferencesKey("book_format_filter")
             val ADVANCED_SEARCH = booleanPreferencesKey("advanced_search")

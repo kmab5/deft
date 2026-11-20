@@ -65,6 +65,7 @@ import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("CyclomaticComplexMethod") // Navigation/search/layout choices are independent screen controls.
 @Composable
 fun BooksScreen(
     state: BooksUiState,
@@ -81,6 +82,9 @@ fun BooksScreen(
     onScanDetails: () -> Unit = {},
     onOpenBook: (Long) -> Unit = {},
     onContinueReading: (Long) -> Unit = {},
+    onStateFilter: (com.kmab.deft.core.model.BookState, Boolean) -> Unit = { _, _ -> },
+    onFavoritesOnly: (Boolean) -> Unit = {},
+    onMinimumRating: (Double?) -> Unit = {},
 ) {
     val c = LocalDeftColors.current
     var menu by remember { mutableStateOf(false) }
@@ -209,14 +213,25 @@ fun BooksScreen(
                     onSettings,
                     onOpenBook,
                 ) {
-                    if (query.isNotBlank()) query = "" else BookFormat.entries.forEach { onFormatChange(it, true) }
+                    if (query.isNotBlank()) {
+                        query = ""
+                    } else {
+                        BookFormat.entries.forEach { onFormatChange(it, true) }
+                        com.kmab.deft.core.model.BookState.entries
+                            .forEach { onStateFilter(it, true) }
+                        onFavoritesOnly(false)
+                        onMinimumRating(null)
+                    }
                 }
             }
             LibraryScrollOverlay(scroll, state.continueReading, onContinueReading)
         }
     }
     when (sheet) {
-        "filters" -> BooksFilters(state, { sheet = null }, onShowMissingChange, onFormatChange)
+        "filters" ->
+            BooksFilters(state, {
+                sheet = null
+            }, onShowMissingChange, onFormatChange, onStateFilter, onFavoritesOnly, onMinimumRating)
         "sort" -> BooksSort(state, { sheet = null }, onSortChange, onReverseSortChange)
         "display" -> BooksDisplay(state, { sheet = null }, onGridViewChange, onGridSizeChange, onListSizeChange)
     }
@@ -268,6 +283,7 @@ private fun BooksCollection(
                         loader,
                         Modifier.animateItem(fadeInSpec = null, placementSpec = tween(DeftMotion.MEDIUM)),
                         size = state.gridSize,
+                        tracking = state.tracking[book.id],
                         onClick = { onOpenBook(book.id) },
                     )
                 }
@@ -291,6 +307,7 @@ private fun BooksCollection(
                         loader,
                         Modifier.animateItem(fadeInSpec = null, placementSpec = tween(DeftMotion.MEDIUM)),
                         size = state.listSize,
+                        tracking = state.tracking[book.id],
                         onClick = { onOpenBook(book.id) },
                     )
                 }
@@ -314,7 +331,7 @@ private fun EmptyBooks(
                 Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 64.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                val filtered = state.hasFolders && state.formatFilter.size != BookFormat.entries.size
+                val filtered = state.hasReadingFilters()
                 Text(
                     if (searching) {
                         "no matching books."
@@ -362,12 +379,14 @@ internal fun BookSort.label(): String =
         BookSort.AUTHOR -> "author"
         BookSort.DATE_ADDED -> "date added"
         BookSort.LAST_READ -> "last read"
+        BookSort.RATING -> "rating"
     }
 
 internal fun BookSort.orderLabel(reverse: Boolean): String =
     when (this) {
         BookSort.TITLE, BookSort.AUTHOR -> if (reverse) "z to a" else "a to z"
         BookSort.DATE_ADDED, BookSort.LAST_READ -> if (reverse) "oldest first" else "newest first"
+        BookSort.RATING -> if (reverse) "lowest first" else "highest first"
     }
 
 internal fun BookDisplaySize.gridMinimumWidth() =
@@ -390,3 +409,10 @@ private fun com.kmab.deft.core.model.SearchOptions.enabledWhen(enabled: Boolean)
         com.kmab.deft.core.model
             .SearchOptions()
     }
+
+private fun BooksUiState.hasReadingFilters(): Boolean =
+    hasFolders && (
+        formatFilter.size != BookFormat.entries.size ||
+            stateFilter.size != com.kmab.deft.core.model.BookState.entries.size || favoritesOnly ||
+            minimumRating != null
+    )

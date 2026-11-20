@@ -42,6 +42,7 @@ fun BookCard(
     modifier: Modifier = Modifier,
     size: BookDisplaySize = BookDisplaySize.MEDIUM,
     onClick: (() -> Unit)? = null,
+    tracking: com.kmab.deft.core.model.BookTrackingSummary? = null,
 ) {
     val c = LocalDeftColors.current
     Column(
@@ -49,11 +50,13 @@ fun BookCard(
             .testTag("book_${book.id}")
             .libraryBookSurface(8.dp, onClick)
             .semantics(mergeDescendants = true) {
-                stateDescription = if (book.lastReadAt == null) "not read" else "previously read"
+                stateDescription =
+                    (tracking?.state ?: com.kmab.deft.core.model.BookState.NOT_STARTED).appearance().label
             },
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         LibraryCover(book, imageLoader, showBadges = size != BookDisplaySize.SMALL)
+        LibraryReadingStatus(book, tracking)
         if (size == BookDisplaySize.SMALL && (book.missing || book.drmProtected)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (book.missing) Icon(LibraryIcons.Missing, "missing", Modifier.size(16.dp), tint = c.muted)

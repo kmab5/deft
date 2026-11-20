@@ -38,6 +38,16 @@ import java.time.Instant
 class BooksScreenTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun filtersExposeReadingStatesAndAssessment() {
+        compose.setContent {
+            DeftTheme { BooksScreen(BooksUiState(isLoading = false), {}, {}, {}, {}, {}, {}, { _, _ -> }) }
+        }
+        compose.onNodeWithContentDescription("filter books").performClick()
+        compose.onNodeWithText("reading states").assertExists()
+        compose.onNodeWithText("favorites only").performScrollTo().assertExists()
+        compose.onNodeWithText("minimum rating").performScrollTo().assertExists()
+    }
+
     @Test fun noFoldersUsesApprovedCopyAndOpensFolderSettings() {
         var additions = 0
         compose.setContent {
@@ -144,7 +154,11 @@ class BooksScreenTest {
             }
         }
         compose.onNodeWithContentDescription("filter books").performClick()
-        compose.onNodeWithText("txt").performClick()
+        compose
+            .onNodeWithText("txt")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
         compose
             .onNodeWithContentDescription("show missing")
             .performScrollTo()

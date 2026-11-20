@@ -55,6 +55,7 @@ import com.kmab.deft.core.designsystem.icons.DeftIcons
 import com.kmab.deft.core.model.BookDisplaySize
 import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
+import com.kmab.deft.core.model.BookState
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -74,7 +75,10 @@ internal fun BooksToolbar(
         } else {
             state.reverseSort
         }
-    val active = (if (state.formatFilter.size != BookFormat.entries.size) 1 else 0) + (if (state.showMissing) 1 else 0)
+    val active =
+        (if (state.formatFilter.size != BookFormat.entries.size) 1 else 0) + (if (state.showMissing) 1 else 0) +
+            (if (state.stateFilter.size != BookState.entries.size) 1 else 0) + (if (state.favoritesOnly) 1 else 0) +
+            (if (state.minimumRating != null) 1 else 0)
     Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Row(
             Modifier
@@ -174,12 +178,15 @@ internal fun BooksFilters(
     onDismiss: () -> Unit,
     onShowMissingChange: (Boolean) -> Unit,
     onFormatChange: (BookFormat, Boolean) -> Unit,
+    onStateFilter: (BookState, Boolean) -> Unit,
+    onFavoritesOnly: (Boolean) -> Unit,
+    onMinimumRating: (Double?) -> Unit,
 ) {
     val c = LocalDeftColors.current
     LibraryPopup("filter books", onDismiss) {
         Column(Modifier.verticalScroll(rememberScrollState())) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("file types", style = DeftTypography.label, color = c.muted, modifier = Modifier.weight(1f))
+                Text("reading states", style = DeftTypography.label, color = c.muted, modifier = Modifier.weight(1f))
                 Text(
                     "reset",
                     style = DeftTypography.label,
@@ -190,9 +197,51 @@ internal fun BooksFilters(
                             .clickable(role = Role.Button) {
                                 BookFormat.entries.forEach { onFormatChange(it, true) }
                                 onShowMissingChange(false)
+                                BookState.entries.forEach { onStateFilter(it, true) }
+                                onFavoritesOnly(false)
+                                onMinimumRating(null)
                             }.padding(vertical = 14.dp, horizontal = 8.dp),
                 )
             }
+            BookState.entries.forEach { readingState ->
+                CheckOption(
+                    readingState.appearance().label,
+                    readingState in state.stateFilter,
+                    { onStateFilter(readingState, it) },
+                    Modifier.fillMaxWidth(),
+                )
+            }
+            HorizontalDivider(color = c.line)
+            CheckOption(
+                "favorites only",
+                state.favoritesOnly,
+                onFavoritesOnly,
+                Modifier.fillMaxWidth(),
+                DeftIcons.Heart,
+            )
+            Text("minimum rating", style = DeftTypography.label, color = c.muted)
+            Slider(
+                value = (state.minimumRating ?: 0.0).toFloat(),
+                onValueChange = {
+                    onMinimumRating(
+                        (it * 2)
+                            .roundToInt()
+                            .toDouble()
+                            .div(2)
+                            .takeIf { value -> value > 0 },
+                    )
+                },
+                valueRange = 0f..5f,
+                steps = 9,
+                modifier =
+                    Modifier.fillMaxWidth().semantics {
+                        contentDescription = "minimum rating"
+                        stateDescription = state.minimumRating?.let { "$it stars or more" } ?: "any rating"
+                    },
+            )
+            Text(state.minimumRating?.let { "$it stars or more" } ?: "any rating", style = DeftTypography.mono)
+            HorizontalDivider(color = c.line)
+            Text("file types", style = DeftTypography.label, color = c.muted)
             BookFormat.entries.chunked(FORMATS_PER_ROW).forEach { formats ->
                 Row(Modifier.fillMaxWidth()) {
                     formats.forEach { format ->
@@ -258,6 +307,7 @@ internal fun BooksSort(
                             BookSort.AUTHOR -> DeftIcons.Authors
                             BookSort.DATE_ADDED -> LibraryIcons.Added
                             BookSort.LAST_READ -> LibraryIcons.History
+                            BookSort.RATING -> DeftIcons.Star
                         }
                     RadioOption(sort.label(), state.sort == sort, { onSortChange(sort) }, icon)
                 }

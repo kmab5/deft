@@ -27,6 +27,7 @@ fun BookRow(
     modifier: Modifier = Modifier,
     size: BookDisplaySize = BookDisplaySize.MEDIUM,
     onClick: (() -> Unit)? = null,
+    tracking: com.kmab.deft.core.model.BookTrackingSummary? = null,
 ) {
     val c = LocalDeftColors.current
     Row(
@@ -35,7 +36,8 @@ fun BookRow(
             .testTag("book_${book.id}")
             .libraryBookSurface(12.dp, onClick)
             .semantics(mergeDescendants = true) {
-                stateDescription = if (book.lastReadAt == null) "not read" else "previously read"
+                stateDescription =
+                    (tracking?.state ?: com.kmab.deft.core.model.BookState.NOT_STARTED).appearance().label
             },
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -48,6 +50,7 @@ fun BookRow(
             compactPlaceholder = true,
         )
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            LibraryReadingStatus(book, tracking)
             Text(
                 book.displayTitle(),
                 color = c.text,

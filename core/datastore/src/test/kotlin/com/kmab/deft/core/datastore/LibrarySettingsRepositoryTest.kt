@@ -89,6 +89,9 @@ class LibrarySettingsRepositoryTest {
                     }
                 }
                 first.setSort(BookSort.LAST_READ)
+                first.setStateFilter(com.kmab.deft.core.model.BookState.ABANDONED, false)
+                first.setFavoritesOnly(true)
+                first.setMinimumRating(3.5)
                 first.setReverseSort(true)
             } finally {
                 firstScope.coroutineContext.job.cancelAndJoin()
@@ -101,6 +104,13 @@ class LibrarySettingsRepositoryTest {
                 assertEquals(emptySet<BookFormat>(), saved.formatFilter)
                 assertEquals(BookFormat.entries.toSet(), saved.enabledFormats)
                 assertEquals(BookSort.LAST_READ, saved.sort)
+                assertEquals(
+                    com.kmab.deft.core.model.BookState.entries
+                        .toSet() - com.kmab.deft.core.model.BookState.ABANDONED,
+                    saved.stateFilter,
+                )
+                assertEquals(true, saved.favoritesOnly)
+                assertEquals(3.5, saved.minimumRating)
                 assertEquals(true, saved.reverseSort)
             } finally {
                 secondScope.coroutineContext.job.cancelAndJoin()

@@ -4,6 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.withResumed
 import com.kmab.deft.core.designsystem.DeftTheme
@@ -44,7 +46,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DeftTheme {
-                DeftApp(scanStatus, scanReports, readerLauncher::open)
+                val completedBook by readerLauncher.pendingCompletion.collectAsStateWithLifecycle()
+                DeftApp(
+                    scanStatus,
+                    scanReports,
+                    readerLauncher::open,
+                    completedBook,
+                    readerLauncher::acknowledgeCompletion,
+                )
             }
         }
     }

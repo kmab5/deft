@@ -16,7 +16,15 @@ fun NavGraphBuilder.settingsGraph(
             onBack,
             { navController.navigate("settings/library") },
             { navController.navigate("settings/reader") },
+            { navController.navigate("settings/tracking") },
+            { navController.navigate("settings/appearance") },
         )
+    }
+    composable("settings/tracking") { entry ->
+        TrackingSettingsScreen(rememberDestinationBack(navController, entry))
+    }
+    composable("settings/appearance") { entry ->
+        TrackingSettingsScreen(rememberDestinationBack(navController, entry), appearance = true)
     }
     composable("settings/library") { entry ->
         LibrarySettingsScreen(

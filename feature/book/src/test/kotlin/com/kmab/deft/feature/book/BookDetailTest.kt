@@ -3,6 +3,8 @@ package com.kmab.deft.feature.book
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -124,6 +126,36 @@ class BookDetailTest {
     @Test fun missingBookKeepsItsDetailAndHasAnHonestReadBlock() {
         val details = fixture().copy(files = emptyList())
         assertEquals("Deft can't find this file anymore. Its history is safe.", readBlockReason(details))
+    }
+
+    @Test fun assessmentsAndHistoryRemainAvailableForProtectedMissingBooks() {
+        val details = fixture().let { it.copy(book = it.book.copy(drmProtected = true), files = emptyList()) }
+        compose.setContent { DeftTheme { BookDetailScreen(BookDetailState(details, false), {}, {}, {}, {}) } }
+        compose.onNodeWithText("your reading").performScrollTo().assertExists()
+        compose.onNodeWithText("your review").performScrollTo().assertExists()
+        compose.onNodeWithText("reading history").performScrollTo().assertExists()
+    }
+
+    @Test fun resetToNotReadRequiresHistoryLossConfirmation() {
+        var reset = false
+        compose.setContent {
+            DeftTheme {
+                BookDetailScreen(
+                    BookDetailState(fixture(), false),
+                    {},
+                    {},
+                    {},
+                    {},
+                    actions = BookTrackingActions(setState = { _, _, confirmed -> reset = confirmed }),
+                )
+            }
+        }
+        compose.onNodeWithText("change state").performScrollTo().performClick()
+        compose.onNode(hasText("not read") and hasClickAction()).performClick()
+        assertEquals(false, reset)
+        compose.onNodeWithText("erase reading history").performClick()
+        compose.waitForIdle()
+        assertEquals(true, reset)
     }
 
     private fun fixture(): BookDetails {

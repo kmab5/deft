@@ -25,4 +25,4 @@ include(":app", ":core:model", ":core:common", ":core:database", ":core:datastor
 
 include(":format:readium", ":feature:reader", ":feature:reader-settings", ":feature:book")
 
-include(":tracking")
+include(":tracking", ":feature:celebrate")

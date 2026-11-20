@@ -34,6 +34,8 @@ fun SettingsHomeScreen(
     onBack: () -> Unit,
     onLibrary: () -> Unit,
     onReader: () -> Unit,
+    onTracking: () -> Unit = {},
+    onAppearance: () -> Unit = {},
 ) {
     val colors = LocalDeftColors.current
     Scaffold(containerColor = colors.bg, contentColor = colors.text, topBar = {
@@ -52,6 +54,15 @@ fun SettingsHomeScreen(
                     )
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = colors.line)
                     SettingsCategory("reader", "Text, themes and page controls.", DeftIcons.Books, onReader)
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = colors.line)
+                    SettingsCategory(
+                        "tracking",
+                        "Idle pause, reading indicator and sessions.",
+                        DeftActionIcons.History,
+                        onTracking,
+                    )
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = colors.line)
+                    SettingsCategory("appearance", "Celebrations and motion.", DeftActionIcons.Palette, onAppearance)
                 }
             }
         }

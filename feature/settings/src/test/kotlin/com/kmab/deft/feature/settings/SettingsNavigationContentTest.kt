@@ -37,6 +37,8 @@ class SettingsNavigationContentTest {
             }
         }
         capture("settings-home")
+        compose.onNodeWithText("tracking").assertExists()
+        compose.onNodeWithText("appearance").assertExists()
         compose.onNodeWithText("library").performClick()
         assertEquals("library", selected)
         compose.onNodeWithText("reader").performClick()

@@ -135,6 +135,8 @@ class BooksViewModelTest {
                 folders,
                 scheduler,
                 ScanStatusObserver(manager),
+                com.kmab.deft.tracking
+                    .ReadThroughRepository(db),
             )
         models.put("books", vm)
         compose.setContent {
@@ -252,7 +254,15 @@ class BooksViewModelTest {
             compose.waitUntil { latest.books.map { it.title } == listOf("Zulu", "Alpha") }
             compose.runOnIdle { models.clear() }
             val recreated =
-                BooksViewModel(BookRepository(db), settings, folders, scheduler, ScanStatusObserver(manager))
+                BooksViewModel(
+                    BookRepository(db),
+                    settings,
+                    folders,
+                    scheduler,
+                    ScanStatusObserver(manager),
+                    com.kmab.deft.tracking
+                        .ReadThroughRepository(db),
+                )
             models.put("recreated", recreated)
             val restored = recreated.uiState.first { !it.isLoading }
             assertEquals(BookSort.TITLE, restored.sort)

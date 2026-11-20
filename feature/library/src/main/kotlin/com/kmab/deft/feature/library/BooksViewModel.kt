@@ -8,11 +8,14 @@ import com.kmab.deft.core.datastore.LibrarySettingsRepository
 import com.kmab.deft.core.model.BookDisplaySize
 import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
+import com.kmab.deft.core.model.BookState
+import com.kmab.deft.core.model.BookTrackingSummary
 import com.kmab.deft.library.scanner.BookRepository
 import com.kmab.deft.library.scanner.LibraryFolderRepository
 import com.kmab.deft.library.scanner.ScanReport
 import com.kmab.deft.library.scanner.ScanScheduler
 import com.kmab.deft.library.scanner.ScanStatusObserver
+import com.kmab.deft.tracking.ReadThroughRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,6 +49,10 @@ data class BooksUiState(
     val hasScanDetails: Boolean = false,
     val continueReading: BookListItem? = null,
     val advancedSearch: Boolean = false,
+    val stateFilter: Set<BookState> = BookState.entries.toSet(),
+    val favoritesOnly: Boolean = false,
+    val minimumRating: Double? = null,
+    val tracking: Map<Long, BookTrackingSummary> = emptyMap(),
 )
 
 private data class BookQuery(
@@ -57,9 +64,11 @@ private data class BookResult(
     val query: BookQuery,
     val books: List<BookListItem>,
     val error: String? = null,
+    val tracking: Map<Long, BookTrackingSummary> = emptyMap(),
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("TooManyFunctions") // One persistence action for each independent library preference.
 @HiltViewModel
 class BooksViewModel
     @Inject
@@ -69,6 +78,7 @@ class BooksViewModel
         folders: LibraryFolderRepository,
         private val scheduler: ScanScheduler,
         scans: ScanStatusObserver,
+        history: ReadThroughRepository,
     ) : ViewModel() {
         private val error = MutableStateFlow<String?>(null)
         private val queries = settings.settings.map { preferences -> BookQuery(preferences, preferences.formatFilter) }
@@ -84,11 +94,13 @@ class BooksViewModel
                             repository.observeBooks(
                                 query.settings.showMissing,
                                 query.formats,
-                                query.settings.sort,
+                                if (query.settings.sort == BookSort.RATING) BookSort.TITLE else query.settings.sort,
                                 query.settings.reverseSort,
                             )
                         }
-                    list.map { BookResult(query, it) }.catch { failure ->
+                    combine(list, history.observeAll()) { items, snapshots ->
+                        BookResult(query, filterTrackedBooks(items, snapshots, query.settings), tracking = snapshots)
+                    }.catch { failure ->
                         if (failure is CancellationException) throw failure
                         emit(BookResult(query, emptyList(), "Couldn't load books. Try rescan."))
                     }
@@ -134,8 +146,21 @@ class BooksViewModel
                     hasScanDetails = scan.report != null || (scan.isFinished && scan.workId != null),
                     continueReading = recent,
                     advancedSearch = result.query.settings.advancedSearch,
+                    stateFilter = result.query.settings.stateFilter,
+                    favoritesOnly = result.query.settings.favoritesOnly,
+                    minimumRating = result.query.settings.minimumRating,
+                    tracking = result.tracking,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), BooksUiState())
+
+        fun setStateFilter(
+            value: BookState,
+            enabled: Boolean,
+        ) = persist { settings.setStateFilter(value, enabled) }
+
+        fun setFavoritesOnly(value: Boolean) = persist { settings.setFavoritesOnly(value) }
+
+        fun setMinimumRating(value: Double?) = persist { settings.setMinimumRating(value) }
 
         fun setGridView(value: Boolean) = persist { settings.setGridView(value) }
 
