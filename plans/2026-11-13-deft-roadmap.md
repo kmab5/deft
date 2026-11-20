@@ -6,7 +6,7 @@
 
 **Rule for every milestone:** it ends with an installable app that is better than the previous milestone's, all tests green, CI green, and the design doc updated if a decision changed (add a row to the design doc's Decision log, §20).
 
-**Completed: M2, `v0.2.5-1`. Next: M3.**
+**Merged: M2, `v0.2.5-1`. Current handover: M3, `0.3.0-1`, awaiting device acceptance.**
 
 **Author-directed handover:** M1 was merged as `v0.1.2-1`. The author passed every 0.2.4 device-retest item and accepted M2, explicitly authorizing final minor polish as `0.2.5-1` followed by a verified merge/tag/push without another feedback round or waiting for GitHub CI. Offline EPUB/library search, image viewing, launch-last-book and navigation refinements are included. M3 tracking/ratings/favorite, M5 highlights/notes and M7/M8 additional formats retain their milestone boundaries. M2 merged with the accepted final version preserved; M3 is next.
 

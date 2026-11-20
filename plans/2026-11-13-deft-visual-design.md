@@ -369,3 +369,12 @@ Updated Compose renders are linked in `plans/design/m2-feedback.html`. These are
 Reader title now uses the 22sp headline token (titleLarge maps to Deft's smaller 17sp title token). Footer top spacing becomes 16dp. The 12dp circular progress thumb is centered inside a full-height 32dp slot, matching the track slot; this avoids Material 3 top-aligning the smaller dot inside its minimum-height wrapper. The visible track stays 3dp. Text, Theme and Page settings gain labelled icons and horizontal swiping in both reader and app settings; vertical scrolling and horizontal value sliders retain their own gestures.
 
 Library grid titles use their actual one/two-line height, removing the reserved blank line above authors for short titles. Scan notices retain accessible actions with less bottom padding. Scan notification permission is an elevated control with bell/bell-off state that refreshes after returning from Android settings.
+
+
+### M3 tracking surfaces (2026-11-20)
+
+Book details gains grouped cards for reading state/assessment, private review and read-through history. State/date changes and history deletion use focused sheets with explicit confirmation for destructive history changes. Missing and Protected books keep these controls. Session rows identify browsing distinctly; reading summaries exclude it. Use the existing state colours, 48dp targets and animated resizing without restoring the earlier vertically stacked ungrouped layout.
+
+Books uses actual read-through-derived states in existing cards and compact filter sheets. Tracking settings joins the existing category chooser with independently editable reflowable/fixed idle timeouts (1–60 minutes or Off), a quiet-indicator toggle and a clear minimum-session explanation. Appearance exposes celebrations. The finish flow follows §8.1 with real book cover/counters and a rating/favorite sheet; disabled celebrations or system animations use the quiet sheet. No invented statistics or personal bests appear before M6.
+
+The M3 rendered reference is `plans/design/m3-feedback.html`; device acceptance remains recorded in `plans/m3-test-checklist.md`.
