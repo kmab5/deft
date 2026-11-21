@@ -55,6 +55,13 @@ import androidx.compose.ui.window.DialogWindowProvider
 import com.kmab.deft.core.designsystem.icons.DeftIcons
 
 @Composable
+fun DeftSettingsTopBar(
+    title: String,
+    modifier: Modifier = Modifier,
+    navigationIcon: (@Composable () -> Unit)? = null,
+) = DeftTopBar(title, modifier.padding(vertical = 8.dp), navigationIcon = navigationIcon)
+
+@Composable
 fun DeftTopBar(
     title: String,
     modifier: Modifier = Modifier,

@@ -126,6 +126,36 @@ class BookDetailTest {
         assertEquals("Deft can't find this file anymore. Its history is safe.", readBlockReason(details))
     }
 
+    @Test fun assessmentsAndHistoryRemainAvailableForProtectedMissingBooks() {
+        val details = fixture().let { it.copy(book = it.book.copy(drmProtected = true), files = emptyList()) }
+        compose.setContent { DeftTheme { BookDetailScreen(BookDetailState(details, false), {}, {}, {}, {}) } }
+        compose.onNodeWithText("your reading").performScrollTo().assertExists()
+        compose.onNodeWithText("your review").performScrollTo().assertExists()
+        compose.onNodeWithText("reading history").performScrollTo().assertExists()
+    }
+
+    @Test fun resetToNotReadRequiresHistoryLossConfirmation() {
+        var reset = false
+        compose.setContent {
+            DeftTheme {
+                BookDetailScreen(
+                    BookDetailState(fixture(), false),
+                    {},
+                    {},
+                    {},
+                    {},
+                    actions = BookTrackingActions(setState = { _, _, confirmed -> reset = confirmed }),
+                )
+            }
+        }
+        compose.onNodeWithContentDescription("change reading state").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("mark as not read").performClick()
+        assertEquals(false, reset)
+        compose.onNodeWithText("erase reading history").performClick()
+        compose.waitForIdle()
+        assertEquals(true, reset)
+    }
+
     private fun fixture(): BookDetails {
         val at = Instant.parse("2026-11-18T12:00:00Z")
         return BookDetails(

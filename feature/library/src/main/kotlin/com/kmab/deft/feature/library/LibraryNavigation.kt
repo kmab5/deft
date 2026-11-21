@@ -42,6 +42,9 @@ fun NavGraphBuilder.libraryGraph(
             onScanDetails,
             onOpenBook = { navController.navigate("book/$it") },
             onContinueReading = onRead,
+            onStateFilter = viewModel::setStateFilter,
+            onFavoritesOnly = viewModel::setFavoritesOnly,
+            onMinimumRating = viewModel::setMinimumRating,
         )
     }
 }

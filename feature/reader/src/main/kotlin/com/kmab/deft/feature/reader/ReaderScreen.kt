@@ -2,11 +2,7 @@
 
 package com.kmab.deft.feature.reader
 
-import android.content.Intent
-import android.content.IntentFilter
 import android.graphics.Color.parseColor
-import android.os.BatteryManager
-import android.text.format.DateFormat
 import android.view.View
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -58,7 +54,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -70,7 +65,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -81,12 +75,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kmab.deft.core.designsystem.DeftColors
+import com.kmab.deft.core.designsystem.DeftHaptic
 import com.kmab.deft.core.designsystem.DeftNoticeHost
 import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.LocalDeftNoticeState
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
+import com.kmab.deft.core.designsystem.performDeftHaptic
 import com.kmab.deft.core.designsystem.rememberDeftNoticeState
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReaderTheme
@@ -94,7 +90,6 @@ import com.kmab.deft.feature.readersettings.ReaderPreferencesPanel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.readium.r2.shared.util.Url
-import java.util.Date
 
 private enum class ReaderSheet { CONTENTS, SETTINGS, SEARCH }
 
@@ -104,6 +99,8 @@ internal fun ReaderScreen(
     activity: ReaderActivity,
 ) {
     val state by model.state.collectAsStateWithLifecycle()
+    val tracking by model.trackingState.collectAsStateWithLifecycle()
+    val trackingPreferences by model.trackingPreferences.collectAsStateWithLifecycle()
     val preferences by model.preferences.collectAsStateWithLifecycle()
     val themes by model.themes.collectAsStateWithLifecycle()
     val systemDark = isSystemInDarkTheme()
@@ -135,6 +132,7 @@ internal fun ReaderScreen(
             }
         }
     LaunchedEffect(model) { model.notices.collect { notices.show(it) } }
+    ReaderTrackingEffects(model, activity, state, tracking, listOf(sheet, imageHref, externalHref).any { it != null })
     ReaderNavigationEffects(
         activity = activity,
         model = model,
@@ -195,9 +193,7 @@ internal fun ReaderScreen(
                             },
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                         )
-                        if (preferences.showStatusLine) {
-                            ReaderStatus(state, progressPositions, preferences.showPageNumber, Modifier.fillMaxWidth())
-                        }
+                        ReaderStatusFooter(state, progressPositions, preferences, trackingPreferences, tracking)
                     }
                     ReaderChrome(
                         visible = chrome,
@@ -238,12 +234,27 @@ internal fun ReaderScreen(
                         FilledTonalButton(onClick = activity::finish) { Text("back to library") }
                     }
                 }
+                ReaderIdleOverlay(
+                    visible =
+                        tracking.idle && state.rendered && !tracking.finishPrompt &&
+                            listOf(sheet, imageHref, externalHref).all { it == null },
+                    onResume = model.interaction::resumeReading,
+                )
                 DeftNoticeHost(notices, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
             }
             ReaderSheets(sheet, state, model, navigator, contentsState) {
                 model.search.cancel()
                 sheet = null
             }
+            ReaderTrackingDialogs(
+                opening = state.openingChoice,
+                finishPrompt = tracking.finishPrompt,
+                busy = state.choosing,
+                choose = model::chooseReading,
+                close = activity::finish,
+                finish = model::finishReading,
+                decline = model::declineFinish,
+            )
             ReaderOverlayWindows(
                 session,
                 imageHref,
@@ -300,7 +311,14 @@ private fun ReaderNavigationEffects(
         }
     }
     val dark = Color(parseColor(theme.background)).luminance() < DARK_LUMINANCE
-    ReaderWindowEffect(activity, preferences, chrome || sheetOpen, dark)
+    val tracking by model.trackingState.collectAsStateWithLifecycle()
+    ReaderWindowEffect(
+        activity,
+        preferences,
+        chrome || sheetOpen,
+        dark,
+        tracking.keepAwake && state.rendered && !tracking.finishPrompt,
+    )
     val overlayOpen = sheetOpen || imageOpen
     val readingIdle = state.rendered && !scrubbing
     LaunchedEffect(chrome, overlayOpen, state.rendered, interaction, scrubbing) {
@@ -310,9 +328,15 @@ private fun ReaderNavigationEffects(
         }
     }
     BackHandler(!overlayOpen && state.canReturn) {
-        model.interaction.returnPoint()?.let { navigator?.go(it, remember = false) }
+        model.interaction.returnPoint()?.let {
+            navigator?.go(it, remember = false)
+            activity.window.decorView.performDeftHaptic(DeftHaptic.BACK)
+        }
     }
-    BackHandler(sheetOpen, onBack = dismissSheet)
+    BackHandler(sheetOpen) {
+        dismissSheet()
+        activity.window.decorView.performDeftHaptic(DeftHaptic.BACK)
+    }
 }
 
 @Composable
@@ -584,41 +608,14 @@ private fun sectionLabel(state: ReaderState): String =
     )
 
 @Composable
-private fun ReaderStatus(
-    state: ReaderState,
-    positions: List<org.readium.r2.shared.publication.Locator>,
-    showLocations: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    val status by produceState(initialValue = "") {
-        while (true) {
-            val battery = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-            val level = battery?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
-            val scale = battery?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
-            val percentage = if (level >= 0 && scale > 0) "${level * PERCENT_SCALE / scale}%" else ""
-            value = "${DateFormat.getTimeFormat(context).format(Date())}  ·  $percentage"
-            delay(STATUS_REFRESH_MILLIS)
-        }
-    }
-    Row(modifier.padding(horizontal = 24.dp, vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(
-            progressLabel((state.locator?.locations?.totalProgression ?: 0.0).toFloat(), positions, showLocations),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Text(status, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onBackground)
-    }
-}
-
-@Composable
 private fun ReaderWindowEffect(
     activity: ReaderActivity,
     preferences: ReaderPreferences,
     chromeVisible: Boolean,
     dark: Boolean,
+    keepAwake: Boolean,
 ) {
-    DisposableEffect(preferences, chromeVisible, dark) {
+    DisposableEffect(preferences, chromeVisible, dark, keepAwake) {
         val observer =
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) activity.applyWindow(chromeVisible, dark)
@@ -694,7 +691,5 @@ private const val SURFACE_TINT_ALPHA = 0.12f
 private const val MIN_CONTROL_CONTRAST = 4.5f
 private const val CONTROL_COLOR_STEPS = 20
 private const val WCAG_LUMINANCE_OFFSET = 0.05f
-private const val PERCENT_SCALE = 100
-private const val STATUS_REFRESH_MILLIS = 30_000L
 
 private const val CHROME_TIMEOUT_MILLIS = 4_000L

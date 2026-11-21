@@ -3,6 +3,7 @@ package com.kmab.deft.core.designsystem
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
@@ -18,11 +19,12 @@ fun rememberDestinationBack(
     controller: NavController,
     entry: NavBackStackEntry,
 ): () -> Unit {
+    val view = LocalView.current
     val back: () -> Unit =
-        remember(controller, entry) {
+        remember(controller, entry, view) {
             {
-                if (entry.lifecycle.currentState == Lifecycle.State.RESUMED) {
-                    controller.popDestination(entry)
+                if (entry.lifecycle.currentState == Lifecycle.State.RESUMED && controller.popDestination(entry)) {
+                    view.performDeftHaptic(DeftHaptic.BACK)
                 }
             }
         }

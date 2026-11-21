@@ -84,6 +84,8 @@ class ReaderMigrationTest {
             DatabaseMigrations.FROM_1_TO_2,
             DatabaseMigrations.FROM_2_TO_3,
             DatabaseMigrations.FROM_3_TO_4,
+            DatabaseMigrations.FROM_4_TO_5,
+            DatabaseMigrations.FROM_5_TO_6,
         ).build()
 
     private fun createVersionThree(

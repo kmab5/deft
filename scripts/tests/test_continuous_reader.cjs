@@ -151,10 +151,11 @@ async function main() {
 }
 main().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   ws?.close();
+  const stopped = new Promise(resolve => child.once('exit', resolve));
   child.kill();
-  await pause(150);
+  await Promise.race([stopped, pause(2000)]);
   const resolved = fs.realpathSync(profile);
   assert.equal(path.dirname(resolved), fs.realpathSync(os.tmpdir()));
   assert.ok(path.basename(resolved).startsWith('deft-continuous-test-'));
-  fs.rmSync(resolved, {recursive: true, force: true, maxRetries: 3, retryDelay: 100});
+  fs.rmSync(resolved, {recursive: true, force: true, maxRetries: 10, retryDelay: 200});
 });

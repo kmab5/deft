@@ -7,6 +7,7 @@ plugins {
 dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:model"))
+    implementation(project(":tracking"))
     implementation(project(":core:database"))
     implementation(project(":core:datastore"))
     implementation(project(":library:scanner"))

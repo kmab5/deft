@@ -140,8 +140,8 @@ Offered, in this order: **original** (the book's own fonts, i.e. publisher defau
 
 Setting **"celebrations"** (Settings → Appearance), **on** by default. When it's off, or the system has animations turned off, every celebration falls back to its **quiet version**.
 
-### 8.1 Finishing a book: full-screen, ends by itself (~2.8 s)
-The whole screen takes part, and the moment ends on its own: no tap needed. A tap skips straight to the exit. Colours are the vivid ink-mode values in both app themes.
+### 8.1 Finishing a book: full-screen, dismiss on tap
+The introduction settles into the finished cover and counters, then holds until a tap or the close control. The close control eases in after the introduction. A tap during the introduction skips to the rating sheet. Colours are the vivid ink-mode values in both app themes.
 | t (ms) | What happens |
 |---|---|
 | 0–380 | A **purple field** sweeps across the full screen from the left, with a diagonal leading edge. |
@@ -152,8 +152,8 @@ The whole screen takes part, and the moment ends on its own: no tap needed. A ta
 | 850–1300 | **"finished."** in `celebrate` (ink on green) rises 18dp into place. |
 | 1000–1900 | Three numbers **count up** in Space Mono: time read, sessions, days. |
 | 1400–1800 | If it's a personal best, an **ink strip** with purple text slides in across the full width: "personal best · longest book". |
-| 2300–2800 | **Exit:** everything slides off to the right with the green field, revealing the book page (now finished). |
-| 2800 | The **"how was it?" sheet** rises (rating, favourite, done). |
+| after introduction | **Hold:** cover, finished label and counters remain. The close control eases in. |
+| tap or close | Reveal the book page and the **"how was it?" sheet** (rating, favourite, done). |
 
 Draw the fields, lines and sparks in one `Canvas`, with the cover and text as `graphicsLayer`-animated composables. Hold 60 fps on a mid-range phone.
 
@@ -195,13 +195,17 @@ Longest session, most time in a day, longest book finished, fastest finish (page
 
 ## 10. Haptics
 
-Only these, all subtle (`HapticFeedbackConstants`):
+All subtle (`HapticFeedbackConstants`), respecting Android touch-feedback settings:
 - long-press selection → `LONG_PRESS`
 - confirming a state change (finished, abandoned, paused) → `CONFIRM` (API 30+), else `CONTEXT_CLICK`
 - volume-key page turns (setting, **off** by default) → `CLOCK_TICK`
 - the moment the celebration burst fires → `CONFIRM`
 
-Nothing else vibrates.
+- committed Back navigation → `CONTEXT_CLICK`; no feedback for cancelled or stale navigation
+- rating, favorite and clear-rating choices → `CLOCK_TICK`; no feedback from recomposition
+- accepted calendar date → `CONFIRM` (same fallback as state confirmation), sent through the active picker view
+
+WebView supplies native word-selection feedback; do not add a second pulse when its selection toolbar is created or handles move. No continuous scrolling or idle-pulse vibration.
 
 ## 11. Screens
 
@@ -369,3 +373,28 @@ Updated Compose renders are linked in `plans/design/m2-feedback.html`. These are
 Reader title now uses the 22sp headline token (titleLarge maps to Deft's smaller 17sp title token). Footer top spacing becomes 16dp. The 12dp circular progress thumb is centered inside a full-height 32dp slot, matching the track slot; this avoids Material 3 top-aligning the smaller dot inside its minimum-height wrapper. The visible track stays 3dp. Text, Theme and Page settings gain labelled icons and horizontal swiping in both reader and app settings; vertical scrolling and horizontal value sliders retain their own gestures.
 
 Library grid titles use their actual one/two-line height, removing the reserved blank line above authors for short titles. Scan notices retain accessible actions with less bottom padding. Scan notification permission is an elevated control with bell/bell-off state that refreshes after returning from Android settings.
+
+
+### M3 tracking surfaces (2026-11-20)
+
+Book details gains grouped cards for reading state/assessment, private review and read-through history. State/date changes and history deletion use focused sheets with explicit confirmation for destructive history changes. Missing and Protected books keep these controls. Session rows identify browsing distinctly; reading summaries exclude it. Use the existing state colours, 48dp targets and animated resizing without restoring the earlier vertically stacked ungrouped layout.
+
+Books uses actual read-through-derived states in existing cards and compact filter sheets. Tracking settings joins the existing category chooser with independently editable reflowable/fixed idle timeouts (1–60 minutes or Off), a quiet-indicator toggle and a clear minimum-session explanation. Appearance exposes celebrations. The finish flow follows §8.1 with real book cover/counters and a rating/favorite sheet; disabled celebrations or system animations use the quiet sheet. No invented statistics or personal bests appear before M6.
+
+The M3 rendered reference is `plans/design/m3-feedback.html`; device acceptance remains recorded in `plans/m3-test-checklist.md`.
+
+### M3 first device-feedback revision (2026-11-20, 0.3.1)
+
+The book assessment card uses a direct state selector and favorite heart, an aligned rating group and consistent padding. Private review has one clear edit action. History groups each read-through outcome, dates and totals, with secondary management in a menu and calendar date selection. Heart state changes have a small pop in either direction. Half-star fill shares the outline geometry.
+
+The full finish celebration holds its final composition until tap or close; the close control eases in after the introduction. Quiet mode and disabled system motion still go directly to the rating sheet.
+
+Reader status uses three aligned areas: page left, optional reading/paused state centered, clock and battery right with a charging bolt. At large text the side labels may wrap within their columns without overlapping the center. Disabling status details still allows the separately enabled tracking indicator to remain centered. Notices align text, icon and close vertically.
+
+Settings titles gain 8dp vertical padding on each side. All switches use a visible off thumb and distinct track/outline in the active palette. Appearance offers System, Light and Dark for the app independently of reader themes, and celebrations. About shows the installed version, GPL license, source, author and offline privacy statement. Tracking exposes a 30-second default minimum, editable from 1 to 300 seconds, explained as applying to new sessions.
+
+### Final M3 device polish — 2026-11-21
+
+Ratings group five stars in one compact adjustable control alongside clear and favorite; avoid wide isolated star gaps and detached hearts. Reading-state choices wrap at their content width with distinct semantic colors, icons and a selected marker rather than full-width centered rows. Keep 48dp targets and large-text wrapping. Timer fields and their Apply action share a row, with validation below. About uses the kmab profile link and adjacent icon-led source/GPL actions.
+
+Idle readers show a very translucent theme-aware film and faint centered `idling` label. Its slow pulse stops with reduced motion; one touch removes it and resumes at the existing page. Fade changes smoothly, consume the wake gesture, and never obscure overlays or count idle time.

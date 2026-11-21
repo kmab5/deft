@@ -8,10 +8,14 @@ import androidx.lifecycle.viewModelScope
 import com.kmab.deft.core.database.entity.BookmarkEntity
 import com.kmab.deft.core.datastore.LibrarySettingsRepository
 import com.kmab.deft.core.datastore.ReaderSettingsRepository
+import com.kmab.deft.core.datastore.TrackingSettingsRepository
+import com.kmab.deft.core.model.BookState
 import com.kmab.deft.core.model.ReaderFont
+import com.kmab.deft.core.model.ReaderOpenChoice
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReadingPosition
 import com.kmab.deft.core.model.SearchOptions
+import com.kmab.deft.core.model.TrackingPreferences
 import com.kmab.deft.feature.readersettings.ReaderFontRepository
 import com.kmab.deft.format.readium.OpenedEpub
 import com.kmab.deft.format.readium.ReaderOpenException
@@ -51,9 +55,14 @@ internal data class ReaderState(
     val rendered: Boolean = false,
     val canReturn: Boolean = false,
     val bookmarks: List<BookmarkEntity> = emptyList(),
+    val openingChoice: BookState? = null,
+    val choosing: Boolean = false,
+    val completedBookId: Long? = null,
 )
 
 @HiltViewModel
+// Reader UI actions delegate to the opening, tracking, navigation and bookmark modules.
+@Suppress("TooManyFunctions")
 internal class ReaderViewModel
     @Inject
     @Suppress("LongParameterList") // Hilt injects the independent reader and library settings repositories explicitly.
@@ -65,9 +74,19 @@ internal class ReaderViewModel
         private val fonts: ReaderFontRepository,
         private val writer: ReaderPositionWriter,
         private val events: ReaderEvents,
+        private val tracking: ReaderTracking,
+        trackingSettings: TrackingSettingsRepository,
+        private val launcher: ReaderLauncher,
     ) : ViewModel() {
         private val mutableState = MutableStateFlow(ReaderState())
         val state = mutableState.asStateFlow()
+        val trackingState = tracking.state
+        val trackingPreferences =
+            trackingSettings.preferences.stateIn(
+                viewModelScope,
+                SharingStarted.Eagerly,
+                TrackingPreferences(),
+            )
         val preferences = settings.preferences.stateIn(viewModelScope, SharingStarted.Eagerly, ReaderPreferences())
         val themes = settings.customThemes.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
         val advancedSearch =
@@ -80,9 +99,11 @@ internal class ReaderViewModel
         val interaction = ReaderInteraction(mutableState, preferences, writer, events)
         val search = ReaderSearch(viewModelScope)
         private var started = false
+        private var pendingSession: ReaderSession? = null
 
         init {
             viewModelScope.launch { writer.failures.collect { notice(it) } }
+            viewModelScope.launch { tracking.failures.collect { notice(it) } }
             viewModelScope.launch {
                 advancedSearch.collect { enabled ->
                     if (!enabled && search.state.value.options != SearchOptions()) search.options(SearchOptions())
@@ -100,12 +121,20 @@ internal class ReaderViewModel
             started = true
             viewModelScope.launch {
                 try {
+                    val snapshot = tracking.prepare(bookId)
                     val session = ReaderSessionLoader(context, books, fonts).load(bookId, restored)
+                    tracking.navigation(
+                        session.positions.size,
+                        session.opened.publication.metadata.layout == org.readium.r2.shared.publication.Layout.FIXED,
+                    )
+                    val gate = requiresReadingChoice(snapshot.state)
+                    pendingSession = session.takeIf { gate }
                     mutableState.update {
                         it.copy(
                             loading = false,
-                            session = session,
+                            session = session.takeUnless { gate },
                             locator = session.initialLocator,
+                            openingChoice = snapshot.state.takeIf { gate },
                         )
                     }
                     books.recordOpened(bookId)
@@ -116,6 +145,52 @@ internal class ReaderViewModel
                     throw cancel
                 } catch (error: Exception) {
                     mutableState.update { it.copy(loading = false, error = error.readableMessage()) }
+                }
+            }
+        }
+
+        fun chooseReading(choice: ReaderOpenChoice) {
+            if (state.value.choosing) return
+            mutableState.update { it.copy(choosing = true) }
+            action {
+                try {
+                    val pending = pendingSession ?: return@action
+                    tracking.choose(choice)
+                    val reset = choice == ReaderOpenChoice.RE_READ || choice == ReaderOpenChoice.START_OVER
+                    val session =
+                        if (reset) {
+                            pending.copy(
+                                initialLocator = pending.opened.publication.locateProgression(0.0),
+                            )
+                        } else {
+                            pending
+                        }
+                    pendingSession = null
+                    mutableState.update {
+                        it.copy(
+                            session = session,
+                            locator = session.initialLocator,
+                            openingChoice = null,
+                        )
+                    }
+                } finally {
+                    mutableState.update { it.copy(choosing = false) }
+                }
+            }
+        }
+
+        fun declineFinish() = tracking.dismissFinishPrompt()
+
+        fun finishReading() {
+            if (state.value.choosing) return
+            mutableState.update { it.copy(choosing = true) }
+            action {
+                try {
+                    val id = tracking.finish()
+                    launcher.completed(id)
+                    mutableState.update { it.copy(completedBookId = id) }
+                } finally {
+                    mutableState.update { it.copy(choosing = false) }
                 }
             }
         }
@@ -168,7 +243,9 @@ internal class ReaderViewModel
         }
 
         override fun onCleared() {
+            interaction.visibility(false)
             search.cancel()
+            pendingSession?.opened?.close()
             state.value.session
                 ?.opened
                 ?.close()
@@ -181,7 +258,7 @@ internal fun parseLocator(json: String?): Locator? =
     }
 
 internal fun Locator.toPosition() =
-    ReadingPosition(toJSON().toString(), (locations.totalProgression ?: 0.0).coerceIn(0.0, 1.0))
+    ReadingPosition(toJSON().toString(), (locations.totalProgression ?: 0.0).coerceIn(0.0, 1.0), locations.position)
 
 internal fun bookmarkMatches(
     bookmark: BookmarkEntity,

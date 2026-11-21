@@ -2,6 +2,8 @@ package com.kmab.deft.core.designsystem
 
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -20,6 +22,26 @@ class DestinationBackTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private lateinit var controller: NavHostController
     private val backActions = mutableMapOf<String, () -> Unit>()
+    private lateinit var hapticView: RecordingHapticView
+
+    @Test fun backFeedbackOccursOnlyForCommittedNavigation() {
+        setup()
+        navigate("settings")
+        navigate("settings/library")
+        val outgoing = backActions.getValue("settings/library")
+        compose.runOnIdle { repeat(30) { outgoing() } }
+        compose.runOnIdle {
+            assertEquals(1, hapticView.effects.size)
+            assertEquals("settings", controller.currentDestination?.route)
+        }
+        navigate("book/1")
+        compose.runOnIdle {
+            outgoing()
+            assertEquals(1, hapticView.effects.size)
+            compose.activity.onBackPressedDispatcher.onBackPressed()
+        }
+        compose.runOnIdle { assertEquals(2, hapticView.effects.size) }
+    }
 
     @Test fun repeatedOutgoingToolbarBackPreservesParentAndRoot() {
         setup()
@@ -69,13 +91,16 @@ class DestinationBackTest {
     }
 
     private fun setup() {
+        hapticView = RecordingHapticView(compose.activity)
         compose.setContent {
             controller = rememberNavController()
             NavHost(controller, startDestination = "books") {
                 composable("books") { Text("books") }
                 listOf("book/1", "settings", "settings/library").forEach { route ->
                     composable(route) { entry ->
-                        backActions[route] = rememberDestinationBack(controller, entry)
+                        CompositionLocalProvider(LocalView provides hapticView) {
+                            backActions[route] = rememberDestinationBack(controller, entry)
+                        }
                         Text(route)
                     }
                 }

@@ -40,6 +40,7 @@ fun BookDetailScreen(
     onRead: () -> Unit,
     onIgnore: () -> Unit,
     onForget: () -> Unit,
+    actions: BookTrackingActions = BookTrackingActions(),
 ) {
     val colors = LocalDeftColors.current
     val notices = LocalDeftNoticeState.current
@@ -95,7 +96,14 @@ fun BookDetailScreen(
                     DeftButton("back to books", onBack, style = DeftButtonStyle.Text)
                 }
             else ->
-                BookDetailBody(state.details, Modifier.padding(padding), state.busy) {
+                BookDetailBody(
+                    state.details,
+                    Modifier.padding(padding),
+                    state.busy,
+                    state.tracking ?: com.kmab.deft.core.model
+                        .BookTrackingSnapshot(state.details.book.id),
+                    actions,
+                ) {
                     val reason = readBlockReason(state.details)
                     if (reason == null) onRead() else notices?.show(reason)
                 }

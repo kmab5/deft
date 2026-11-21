@@ -8,6 +8,7 @@ import com.kmab.deft.core.database.dao.BookDao
 import com.kmab.deft.core.database.dao.BookFileDao
 import com.kmab.deft.core.database.dao.BookmarkDao
 import com.kmab.deft.core.database.dao.LibraryFolderDao
+import com.kmab.deft.core.database.dao.TrackingDao
 import com.kmab.deft.core.database.entity.AuthorAliasEntity
 import com.kmab.deft.core.database.entity.AuthorEntity
 import com.kmab.deft.core.database.entity.BookAuthorEntity
@@ -17,10 +18,14 @@ import com.kmab.deft.core.database.entity.BookmarkEntity
 import com.kmab.deft.core.database.entity.ExcludedFolderEntity
 import com.kmab.deft.core.database.entity.LibraryFolderEntity
 import com.kmab.deft.core.database.entity.PendingRootRemovalEntity
+import com.kmab.deft.core.database.entity.ReadThroughEntity
+import com.kmab.deft.core.database.entity.ReadingSessionEntity
 
 @Database(
     entities = [
         BookEntity::class,
+        ReadThroughEntity::class,
+        ReadingSessionEntity::class,
         BookmarkEntity::class,
         BookFileEntity::class,
         AuthorEntity::class,
@@ -30,11 +35,13 @@ import com.kmab.deft.core.database.entity.PendingRootRemovalEntity
         ExcludedFolderEntity::class,
         PendingRootRemovalEntity::class,
     ],
-    version = 4,
+    version = 6,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
+    abstract fun trackingDao(): TrackingDao
+
     abstract fun bookDao(): BookDao
 
     abstract fun bookmarkDao(): BookmarkDao

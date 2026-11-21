@@ -38,7 +38,9 @@ internal class ReaderWindow(
     }
 }
 
-internal class ReaderVolumeKeys {
+internal class ReaderVolumeKeys(
+    private val tick: () -> Unit = {},
+) {
     private val held = mutableSetOf<Int>()
 
     fun handle(
@@ -50,7 +52,10 @@ internal class ReaderVolumeKeys {
         if (!volume || !enabled && event.keyCode !in held) return false
         if (event.action == KeyEvent.ACTION_DOWN) {
             held += event.keyCode
-            if (event.repeatCount == 0) turn(event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)
+            if (event.repeatCount == 0) {
+                turn(event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)
+                tick()
+            }
         } else if (event.action == KeyEvent.ACTION_UP) {
             held -= event.keyCode
         }

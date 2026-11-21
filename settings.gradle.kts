@@ -24,3 +24,5 @@ rootProject.name = "Deft"
 include(":app", ":core:model", ":core:common", ":core:database", ":core:datastore", ":core:designsystem", ":format:epub", ":library:scanner", ":feature:library", ":feature:settings")
 
 include(":format:readium", ":feature:reader", ":feature:reader-settings", ":feature:book")
+
+include(":tracking", ":feature:celebrate")

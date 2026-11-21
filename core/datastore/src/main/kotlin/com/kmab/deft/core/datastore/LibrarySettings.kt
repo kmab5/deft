@@ -3,6 +3,7 @@ package com.kmab.deft.core.datastore
 import com.kmab.deft.core.model.BookDisplaySize
 import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
+import com.kmab.deft.core.model.BookState
 import java.time.Instant
 
 data class LibrarySettings(
@@ -16,4 +17,7 @@ data class LibrarySettings(
     val listSize: BookDisplaySize = BookDisplaySize.MEDIUM,
     val formatFilter: Set<BookFormat> = BookFormat.entries.toSet(),
     val advancedSearch: Boolean = false,
+    val stateFilter: Set<BookState> = BookState.entries.toSet(),
+    val favoritesOnly: Boolean = false,
+    val minimumRating: Double? = null,
 )

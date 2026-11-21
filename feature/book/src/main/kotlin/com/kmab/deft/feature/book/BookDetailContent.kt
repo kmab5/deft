@@ -65,6 +65,8 @@ internal fun BookDetailBody(
     details: BookDetails,
     modifier: Modifier,
     busy: Boolean,
+    tracking: com.kmab.deft.core.model.BookTrackingSnapshot,
+    actions: BookTrackingActions,
     onRead: () -> Unit,
 ) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -79,6 +81,7 @@ internal fun BookDetailBody(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             BookIdentityPanel(details, busy, onRead)
+            BookTrackingCards(tracking, busy, actions)
             BookDescription(details.book.description)
             BookEdition(details)
             BookFiles(details.files)

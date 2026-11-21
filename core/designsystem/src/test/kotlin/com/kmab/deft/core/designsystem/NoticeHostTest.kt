@@ -111,6 +111,16 @@ class NoticeHostTest {
         compose.runOnIdle { assertEquals(0, state.visible.size) }
     }
 
+    @Test fun multilineNoticeCentersMessageWithItsCloseControl() {
+        val state = DeftNoticeState()
+        val message = "Reading history could not be saved. Deft will retry automatically."
+        state.show(message, DeftNoticeKind.Error)
+        compose.setContent { DeftTheme { DeftNoticeHost(state, paused = true) } }
+        val text = compose.onNodeWithText(message).fetchSemanticsNode().boundsInRoot
+        val close = compose.onNodeWithContentDescription("dismiss notice").fetchSemanticsNode().boundsInRoot
+        assertEquals("Message and controls share the vertical center", close.center.y, text.center.y, 1f)
+    }
+
     @Test fun timeoutHonorsAccessibilityReadingTime() {
         val state = DeftNoticeState()
         state.show("Scan complete")

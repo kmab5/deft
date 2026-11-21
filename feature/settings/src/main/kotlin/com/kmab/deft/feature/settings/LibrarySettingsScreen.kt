@@ -43,8 +43,8 @@ import com.kmab.deft.core.designsystem.DeftButton
 import com.kmab.deft.core.designsystem.DeftButtonStyle
 import com.kmab.deft.core.designsystem.DeftDialog
 import com.kmab.deft.core.designsystem.DeftNoticeKind
+import com.kmab.deft.core.designsystem.DeftSettingsTopBar
 import com.kmab.deft.core.designsystem.DeftShapes
-import com.kmab.deft.core.designsystem.DeftTopBar
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.LocalDeftNoticeState
@@ -87,7 +87,7 @@ fun LibrarySettingsScreen(
             exclusionRootName = null
         }
     Scaffold(containerColor = colors.bg, contentColor = colors.text, topBar = {
-        DeftTopBar("library settings", navigationIcon = {
+        DeftSettingsTopBar("library settings", navigationIcon = {
             IconButton(onClick = onBack) { Icon(DeftActionIcons.Back, "back") }
         })
     }) { padding ->
@@ -124,7 +124,8 @@ fun LibrarySettingsScreen(
                     Text("advanced search", style = DeftTypography.title)
                     Text("Case, whole words and regex in your library and books.", style = DeftTypography.body)
                 }
-                androidx.compose.material3.Switch(settings.advancedSearch, onCheckedChange = null)
+                com.kmab.deft.core.designsystem
+                    .DeftSwitch(settings.advancedSearch, onCheckedChange = null)
             }
             IgnoredBooksEntry(onIgnoredBooks)
             LibraryStorageSection(scan.isScanning)

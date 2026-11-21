@@ -48,6 +48,8 @@ internal fun DeftApp(
     observer: ScanStatusObserver,
     reports: ScanReportStore,
     onRead: (Long) -> Unit,
+    completedBook: Long? = null,
+    onCompletionHandled: () -> Unit = {},
 ) {
     val notices = rememberDeftNoticeState()
     val scan by observer.status.collectAsStateWithLifecycle(ScanStatus())
@@ -84,6 +86,15 @@ internal fun DeftApp(
         Surface(Modifier.fillMaxSize(), color = LocalDeftColors.current.bg) {
             Box(Modifier.fillMaxSize().safeDrawingPadding()) {
                 val navController = rememberNavController()
+                LaunchedEffect(completedBook) {
+                    completedBook?.let {
+                        navController.navigate("book/$it?celebrate=true") {
+                            popUpTo("books") { inclusive = false }
+                            launchSingleTop = true
+                        }
+                        onCompletionHandled()
+                    }
+                }
                 val openDetails: () -> Unit = {
                     if (scan.isFinished || scan.report != null) {
                         selectedReport = scan.reportSelection()

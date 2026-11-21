@@ -6,9 +6,9 @@
 
 **Rule for every milestone:** it ends with an installable app that is better than the previous milestone's, all tests green, CI green, and the design doc updated if a decision changed (add a row to the design doc's Decision log, §20).
 
-**Completed: M2, `v0.2.5-1`. Next: M3.**
+**Accepted: M3, final revision `0.3.2-1`, authorized for verified merge/tag/push. Next: M4 — organization.**
 
-**Author-directed handover:** M1 was merged as `v0.1.2-1`. The author passed every 0.2.4 device-retest item and accepted M2, explicitly authorizing final minor polish as `0.2.5-1` followed by a verified merge/tag/push without another feedback round or waiting for GitHub CI. Offline EPUB/library search, image viewing, launch-last-book and navigation refinements are included. M3 tracking/ratings/favorite, M5 highlights/notes and M7/M8 additional formats retain their milestone boundaries. M2 merged with the accepted final version preserved; M3 is next.
+**Author-directed handover:** M1 was merged as `v0.1.2-1`. The author passed every 0.2.4 device-retest item and accepted M2, explicitly authorizing final minor polish as `0.2.5-1` followed by a verified merge/tag/push without another feedback round or waiting for GitHub CI. Offline EPUB/library search, image viewing, launch-last-book and navigation refinements are included. M3 tracking/ratings/favorite, M5 highlights/notes and M7/M8 additional formats retain their milestone boundaries. M2 merged with the accepted final version preserved. The author subsequently accepted the M3 device review and authorized the final 0.3.2 fixes followed by build verification and merge without another feedback gate or CI wait.
 
 ## Branching, handover, tagging
 1. Work on `feat/mN-<name>` (fixes: `fix/<topic>`), branched from `main`. Push the branch so CI runs.
@@ -32,7 +32,7 @@
 
 ## M3 — Tracking: sessions, read-throughs, states
 **Spec:** §8 (all), §9, §15 (`ReadThrough`, `ReadingSession`).
-**Delivers:** `SessionTracker` driven by `ReaderEvents` + lifecycle (two idle timeouts incl. Off + the 15-min keep-screen-on safety net, `browsing` sessions, min 60 s, 30 s incremental writes, screen-off/background end), read-through state machine with all §8.3 prompts, manual state changes and date editing on the book page, ratings (half-star), favorite, review, haptics (visual §10), the finish celebration + quiet version and the `celebrations` setting (visual §8.1), `feature/celebrate`. Books screen state chips become real. Settings → Tracking.
+**Delivers:** `SessionTracker` driven by `ReaderEvents` + lifecycle (two idle timeouts incl. Off + the 15-min keep-screen-on safety net, `browsing` sessions, default 30 s minimum adjustable 1–300 s, 30 s incremental writes, screen-off/background end), read-through state machine with all §8.3 prompts, manual state changes and date editing on the book page, ratings (half-star), favorite, review, haptics (visual §10), the finish celebration + quiet version and the `celebrations` setting (visual §8.1), `feature/celebrate`. Books screen state chips become real. Settings → Tracking.
 **Acceptance:** fake-clock tests cover every row of §8.3 and every idle/background edge; reading for 3 min with a 6-min idle gap records exactly 3 min.
 **Produces:** `SessionRepository`, `ReadThroughRepository`, `BookState` derivation query used by stats and library filters.
 
@@ -43,13 +43,14 @@
 
 ## M5 — Highlights, notes, search
 **Spec:** §10.1 (selection, search, define), §11, §15 (`Highlight`, `PageNote`).
-**Delivers:** text selection actions (4 colors, note, copy, share, define via `ACTION_PROCESS_TEXT`), Readium decorations, in-book search, per-book notes tab, global Notes screen with filters/search, export a book's notes as Markdown.
-**Acceptance:** highlights render on reopen at the same text; deleting the file keeps notes visible on the Notes screen.
+**Delivers:** text selection actions (4 highlight colors plus a colorless/no-highlight choice, note, copy, share, define via `ACTION_PROCESS_TEXT`), Readium decorations, in-book search, per-book notes tab, global Notes screen with filters/search, export a book's notes as Markdown.
+**Acceptance:** highlights render on reopen at the same text; selecting text alone creates no persistent highlight. Colorless removes the visible highlight while retaining an explicitly saved note. Deleting the file keeps notes visible on the Notes screen.
 
 ## M6 — Stats, goals, year in review
 **Spec:** §13, §14 (Stats).
 **Delivers:** pure-Kotlin stats calculators over sessions/read-throughs (timezone-correct per §13), per-book/category/author/series stats on their pages, overall Stats screen with range selector, heatmap, streaks, distributions, goals (yearly books, daily minutes), year in review (visual §11.7), personal bests and the remaining celebrations (visual §8.2–8.3).
-**Acceptance:** golden-dataset tests for every metric, including sessions crossing midnight and zone changes.
+**Reader addition after speed metrics:** opt-in auto-scroll for reflowable books, using measured reading speed or a custom interval. Start/pause explicitly, pause on touch/selection, overlays, background and chapter/end boundaries as appropriate; automated motion never masquerades as human interaction or defeats idle/screen-off protection. Calibrate only from manual reading and expose a manual fallback when speed data is insufficient.
+**Acceptance:** golden-dataset tests for every metric, including sessions crossing midnight and zone changes; auto-scroll respects explicit stop and tracking safeguards, without counting unattended automatic movement as reading.
 
 ## M7 — Fixed-layout viewer: PDF, CBZ, DjVu
 **Spec:** §5.3 (`PageSource`), §10.2, §6.5 (PDF encryption vs password), §3 (F-Droid native builds).

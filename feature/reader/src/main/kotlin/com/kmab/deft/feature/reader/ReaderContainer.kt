@@ -39,7 +39,7 @@ internal class ReaderContainer(
         // A long press may start selection after DOWN. Once a handle owns a gesture,
         // toolbar recreation must not let paging steal the remainder of that stream.
         if (route == Route.PENDING && !handlesSwipes()) route = Route.CONTENT
-        if (route == Route.CONTENT) return super.dispatchTouchEvent(event)
+        if (route == Route.CONTENT) return dispatchContent(event)
 
         if (event.pointerCount > 1 && route != Route.BLOCKED) {
             cancelContent(event)
@@ -53,6 +53,12 @@ internal class ReaderContainer(
             Route.BLOCKED, Route.IMMEDIATE_PAGE -> true
             else -> super.dispatchTouchEvent(event)
         }
+    }
+
+    private fun dispatchContent(event: MotionEvent): Boolean {
+        val moved = abs(event.x - startX) > slop || abs(event.y - startY) > slop
+        if (event.actionMasked == MotionEvent.ACTION_MOVE && !systemEdge && moved) onReadingGesture()
+        return super.dispatchTouchEvent(event)
     }
 
     private fun observeMove(event: MotionEvent) {

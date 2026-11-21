@@ -4,16 +4,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.Undo
 import androidx.compose.material.icons.automirrored.outlined.ViewList
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.DoNotDisturb
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FolderOff
 import androidx.compose.material.icons.outlined.FolderOpen
@@ -25,6 +33,7 @@ import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.PauseCircleOutline
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.Title
@@ -34,6 +43,15 @@ import androidx.compose.material.icons.outlined.WarningAmber
 
 /** Established Material outlined vectors; directional actions mirror in RTL layouts. */
 object DeftActionIcons {
+    val Source get() = Icons.Outlined.Code
+    val License get() = Icons.Outlined.Description
+    val ExternalLink get() = Icons.AutoMirrored.Outlined.OpenInNew
+    val NotRead get() = Icons.Outlined.Book
+    val Reading get() = Icons.AutoMirrored.Outlined.MenuBook
+    val Finished get() = Icons.Outlined.CheckCircleOutline
+    val Paused get() = Icons.Outlined.PauseCircleOutline
+    val Abandoned get() = Icons.Outlined.DoNotDisturb
+    val Charging get() = Icons.Outlined.Bolt
     val More get() = Icons.Outlined.MoreVert
     val Back get() = Icons.AutoMirrored.Outlined.ArrowBack
     val Close get() = Icons.Outlined.Close
