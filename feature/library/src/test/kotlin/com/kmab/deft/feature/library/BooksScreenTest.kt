@@ -7,7 +7,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -37,6 +39,68 @@ import java.time.Instant
 @Config(sdk = [36])
 class BooksScreenTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun selectionAddsOnlySelectedBooksAndNeverLaunchesThem() {
+        val books =
+            (1L..3L).map {
+                BookListItem(it, "Book $it", "Book $it", "Writer", BookFormat.EPUB, null, Instant.EPOCH, false, false)
+            }
+        var opened = 0
+        var selected = emptySet<Long>()
+        val completed = mutableStateOf(0)
+        compose.setContent {
+            DeftTheme {
+                BooksScreen(
+                    BooksUiState(books = books, gridView = false, isLoading = false, hasFolders = true),
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    { _, _ -> },
+                    onOpenBook = { opened++ },
+                    onAddToCategory = { ids ->
+                        selected = ids
+                        completed.value++
+                    },
+                    selectionResetKey = completed.value,
+                )
+            }
+        }
+        compose.onNodeWithTag("book_1").performTouchInput { longClick() }
+        compose.onNodeWithTag("book_2").performClick()
+        compose.onNodeWithText("2 selected").assertExists()
+        compose.onNodeWithText("add to category").performClick()
+        assertEquals(setOf(1L, 2L), selected)
+        assertEquals(0, opened)
+        compose.onNodeWithText("2 selected").assertDoesNotExist()
+        compose.onNodeWithTag("book_1").performClick()
+        assertEquals(1, opened)
+    }
+
+    @Test fun selectionSurvivesRestorationAndDropsBooksNoLongerVisible() {
+        val books =
+            (1L..2L).map {
+                BookListItem(it, "Book $it", "Book $it", "Writer", BookFormat.EPUB, null, Instant.EPOCH, false, false)
+            }
+        val state = mutableStateOf(BooksUiState(books = books, isLoading = false, hasFolders = true))
+        val restoration = StateRestorationTester(compose)
+        restoration.setContent {
+            DeftTheme { BooksScreen(state.value, {}, {}, {}, {}, {}, {}, { _, _ -> }) }
+        }
+        compose.onNodeWithTag("book_1").performTouchInput { longClick() }
+        compose.runOnIdle { state.value = state.value.copy(books = emptyList(), isLoading = true) }
+        restoration.emulateSavedInstanceStateRestore()
+        compose.onNodeWithText("1 selected").assertExists()
+        compose.runOnIdle { state.value = state.value.copy(books = books, isLoading = false) }
+        compose.onNodeWithText("select all").performClick()
+        compose.onNodeWithText("2 selected").assertExists()
+        compose.runOnIdle { state.value = state.value.copy(books = books.drop(1)) }
+        compose.onNodeWithText("1 selected").assertExists()
+        compose.onNodeWithContentDescription("clear selection").performClick()
+        compose.onNodeWithText("1 selected").assertDoesNotExist()
+    }
 
     @Test fun filtersExposeReadingStatesAndAssessment() {
         compose.setContent {

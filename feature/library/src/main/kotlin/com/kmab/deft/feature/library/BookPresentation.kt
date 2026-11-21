@@ -2,7 +2,7 @@ package com.kmab.deft.feature.library
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,14 +19,26 @@ import com.kmab.deft.core.designsystem.LocalDeftColors
 internal fun Modifier.libraryBookSurface(
     inset: Dp,
     onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
+    selected: Boolean = false,
 ): Modifier {
     val colors = LocalDeftColors.current
     return shadow(1.dp, DeftShapes.card)
         .clip(DeftShapes.card)
         .background(colors.surface)
-        .border(1.dp, colors.line, DeftShapes.card)
-        .then(if (onClick == null) Modifier else Modifier.clickable(role = Role.Button, onClick = onClick))
-        .padding(inset)
+        .border(if (selected) 2.dp else 1.dp, if (selected) colors.accentText else colors.line, DeftShapes.card)
+        .then(
+            if (onClick == null) {
+                Modifier
+            } else {
+                Modifier.combinedClickable(
+                    role = Role.Button,
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                    onLongClickLabel = "select book",
+                )
+            },
+        ).padding(inset)
 }
 
 internal fun BookListItem.displayTitle(): String = title.trim().ifEmpty { "<no-title>" }

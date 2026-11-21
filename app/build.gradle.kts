@@ -40,6 +40,7 @@ android {
     }
 }
 dependencies {
+    implementation(project(":feature:organization"))
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation(project(":feature:book"))
     implementation(project(":feature:reader"))

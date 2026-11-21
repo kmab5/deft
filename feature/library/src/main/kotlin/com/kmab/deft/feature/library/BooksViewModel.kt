@@ -10,6 +10,8 @@ import com.kmab.deft.core.model.BookFormat
 import com.kmab.deft.core.model.BookSort
 import com.kmab.deft.core.model.BookState
 import com.kmab.deft.core.model.BookTrackingSummary
+import com.kmab.deft.library.organization.CategorySummary
+import com.kmab.deft.library.organization.OrganizationRepository
 import com.kmab.deft.library.scanner.BookRepository
 import com.kmab.deft.library.scanner.LibraryFolderRepository
 import com.kmab.deft.library.scanner.ScanReport
@@ -53,6 +55,8 @@ data class BooksUiState(
     val favoritesOnly: Boolean = false,
     val minimumRating: Double? = null,
     val tracking: Map<Long, BookTrackingSummary> = emptyMap(),
+    val categories: List<CategorySummary> = emptyList(),
+    val categoryFilter: Long? = null,
 )
 
 private data class BookQuery(
@@ -65,12 +69,15 @@ private data class BookResult(
     val books: List<BookListItem>,
     val error: String? = null,
     val tracking: Map<Long, BookTrackingSummary> = emptyMap(),
+    val categories: List<CategorySummary> = emptyList(),
+    val categoryFilter: Long? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("TooManyFunctions") // One persistence action for each independent library preference.
 @HiltViewModel
 class BooksViewModel
+    @Suppress("LongParameterList") // Hilt supplies independent library data and scan services.
     @Inject
     constructor(
         repository: BookRepository,
@@ -79,6 +86,7 @@ class BooksViewModel
         private val scheduler: ScanScheduler,
         scans: ScanStatusObserver,
         history: ReadThroughRepository,
+        organization: OrganizationRepository,
     ) : ViewModel() {
         private val error = MutableStateFlow<String?>(null)
         private val queries = settings.settings.map { preferences -> BookQuery(preferences, preferences.formatFilter) }
@@ -98,8 +106,18 @@ class BooksViewModel
                                 query.settings.reverseSort,
                             )
                         }
-                    combine(list, history.observeAll()) { items, snapshots ->
-                        BookResult(query, filterTrackedBooks(items, snapshots, query.settings), tracking = snapshots)
+                    combine(list, history.observeAll(), organization.observe()) { items, snapshots, organized ->
+                        val category = organized.categories.find { it.category.id == query.settings.categoryFilter }
+                        val memberIds = category?.books?.map { it.book.book.id }?.toSet()
+                        BookResult(
+                            query,
+                            filterTrackedBooks(items, snapshots, query.settings).filter {
+                                memberIds == null || it.id in memberIds
+                            },
+                            tracking = snapshots,
+                            categories = organized.categories,
+                            categoryFilter = category?.category?.id,
+                        )
                     }.catch { failure ->
                         if (failure is CancellationException) throw failure
                         emit(BookResult(query, emptyList(), "Couldn't load books. Try rescan."))
@@ -150,6 +168,8 @@ class BooksViewModel
                     favoritesOnly = result.query.settings.favoritesOnly,
                     minimumRating = result.query.settings.minimumRating,
                     tracking = result.tracking,
+                    categories = result.categories,
+                    categoryFilter = result.categoryFilter,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), BooksUiState())
 
@@ -161,6 +181,8 @@ class BooksViewModel
         fun setFavoritesOnly(value: Boolean) = persist { settings.setFavoritesOnly(value) }
 
         fun setMinimumRating(value: Double?) = persist { settings.setMinimumRating(value) }
+
+        fun setCategoryFilter(value: Long?) = persist { settings.setCategoryFilter(value) }
 
         fun setGridView(value: Boolean) = persist { settings.setGridView(value) }
 

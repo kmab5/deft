@@ -57,7 +57,9 @@ import com.kmab.deft.core.designsystem.GeneratedCover
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
 import com.kmab.deft.core.designsystem.icons.DeftIcons
-import java.io.File
+import com.kmab.deft.core.designsystem.privateCoverFile
+import com.kmab.deft.feature.organization.BookAuthorLinks
+import com.kmab.deft.feature.organization.BookOrganizationPanels
 import kotlin.math.roundToInt
 
 @Composable
@@ -67,6 +69,7 @@ internal fun BookDetailBody(
     busy: Boolean,
     tracking: com.kmab.deft.core.model.BookTrackingSnapshot,
     actions: BookTrackingActions,
+    organization: BookOrganizationLinks? = null,
     onRead: () -> Unit,
 ) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -80,7 +83,10 @@ internal fun BookDetailBody(
                 .animateContentSize(),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            BookIdentityPanel(details, busy, onRead)
+            BookIdentityPanel(details, busy, organization?.openAuthor, onRead)
+            if (organization != null && !details.book.ignored) {
+                BookOrganizationPanels(details.book.id, organization.openCategory, organization.openBook)
+            }
             BookTrackingCards(tracking, busy, actions)
             BookDescription(details.book.description)
             BookEdition(details)
@@ -93,6 +99,7 @@ internal fun BookDetailBody(
 private fun BookIdentityPanel(
     details: BookDetails,
     busy: Boolean,
+    openAuthor: ((Long) -> Unit)?,
     onRead: () -> Unit,
 ) {
     val colors = LocalDeftColors.current
@@ -108,7 +115,7 @@ private fun BookIdentityPanel(
             val availableWidth = maxWidth
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 if (availableWidth < 280.dp || fontScale > STACKED_METADATA_FONT_SCALE) {
-                    BookIdentity(details)
+                    BookIdentity(details, openAuthor)
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -127,7 +134,7 @@ private fun BookIdentityPanel(
                     ) {
                         DetailCover(details, Modifier.width(104.dp))
                         Column(Modifier.weight(1f).fillMaxHeight()) {
-                            BookIdentity(details)
+                            BookIdentity(details, openAuthor)
                             Spacer(Modifier.weight(1f).height(12.dp))
                             Box(Modifier.align(Alignment.End)) { BookReadAction(details, busy, onRead) }
                         }
@@ -143,12 +150,17 @@ private fun BookIdentityPanel(
 @OptIn(ExperimentalLayoutApi::class)
 private fun BookIdentity(
     details: BookDetails,
+    openAuthor: ((Long) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalDeftColors.current
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(details.displayTitle(), style = DeftTypography.headline, color = colors.text)
-        Text(details.displayAuthors(), style = DeftTypography.body, color = colors.muted)
+        if (openAuthor == null || details.book.ignored) {
+            Text(details.displayAuthors(), style = DeftTypography.body, color = colors.muted)
+        } else {
+            BookAuthorLinks(details.book.id, details.displayAuthors(), openAuthor)
+        }
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -341,12 +353,7 @@ private fun DetailCover(
     DisposableEffect(loader) { onDispose { loader.shutdown() } }
     val book = details.book
     val path = book.coverOverridePath ?: book.coverPath
-    val cover =
-        remember(path) {
-            path
-                ?.let { value -> runCatching { File(value).canonicalFile }.getOrNull() }
-                ?.takeIf { it.isAbsolute && it.toPath().startsWith(context.filesDir.canonicalFile.toPath()) }
-        }
+    val cover = remember(path, context) { privateCoverFile(path, context.filesDir) }
     val density = LocalDensity.current
     CoverImage(details.displayTitle(), details.displayAuthors(), modifier.clearAndSetSemantics { }) {
         // This is decorative cover artwork. Accessible title/author labels above honor font scaling.

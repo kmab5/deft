@@ -2,6 +2,8 @@
 
 > **For agentic workers:** Use subagent-driven development, test-driven development and codebase-design. Execute focused implementation tasks, then one combined verification/audit as the author requested. Only the root agent runs Gradle on this 8 GB host.
 
+**Status:** Implementation, source audit and local verification complete. Device acceptance remains open in `m4-test-checklist.md`; M4 is not merged.
+
 **Goal:** Fully implement roadmap M4 on `feat/m4-organization`, preserving the accepted EPUB and tracking experience.
 
 **Architecture:** A transactional `library/organization` module owns organization rules and consistent snapshots. Room 7 stores categories, types, memberships, series aliases and explicit auto-fill exclusions. The scanner calls this module after indexing; category/author screens, Books selection and book details share its interface. A separate `feature/organization` keeps these screens focused while existing Books and reader modules retain their responsibilities.
@@ -44,7 +46,7 @@ Category names are non-unique. Type normalized names are unique; built-in Series
 
 ```kotlin
 data class OrganizedBook(val book: BookListItem, val state: BookState = NOT_STARTED,
-    val rating: Double? = null, val activeSeconds: Long = 0)
+    val rating: Double? = null, val activeSeconds: Long = 0, val authorIds: List<Long> = emptyList())
 data class OrganizationStats(val total: Int = 0, val finished: Int = 0, val reading: Int = 0,
     val paused: Int = 0, val abandoned: Int = 0, val activeSeconds: Long = 0,
     val averageRating: Double? = null)
@@ -69,6 +71,8 @@ fun observe(): Flow<OrganizationSnapshot>
 suspend fun get(): OrganizationSnapshot
 suspend fun saveCategory(id: Long? = null, name: String, description: String? = null,
     typeIds: Set<Long> = emptySet(), order: CategoryOrder = MANUAL, coverPath: String? = null): Long
+suspend fun createCategoryWithBooks(name: String, description: String?, typeIds: Set<Long>,
+    order: CategoryOrder, coverPath: String?, bookIds: Set<Long>): Long
 suspend fun deleteCategory(id: Long)
 suspend fun saveType(id: Long? = null, name: String): Long
 suspend fun deleteType(id: Long)
@@ -90,7 +94,7 @@ Names are bounded to 240 characters and descriptions to 10,000. Validate blank/o
 
 **Files:** create CategoryOrder, CategoryEntities, OrganizationDao, OrganizationMigration and Room schema 7; modify AppDatabase, DatabaseModule, DatabaseMigrations and existing migration chains. Create `library/organization/build.gradle.kts`, manifest, `OrganizationModels.kt`, `OrganizationRepository.kt`, focused internal category/author/auto-fill helpers and tests. Register module.
 
-- [ ] Add failing repository/migration tests before implementation. Representative acceptance:
+- [x] Add failing repository/migration tests before implementation. Representative acceptance:
 
 ```kotlin
 val manual = repo.saveCategory(name = "Earthsea", typeIds = setOf(1))
@@ -108,42 +112,42 @@ assertEquals(3.75, repo.get().categories.single().rating)
 ```
 
 Use fixtures covering case/whitespace series names, 1/2/2.5 indices, absent index append, existing confirmed position untouched, explicit removal suppression, disabled auto-fill caller, ignored books, missing members, abandoned unresolved, browsing excluded, duplicate authors/aliases, target conflict, effective author overrides, empty categories, deleting category/type with history intact and valid/invalid decimal/reorder/rating inputs. Migration test upgrades 6→7 and an earlier complete chain, checks existing sessions/locators/ratings, seeds Series and verifies SET NULL parent FK.
-- [ ] Run grouped red tests, implement the contract, run green tests. Export schema via KSP.
-- [ ] Commit the complete verified foundation as `feat(organization): add categories and author rules`.
+- [x] Run grouped red tests, implement the contract, run green tests. Export schema via KSP.
+- [x] Commit the complete verified foundation as `feat(organization): add categories and author rules`.
 
 ## Task 2 — scanner and persistent preferences
 
 **Files:** `ScanRunner.kt`, scanner Gradle/tests; LibrarySettings/Repository/tests; LibrarySettingsScreen/ViewModel/tests.
 
-- [ ] Add `seriesAutoFill=true`, nullable `categoryFilter` and `categoryTypeFilter`, `groupCategoriesByType=false`, `categoryGridView=false`; explicit typed setters and persistence regressions.
-- [ ] Inject OrganizationRepository into ScanRunner; after each successful indexing batch, call autoFill only when enabled. This processes stored metadata on unchanged existing EPUBs too. Keep existing scan lock, continuation and reconciliation behavior; auto-fill failures must be reported, not falsely marked successful.
-- [ ] Add the Library settings series auto-fill switch with explanation and explicit rescan when enabling. Existing category membership remains when disabled.
-- [ ] Test real `calibre:series` EPUB scan creates one ordered suggested Series category, disabling prevents additions, re-enabling handles unchanged fingerprints, alias merge survives rescan and ignored metadata is excluded.
-- [ ] Commit scanner/preferences integration after its grouped tests.
+- [x] Add `seriesAutoFill=true`, nullable `categoryFilter` and `categoryTypeFilter`, `groupCategoriesByType=false`, `categoryGridView=false`; explicit typed setters and persistence regressions.
+- [x] Inject OrganizationRepository into ScanRunner; after each successful indexing batch, call autoFill only when enabled. This processes stored metadata on unchanged existing EPUBs too. Keep existing scan lock, continuation and reconciliation behavior; auto-fill failures must be reported, not falsely marked successful.
+- [x] Add the Library settings series auto-fill switch with explanation and explicit rescan when enabling. Existing category membership remains when disabled.
+- [x] Test real `calibre:series` EPUB scan creates one ordered suggested Series category, disabling prevents additions, re-enabling handles unchanged fingerprints, alias merge survives rescan and ignored metadata is excluded.
+- [x] Commit scanner/preferences integration with the verified organization foundation.
 
 ## Task 3 — category and author experience
 
 **Files:** new `feature/organization` module with navigation, view-model, categories list/cards, category detail/member/reorder/editor sheets, type editor, author list/detail/editor, reusable membership picker/progress/collage components, bounded private category cover import and Compose/render tests. Existing feature/book screens/view-model/navigation may be updated by this task. No root Books/app files are owned by this task.
 
-- [ ] Build real Categories and Authors destinations and detail routes (`categories`, `category/{categoryId}`, `authors`, `author/{authorId}`). Top-level overflow opens existing settings. Use guarded Back on details.
-- [ ] Category cards show cover collage (up to four nonignored covers) or imported custom cover, types, review indicator, progress and computed/overridden rating. Persist grid/list and type filter/group controls; show all/untyped handling and empty/error/loading states.
-- [ ] Create/edit/delete categories, description, types and bounded image cover; remove custom cover returns collage. Type CRUD protects Series. Duplicate category names remain identifiable by types/count/ID in merge/picker destinations.
-- [ ] Detail uses grouped identity/progress/rating/actions, ordered members, decimal series edit, individual/all suggestion confirmation, member removal, add-book picker, ordering choices, drag reordering plus accessible move up/down actions, target-select/confirm merge and destructive category confirmation. Rating override/reset clearly distinguishes computed mean.
-- [ ] Authors list/search and detail show counts, all five state contributions, finished progress, total time and computed rating, books grouped by state, rename and confirmed merge. Only authors with nonignored effective books appear.
-- [ ] Book page author names navigate to authors; category membership and positions link to categories, allow adding/removing through shared controls, and show each eligible next-in-series candidate. Missing/Protected books remain manageable.
-- [ ] Reuse existing design tokens and safe image loader, with notices for errors. Render paper, ink, 150% text and landscape; test create/edit/confirm/merge/error controls and route callbacks with real snapshots.
-- [ ] Commit verified UI.
+- [x] Build real Categories and Authors destinations and detail routes (`categories`, `category/{categoryId}`, `authors`, `author/{authorId}`). Top-level overflow opens existing settings. Use guarded Back on details.
+- [x] Category cards show cover collage (up to four nonignored covers) or imported custom cover, types, review indicator, progress and computed/overridden rating. Persist grid/list and type filter/group controls; show all/untyped handling and empty/error/loading states.
+- [x] Create/edit/delete categories, description, types and bounded image cover; remove custom cover returns collage. Type CRUD protects Series. Duplicate category names remain identifiable by types/count/ID in merge/picker destinations.
+- [x] Detail uses grouped identity/progress/rating/actions, ordered members, decimal series edit, individual/all suggestion confirmation, member removal, add-book picker, ordering choices, drag reordering plus accessible move up/down actions, target-select/confirm merge and destructive category confirmation. Rating override/reset clearly distinguishes computed mean.
+- [x] Authors list/search and detail show counts, all five state contributions, finished progress, total time and computed rating, books grouped by state, rename and confirmed merge. Only authors with nonignored effective books appear.
+- [x] Book page author names navigate to authors; category membership and positions link to categories, allow adding/removing through shared controls, and show each eligible next-in-series candidate. Missing/Protected books remain manageable.
+- [x] Reuse existing design tokens and safe image loader, with notices for errors. Render paper, ink, 150% text and landscape; test create/edit/confirm/merge/error controls and route callbacks with real snapshots.
+- [x] Commit verified UI.
 
 ## Task 4 — Books selection, app navigation and handover
 
 **Files:** BooksScreen/Card/Row/ViewModel/Controls/Navigation and selection components/tests; DeftApp, app Gradle/tests; DeftBottomBar (optional visible destination indices preserving existing default goldens); docs/checklist/reference/version.
 
-- [ ] Enable long-press selection in grid and list, selection indication/count, select all visible, clear/back exit, and Add to category with create-new option. Apply only explicitly selected IDs, reconcile stale/forgotten IDs, preserve selection through rotation, exit after successful addition; no accidental book launch while selecting.
-- [ ] Add persisted category filter beside existing filters; all/uncategorized choices if exposed must have defined semantics. Deleted selected category falls back to all instead of trapping an empty library.
-- [ ] Show Books/Categories/Authors bottom navigation only on those top-level destinations. Preserve each tab's state, navigation root, scan notices, reader completion routing and settings entry. Future tabs stay hidden.
-- [ ] Run focused red/green tests during development, then one whole-M4 audit and `ktlintFormat check assembleRelease`, single Gradle worker. Fix failures together. Inspect generated UI renders and verify Room migration, scanner acceptance, privacy guardrails and signed release identity.
-- [ ] Update spec decision log, visual reference, README/roadmap status and `plans/m4-test-checklist.md` with thorough tickable device steps including upgrade, types, series, aliases, merges, ignore/missing, reorder, ratings, selection, author links, accessibility and scanner cancellation.
-- [ ] Commit/push `feat/m4-organization`; archive mapping and exact source evidence; give signed `deft-0.4.0.apk` and checklist. Do not merge M4 before author acceptance.
+- [x] Enable long-press selection in grid and list, selection indication/count, select all visible, clear/back exit, and Add to category with create-new option. Apply only explicitly selected IDs, reconcile stale/forgotten IDs, preserve selection through rotation, exit after successful addition; no accidental book launch while selecting.
+- [x] Add persisted category filter beside existing filters; all/uncategorized choices if exposed must have defined semantics. Deleted selected category falls back to all instead of trapping an empty library.
+- [x] Show Books/Categories/Authors bottom navigation only on those top-level destinations. Preserve each tab's state, navigation root, scan notices, reader completion routing and settings entry. Future tabs stay hidden.
+- [x] Run focused red/green tests during development, then one whole-M4 audit and `ktlintFormat check assembleRelease`, single Gradle worker. Fix failures together. Inspect generated UI renders and verify Room migration, scanner acceptance, privacy guardrails and signed release identity.
+- [x] Update spec decision log, visual reference, README/roadmap status and `plans/m4-test-checklist.md` with thorough tickable device steps including upgrade, types, series, aliases, merges, ignore/missing, reorder, ratings, selection, author links, accessibility and scanner cancellation.
+- [x] Commit/push `feat/m4-organization`; archive mapping and exact source evidence; give signed `deft-0.4.0.apk` and checklist. Do not merge M4 before author acceptance.
 
 ## Validation commands
 

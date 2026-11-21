@@ -402,3 +402,24 @@ Idle readers show a very translucent theme-aware film and faint centered `idling
 ### M3 follow-up — 0.3.3
 
 Use a visible black idle film (38% opacity) in every reader theme, with a faint pulsing label in the reader’s ink color. Keep the consumed wake gesture and idle accounting unchanged.
+
+### M4 organization — 0.4.0
+
+Enable Books, Categories and Authors in the bottom bar; keep future Notes/Stats
+destinations hidden. Categories use outlined, subtly lifted cards with a custom
+local cover or up-to-four-cover collage, type labels, state progress, rating and
+review indication. Group/filter/list-grid choices persist. Detail separates the
+category identity and controls from member rows; focused sheets handle edits,
+types, ordering and merges. Decimal positions belong to Series; non-Series
+manual order supports drag handles and explicit up/down controls.
+
+Computed ratings display one decimal and remain distinct from a personal
+override. Abandoned remains an unresolved part of the state breakdown. Author
+pages group books by state and show complete coauthor credit; book-page links
+retain the metadata's credit order. Bulk Books selection uses an accent border,
+checkmark, count and one clear Add to category action.
+
+Keep 48dp controls, wrapping actions, keyboard-safe sheets and animated list
+placement. Mutation errors use the existing bottom notices, including within a
+modal sheet. Local renders are linked from `plans/design/m4-organization.html`;
+the device review remains `plans/m4-test-checklist.md`.

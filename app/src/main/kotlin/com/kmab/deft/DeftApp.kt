@@ -1,6 +1,7 @@
 package com.kmab.deft
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Surface
@@ -20,8 +21,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.kmab.deft.core.designsystem.DeftBottomBar
 import com.kmab.deft.core.designsystem.DeftNoticeHost
 import com.kmab.deft.core.designsystem.DeftNoticeKind
 import com.kmab.deft.core.designsystem.LocalDeftColors
@@ -30,6 +34,7 @@ import com.kmab.deft.core.designsystem.rememberDeftNoticeState
 import com.kmab.deft.feature.book.bookGraph
 import com.kmab.deft.feature.library.ScanDetailsSheet
 import com.kmab.deft.feature.library.libraryGraph
+import com.kmab.deft.feature.organization.organizationGraph
 import com.kmab.deft.feature.settings.settingsGraph
 import com.kmab.deft.library.scanner.ScanDetails
 import com.kmab.deft.library.scanner.ScanReport
@@ -100,15 +105,39 @@ internal fun DeftApp(
                         selectedReport = scan.reportSelection()
                     }
                 }
-                NavHost(navController, startDestination = "books") {
-                    libraryGraph(navController, onScanDetails = openDetails, onRead = onRead)
-                    bookGraph(navController, onRead)
-                    settingsGraph(navController, onScanDetails = openDetails)
-                }
+                DeftNavigation(navController, openDetails, onRead)
                 DeftNoticeHost(notices, Modifier.align(Alignment.BottomCenter), paused = selectedReport != null)
             }
         }
         selectedReport?.let { report -> ReportPopup(report, reports) { selectedReport = null } }
+    }
+}
+
+@Composable
+private fun DeftNavigation(
+    navController: NavHostController,
+    openDetails: () -> Unit,
+    onRead: (Long) -> Unit,
+) {
+    val entry by navController.currentBackStackEntryAsState()
+    val tabs = listOf("books", "categories", "authors")
+    val selected = tabs.indexOf(entry?.destination?.route)
+    Column(Modifier.fillMaxSize()) {
+        NavHost(navController, startDestination = "books", modifier = Modifier.weight(1f)) {
+            libraryGraph(navController, onScanDetails = openDetails, onRead = onRead)
+            bookGraph(navController, onRead)
+            organizationGraph(navController)
+            settingsGraph(navController, onScanDetails = openDetails)
+        }
+        if (selected >= 0) {
+            DeftBottomBar(selected, { index ->
+                navController.navigate(tabs[index]) {
+                    popUpTo("books") { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }, destinations = tabs.indices.toList())
+        }
     }
 }
 

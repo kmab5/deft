@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,14 +29,17 @@ fun BookRow(
     size: BookDisplaySize = BookDisplaySize.MEDIUM,
     onClick: (() -> Unit)? = null,
     tracking: com.kmab.deft.core.model.BookTrackingSummary? = null,
+    onLongClick: (() -> Unit)? = null,
+    selected: Boolean = false,
 ) {
     val c = LocalDeftColors.current
     Row(
         modifier
             .fillMaxWidth()
             .testTag("book_${book.id}")
-            .libraryBookSurface(12.dp, onClick)
+            .libraryBookSurface(12.dp, onClick, onLongClick, selected)
             .semantics(mergeDescendants = true) {
+                this.selected = selected
                 stateDescription =
                     (tracking?.state ?: com.kmab.deft.core.model.BookState.NOT_STARTED).appearance().label
             },
@@ -75,6 +79,7 @@ fun BookRow(
                 style = DeftTypography.cardTitle,
             )
         }
+        if (selected) SelectionMark()
     }
 }
 

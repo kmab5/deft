@@ -1,5 +1,6 @@
 package com.kmab.deft.feature.library
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -85,6 +86,9 @@ fun BooksScreen(
     onStateFilter: (com.kmab.deft.core.model.BookState, Boolean) -> Unit = { _, _ -> },
     onFavoritesOnly: (Boolean) -> Unit = {},
     onMinimumRating: (Double?) -> Unit = {},
+    onCategoryFilter: (Long?) -> Unit = {},
+    onAddToCategory: (Set<Long>) -> Unit = {},
+    selectionResetKey: Int = 0,
 ) {
     val c = LocalDeftColors.current
     var menu by remember { mutableStateOf(false) }
@@ -102,6 +106,23 @@ fun BooksScreen(
     val searchResult =
         remember(state.books, query, activeOptions) { runCatching { state.books.searchBooks(query, activeOptions) } }
     val visibleBooks = searchResult.getOrDefault(emptyList())
+    var selected by rememberSaveable { mutableStateOf(emptyList<Long>()) }
+    var handledReset by rememberSaveable { mutableStateOf(selectionResetKey) }
+    LaunchedEffect(selectionResetKey) {
+        if (selectionResetKey != handledReset) {
+            selected = emptyList()
+            handledReset = selectionResetKey
+        }
+    }
+    val visibleIds = remember(visibleBooks) { visibleBooks.map { it.id }.toSet() }
+    LaunchedEffect(visibleIds, state.isLoading, state.error, searchResult.isSuccess) {
+        if (!state.isLoading && state.error == null && searchResult.isSuccess) {
+            selected = selected.filter { it in visibleIds }
+        }
+    }
+    BackHandler(selected.isNotEmpty()) { selected = emptyList() }
+    val toggle: (Long) -> Unit = { id -> selected = if (id in selected) selected - id else selected + id }
+    val open: (Long) -> Unit = { id -> if (selected.isEmpty()) onOpenBook(id) else toggle(id) }
     val scroll = rememberLibraryScrollState(state.gridView)
     LaunchedEffect(query) {
         if (query != previousQuery) {
@@ -166,13 +187,18 @@ fun BooksScreen(
                 LibrarySearchFilters(state.advancedSearch, searchOptions, { searchOptions = it }, searchResult)
             }
         }
-        AnimatedVisibility(state.continueReading != null && scroll.showHeader) {
+        AnimatedVisibility(state.continueReading != null && scroll.showHeader && selected.isEmpty()) {
             state.continueReading?.let { book -> ContinueReadingCard(book, loader) { onContinueReading(book.id) } }
         }
         BooksToolbar(state, onFilters = { sheet = "filters" }, onSort = { sheet = "sort" }, onDisplay = {
             sheet =
                 "display"
         })
+        AnimatedVisibility(selected.isNotEmpty()) {
+            BooksSelectionBar(selected.size, { selected = emptyList() }, { selected = visibleIds.toList() }) {
+                onAddToCategory(selected.toSet())
+            }
+        }
         AnimatedVisibility(
             visible = state.isScanning,
             enter = fadeIn(tween(DeftMotion.SHORT)) + expandVertically(tween(DeftMotion.SHORT)),
@@ -211,7 +237,9 @@ fun BooksScreen(
                     onAddFolder,
                     onRescan,
                     onSettings,
-                    onOpenBook,
+                    open,
+                    toggle,
+                    selected.toSet(),
                 ) {
                     if (query.isNotBlank()) {
                         query = ""
@@ -221,17 +249,18 @@ fun BooksScreen(
                             .forEach { onStateFilter(it, true) }
                         onFavoritesOnly(false)
                         onMinimumRating(null)
+                        onCategoryFilter(null)
                     }
                 }
             }
-            LibraryScrollOverlay(scroll, state.continueReading, onContinueReading)
+            LibraryScrollOverlay(scroll, state.continueReading.takeIf { selected.isEmpty() }, onContinueReading)
         }
     }
     when (sheet) {
         "filters" ->
             BooksFilters(state, {
                 sheet = null
-            }, onShowMissingChange, onFormatChange, onStateFilter, onFavoritesOnly, onMinimumRating)
+            }, onShowMissingChange, onFormatChange, onStateFilter, onFavoritesOnly, onMinimumRating, onCategoryFilter)
         "sort" -> BooksSort(state, { sheet = null }, onSortChange, onReverseSortChange)
         "display" -> BooksDisplay(state, { sheet = null }, onGridViewChange, onGridSizeChange, onListSizeChange)
     }
@@ -248,6 +277,8 @@ private fun BooksCollection(
     onRescan: () -> Unit,
     onSettings: () -> Unit,
     onOpenBook: (Long) -> Unit,
+    onSelectBook: (Long) -> Unit,
+    selected: Set<Long>,
     onClear: () -> Unit,
 ) {
     val c = LocalDeftColors.current
@@ -285,6 +316,8 @@ private fun BooksCollection(
                         size = state.gridSize,
                         tracking = state.tracking[book.id],
                         onClick = { onOpenBook(book.id) },
+                        onLongClick = { onSelectBook(book.id) },
+                        selected = book.id in selected,
                     )
                 }
             }
@@ -309,6 +342,8 @@ private fun BooksCollection(
                         size = state.listSize,
                         tracking = state.tracking[book.id],
                         onClick = { onOpenBook(book.id) },
+                        onLongClick = { onSelectBook(book.id) },
+                        selected = book.id in selected,
                     )
                 }
             }
@@ -414,5 +449,5 @@ private fun BooksUiState.hasReadingFilters(): Boolean =
     hasFolders && (
         formatFilter.size != BookFormat.entries.size ||
             stateFilter.size != com.kmab.deft.core.model.BookState.entries.size || favoritesOnly ||
-            minimumRating != null
+            minimumRating != null || categoryFilter != null
     )

@@ -27,3 +27,4 @@ include(":format:readium", ":feature:reader", ":feature:reader-settings", ":feat
 
 include(":tracking", ":feature:celebrate")
 include(":library:organization")
+include(":feature:organization")
