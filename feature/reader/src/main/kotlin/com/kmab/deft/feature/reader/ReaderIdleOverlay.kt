@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -53,7 +54,7 @@ internal fun ReaderIdleOverlay(
         Box(
             Modifier
                 .fillMaxSize()
-                .background(colors.text.copy(alpha = 0.06f))
+                .background(Color.Black.copy(alpha = 0.38f))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,

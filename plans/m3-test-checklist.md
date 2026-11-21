@@ -130,24 +130,26 @@ The author accepted 0.3.1 and requested these final changes before merging M3.
 These optional device smoke checks document changes; they are not claimed as
 physical-device tests or a new merge gate.
 
-- [ ] Upgrade from 0.3.1 without uninstalling; session history and all preferences remain.
-- [ ] Set idle pause to one minute, stop interacting, and see a faint film with pulsing
+- [X] Upgrade from 0.3.1 without uninstalling; session history and all preferences remain.
+- [X] Set idle pause to one minute, stop interacting, and see a faint film with pulsing
   `idling`. Tap once: film fades, tracking resumes, page stays unchanged. A subsequent
   tap/gesture reads normally. No idle time or fake page turn enters history.
-- [ ] Open/close reader settings, background/lock, then return: no stale idle film
+-- the translucent film is completely invisible, make it more opaque and black
+- [X] Open/close reader settings, background/lock, then return: no stale idle film
   covers dialogs or starts tracking while hidden. Disable animations: idle label is steady.
-- [ ] Timer Apply buttons sit beside their fields in normal and 150% text. Apply and
+- [X] Timer Apply buttons sit beside their fields in normal and 150% text. Apply and
   keyboard Done both save valid values and reject invalid values; Off still works.
-- [ ] About links `kmab` to https://kmab5.github.io. Icon-led source and GPL actions
+- [X] About links `kmab` to https://kmab5.github.io. Icon-led source and GPL actions
   are grouped and open the correct external pages only after a tap.
-- [ ] Book and finish-sheet rating controls are compact, with clear and heart aligned.
+- [X] Book and finish-sheet rating controls are compact, with clear and heart aligned.
   Select half stars by touch and TalkBack; clear/favorite and large text remain usable.
-- [ ] Reading-state choices wrap with icons and semantic colors, and clearly identify
+- [X] Reading-state choices wrap with icons and semantic colors, and clearly identify
   the current state. Confirm Finished/Not read prompts still protect dates/history.
-- [ ] With Android touch vibration enabled, native word selection, Back, direct
+- [X] With Android touch vibration enabled, native word selection, Back, direct
   assessment changes, state confirmation and celebration have subtle feedback.
   Selection-handle movement and stale/repeated Back do not add app-generated pulses.
   Disable system touch vibration: Deft does not bypass that setting.
+-- selecting texts isnt giving haptics
 
 ### Requested planning notes and thoughts
 
@@ -157,3 +159,11 @@ physical-device tests or a new merge gate.
   with idle/visibility safeguards and no false reading interactions from automatic motion.
 - [Format extensions and online fiction: my assessment](2026-11-21-format-and-online-fiction-thoughts.md).
   This is discussion only; neither feature is implemented or approved by these notes.
+
+## 0.3.3 follow-up
+
+The author passed the 0.3.2 checks and requested a darker black idle film and reliable text-selection feedback before M4. These changes are included in the M4 test build too.
+
+- [ ] Idle pause visibly dims light, sepia and dark pages with a 38% black film; the faint label pulses, or stays steady with animations off. The consumed wake touch keeps the same page and does not count idle time.
+- [ ] Selecting a word in paged and continuous EPUB gives one subtle long-press pulse with system vibration enabled. Moving handles or recreating the toolbar does not repeat it. Clearing and selecting again pulses again.
+- [ ] Background/lock during selection stops observation; returning does not vibrate for a stale selection. Disable Android touch vibration: no app-generated selection pulse.

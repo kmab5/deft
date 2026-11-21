@@ -11,16 +11,19 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
 import com.kmab.deft.core.model.PageAnimation
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReaderTheme
 import com.kmab.deft.format.readium.ContinuousReaderResources
 import com.kmab.deft.format.readium.continuousReaderStyles
 import com.kmab.deft.format.readium.localPublicationUrl
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONObject
 import org.json.JSONTokener
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.util.Url
+import kotlin.coroutines.resume
 
 /** A vertical viewport over isolated, virtualized chapter documents with original publication locators. */
 internal class ContinuousReaderView(
@@ -37,6 +40,8 @@ internal class ContinuousReaderView(
     private var target = initialLocator
     private var awaitingRestore = initialLocator
     private var animate = preferences.pageAnimation == PageAnimation.SLIDE
+    private val selectionFeedback =
+        ReaderSelectionFeedback(activity.lifecycleScope, activity.lifecycle, ::currentSelection, callbacks.onSelection)
     private val publicationResources =
         ContinuousReaderResources(session.opened.publication, activity.assets) {
             activity.runOnUiThread { if (!destroyed) callbacks.onError() }
@@ -115,6 +120,7 @@ internal class ContinuousReaderView(
     }
 
     fun destroy() {
+        selectionFeedback.close()
         destroyed = true
         ready = false
         view.stopLoading()
@@ -133,15 +139,9 @@ internal class ContinuousReaderView(
                 mode: ActionMode,
                 menu: Menu,
             ): Boolean {
-                view.evaluateJavascript("JSON.stringify(deftContinuous.selection())") { value ->
-                    val data = runCatching { JSONObject(JSONTokener(value).nextValue().toString()) }.getOrNull()
-                    data?.let {
-                        locator(it.optString("href"), it.optDouble("progression", 0.0))
-                            ?.copy(text = Locator.Text(highlight = it.optString("text")))
-                            ?.let(callbacks.onSelection)
-                    }
-                }
-                return delegate.onCreateActionMode(mode, menu)
+                val created = delegate.onCreateActionMode(mode, menu)
+                if (created) selectionFeedback.toolbarStarted(mode)
+                return created
             }
 
             override fun onPrepareActionMode(
@@ -157,7 +157,22 @@ internal class ContinuousReaderView(
             override fun onDestroyActionMode(mode: ActionMode) {
                 // Android recreates the floating toolbar while a selection handle moves.
                 // The native delegate owns dismissal; clearing ranges here cancels that selection.
+                selectionFeedback.toolbarStopped(mode)
                 delegate.onDestroyActionMode(mode)
+            }
+        }
+
+    private suspend fun currentSelection(): Locator? =
+        suspendCancellableCoroutine { continuation ->
+            view.evaluateJavascript("JSON.stringify(deftContinuous.selection())") { value ->
+                if (!continuation.isActive) return@evaluateJavascript
+                val data = runCatching { JSONObject(JSONTokener(value).nextValue().toString()) }.getOrNull()
+                val selected =
+                    data?.let {
+                        locator(it.optString("href"), it.optDouble("progression", 0.0))
+                            ?.copy(text = Locator.Text(highlight = it.optString("text")))
+                    }
+                continuation.resume(selected)
             }
         }
 

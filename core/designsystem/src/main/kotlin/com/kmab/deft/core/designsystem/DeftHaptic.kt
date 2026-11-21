@@ -5,7 +5,7 @@ import android.provider.Settings
 import android.view.HapticFeedbackConstants
 import android.view.View
 
-enum class DeftHaptic { BACK, CHOICE, CONFIRM }
+enum class DeftHaptic { BACK, CHOICE, CONFIRM, SELECTION }
 
 /** User actions only; Android remains responsible for device support and intensity. */
 fun View.performDeftHaptic(event: DeftHaptic): Boolean {
@@ -15,6 +15,7 @@ fun View.performDeftHaptic(event: DeftHaptic): Boolean {
         when (event) {
             DeftHaptic.BACK -> HapticFeedbackConstants.CONTEXT_CLICK
             DeftHaptic.CHOICE -> HapticFeedbackConstants.CLOCK_TICK
+            DeftHaptic.SELECTION -> HapticFeedbackConstants.LONG_PRESS
             DeftHaptic.CONFIRM ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     HapticFeedbackConstants.CONFIRM

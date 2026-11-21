@@ -1,5 +1,6 @@
 package com.kmab.deft.feature.reader
 
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -27,6 +31,7 @@ import com.github.takahirom.roborazzi.RoborazziTaskType
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.kmab.deft.core.model.ReaderThemes
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -81,6 +86,28 @@ class ReaderIdleOverlayTest {
         }
         compose.onNodeWithText("idling").assertDoesNotExist()
         compose.onNodeWithContentDescription("resume reading").assertDoesNotExist()
+    }
+
+    @OptIn(ExperimentalRoborazziApi::class)
+    @Test
+    fun idleFilmDarkensThePageWithBlackEvenInThePaperTheme() {
+        compose.setContent {
+            ReaderTheme(ReaderThemes.builtIn.first()) {
+                Box(Modifier.fillMaxSize().background(Color.White)) {
+                    ReaderIdleOverlay(true, {})
+                }
+            }
+        }
+        compose.onNodeWithText("idling").assertIsDisplayed()
+        val output = File("build/reports/screenshots/reader-idle-film-white-page.png").apply { parentFile?.mkdirs() }
+        compose.onRoot().captureRoboImage(
+            output.path,
+            roborazziOptions = RoborazziOptions(taskType = RoborazziTaskType.Record),
+        )
+        val pixel = requireNotNull(BitmapFactory.decodeFile(output.path)).asImageBitmap().toPixelMap()[12, 12]
+        assertTrue("expected a readable page under a strong film, got $pixel", pixel.red in 0.45f..0.75f)
+        assertEquals(pixel.red, pixel.green, 0.01f)
+        assertEquals(pixel.red, pixel.blue, 0.01f)
     }
 
     @Test fun swipeAlsoWakesWithoutTurningTheUnderlyingPage() {

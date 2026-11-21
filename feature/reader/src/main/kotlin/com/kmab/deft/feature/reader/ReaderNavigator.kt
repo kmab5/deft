@@ -13,6 +13,8 @@ import android.webkit.WebView
 import android.widget.FrameLayout
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
+import com.kmab.deft.core.designsystem.DeftHaptic
+import com.kmab.deft.core.designsystem.performDeftHaptic
 import com.kmab.deft.core.model.PageAnimation
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReaderTheme
@@ -47,10 +49,14 @@ internal class ReaderNavigator(
     private var generation = 0L
     private var preferences = ReaderPreferences()
     private var theme: ReaderTheme? = null
-    private var selecting = false
+    private var pagedSelectionFeedback: ReaderSelectionFeedback? = null
+    private val onSelectionStarted: (Locator) -> Unit = { locator ->
+        activity.window.decorView.performDeftHaptic(DeftHaptic.SELECTION)
+        model.interaction.selection(locator)
+    }
     val handlesSwipes: Boolean
         get() =
-            !preferences.scroll && !selecting
+            !preferences.scroll && pagedSelectionFeedback?.hasToolbar != true
     val nativeSwipes: Boolean
         get() = preferences.pageAnimation == PageAnimation.SLIDE && ValueAnimator.areAnimatorsEnabled()
 
@@ -238,6 +244,8 @@ internal class ReaderNavigator(
     }
 
     fun detach() {
+        pagedSelectionFeedback?.close()
+        pagedSelectionFeedback = null
         collection?.cancel()
         collection = null
         model.interaction.detachNavigator(generation)
@@ -296,7 +304,7 @@ internal class ReaderNavigator(
                                 )
                             }
                         },
-                        onSelection = model.interaction::selection,
+                        onSelection = onSelectionStarted,
                         onError = {
                             model.interaction.renderingFailed()
                             model.notice(
@@ -308,13 +316,21 @@ internal class ReaderNavigator(
         host.addView(continuous?.view, FrameLayout.LayoutParams(-1, -1))
     }
 
-    private fun selectionCallback() =
-        object : ActionMode.Callback {
+    private fun selectionCallback(): ActionMode.Callback {
+        val feedback =
+            ReaderSelectionFeedback(
+                activity.lifecycleScope,
+                activity.lifecycle,
+                { fragment?.currentSelection()?.locator },
+                onSelectionStarted,
+            )
+        pagedSelectionFeedback = feedback
+        return object : ActionMode.Callback {
             override fun onCreateActionMode(
                 mode: ActionMode,
                 menu: Menu,
             ): Boolean {
-                selecting = true
+                feedback.toolbarStarted(mode)
                 menu
                     .add(
                         Menu.NONE,
@@ -322,13 +338,6 @@ internal class ReaderNavigator(
                         Menu.NONE,
                         "Copy",
                     ).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
-                activity.lifecycleScope.launch {
-                    fragment?.currentSelection()?.let {
-                        model.interaction.selection(
-                            it.locator,
-                        )
-                    }
-                }
                 return true
             }
 
@@ -358,9 +367,10 @@ internal class ReaderNavigator(
             override fun onDestroyActionMode(mode: ActionMode) {
                 // Chromium can recreate the toolbar while a selection handle moves.
                 // Its lifetime is not the lifetime of the selected DOM range.
-                selecting = false
+                feedback.toolbarStopped(mode)
             }
         }
+    }
 }
 
 private fun hardenWebViews(view: View?) {

@@ -205,7 +205,7 @@ All subtle (`HapticFeedbackConstants`), respecting Android touch-feedback settin
 - rating, favorite and clear-rating choices → `CLOCK_TICK`; no feedback from recomposition
 - accepted calendar date → `CONFIRM` (same fallback as state confirmation), sent through the active picker view
 
-WebView supplies native word-selection feedback; do not add a second pulse when its selection toolbar is created or handles move. No continuous scrolling or idle-pulse vibration.
+Deft confirms the first real nonempty word selection with LONG_PRESS feedback; native WebView feedback was absent on the author’s device. Do not pulse again when the toolbar is recreated or selection handles move. No continuous scrolling or idle-pulse vibration.
 
 ## 11. Screens
 
@@ -398,3 +398,7 @@ Settings titles gain 8dp vertical padding on each side. All switches use a visib
 Ratings group five stars in one compact adjustable control alongside clear and favorite; avoid wide isolated star gaps and detached hearts. Reading-state choices wrap at their content width with distinct semantic colors, icons and a selected marker rather than full-width centered rows. Keep 48dp targets and large-text wrapping. Timer fields and their Apply action share a row, with validation below. About uses the kmab profile link and adjacent icon-led source/GPL actions.
 
 Idle readers show a very translucent theme-aware film and faint centered `idling` label. Its slow pulse stops with reduced motion; one touch removes it and resumes at the existing page. Fade changes smoothly, consume the wake gesture, and never obscure overlays or count idle time.
+
+### M3 follow-up — 0.3.3
+
+Use a visible black idle film (38% opacity) in every reader theme, with a faint pulsing label in the reader’s ink color. Keep the consumed wake gesture and idle accounting unchanged.

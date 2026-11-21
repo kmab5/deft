@@ -26,6 +26,7 @@ class DeftHapticsTest {
                 HapticFeedbackConstants.CONTEXT_CLICK,
                 HapticFeedbackConstants.CLOCK_TICK,
                 HapticFeedbackConstants.CONFIRM,
+                HapticFeedbackConstants.LONG_PRESS,
             ),
             view.effects,
         )
@@ -35,7 +36,7 @@ class DeftHapticsTest {
     @Test fun disabledSystemOrViewFeedbackIsSilent() {
         val view = RecordingHapticView(ApplicationProvider.getApplicationContext())
         Settings.System.putInt(view.context.contentResolver, Settings.System.HAPTIC_FEEDBACK_ENABLED, 0)
-        assertFalse(view.performDeftHaptic(DeftHaptic.CHOICE))
+        assertFalse(view.performDeftHaptic(DeftHaptic.SELECTION))
         Settings.System.putInt(view.context.contentResolver, Settings.System.HAPTIC_FEEDBACK_ENABLED, 1)
         view.isHapticFeedbackEnabled = false
         assertFalse(view.performDeftHaptic(DeftHaptic.BACK))
