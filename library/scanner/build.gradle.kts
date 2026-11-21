@@ -3,6 +3,7 @@ plugins {
     id("deft.android.hilt")
 }
 dependencies {
+    implementation(project(":library:organization"))
     implementation(project(":core:model"))
     implementation(project(":core:common"))
     implementation(project(":core:database"))

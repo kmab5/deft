@@ -50,6 +50,11 @@ class LibrarySettingsRepositoryTest {
             repository.setReverseSort(true)
             repository.setGridSize(BookDisplaySize.SMALL)
             repository.setListSize(BookDisplaySize.LARGE)
+            repository.setSeriesAutoFill(false)
+            repository.setCategoryFilter(42L)
+            repository.setCategoryTypeFilter(7L)
+            repository.setGroupCategoriesByType(true)
+            repository.setCategoryGridView(true)
             scope.coroutineContext.job.cancelAndJoin()
             val secondScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             try {
@@ -69,6 +74,11 @@ class LibrarySettingsRepositoryTest {
                         listSize = BookDisplaySize.LARGE,
                         formatFilter = BookFormat.entries.toSet() - BookFormat.TXT,
                         advancedSearch = true,
+                        seriesAutoFill = false,
+                        categoryFilter = 42L,
+                        categoryTypeFilter = 7L,
+                        groupCategoriesByType = true,
+                        categoryGridView = true,
                     ),
                     reopened.settings.first(),
                 )

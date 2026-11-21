@@ -75,7 +75,10 @@ class ScanIntegrationTest {
             db,
             time,
         )
-    private val runner by lazy { ScanRunner(db, scanner, settings, time, coordination, access) }
+    private val organization =
+        com.kmab.deft.library.organization
+            .OrganizationRepository(db)
+    private val runner by lazy { ScanRunner(db, scanner, settings, time, coordination, access, organization) }
     private lateinit var manager: WorkManager
     private val requestedForegroundModes = mutableListOf<Boolean>()
     private val scheduler by lazy { ScanScheduler(manager, settings, time, db) }
@@ -302,7 +305,7 @@ class ScanIntegrationTest {
             }
             assertEquals(listOf("old"), db.libraryFolderDao().pendingRemovals())
             tree.cancelWalk = false
-            val restarted = ScanRunner(db, scanner, settings, time, ScanCoordination(), access)
+            val restarted = ScanRunner(db, scanner, settings, time, ScanCoordination(), access, organization)
             restarted.run()
             assertTrue(db.libraryFolderDao().pendingRemovals().isEmpty())
             assertTrue(
@@ -448,7 +451,7 @@ private class BackgroundTree : DocumentTree {
     override fun open(uri: String) = ByteArrayInputStream(uri.substringBefore('/').toByteArray())
 }
 
-private class MemoryFolderAccess : FolderAccess {
+internal class MemoryFolderAccess : FolderAccess {
     private val reads = mutableSetOf<Uri>()
     var failName = false
 

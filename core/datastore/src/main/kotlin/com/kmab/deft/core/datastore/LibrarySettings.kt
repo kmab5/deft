@@ -20,4 +20,9 @@ data class LibrarySettings(
     val stateFilter: Set<BookState> = BookState.entries.toSet(),
     val favoritesOnly: Boolean = false,
     val minimumRating: Double? = null,
+    val seriesAutoFill: Boolean = true,
+    val categoryFilter: Long? = null,
+    val categoryTypeFilter: Long? = null,
+    val groupCategoriesByType: Boolean = false,
+    val categoryGridView: Boolean = false,
 )

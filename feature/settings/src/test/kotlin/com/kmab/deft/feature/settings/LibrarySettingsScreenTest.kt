@@ -156,6 +156,16 @@ class LibrarySettingsScreenTest {
 
     private fun requests() = manager.getWorkInfosForUniqueWork(ScanScheduler.WORK_NAME).get()
 
+    @Test fun enablingSeriesAutoFillRequestsRescanAndDisablingKeepsExistingWorkUntouched() {
+        compose.setContent { DeftTheme { LibrarySettingsScreen({}, vm) } }
+        compose.onNodeWithText("series auto-fill").performScrollTo().performClick()
+        compose.waitUntil { runBlocking { !settings.settings.first().seriesAutoFill } }
+        assertEquals(0, requests().size)
+        compose.onNodeWithText("series auto-fill").performClick()
+        compose.waitUntil { requests().isNotEmpty() }
+        assertEquals(true, runBlocking { settings.settings.first().seriesAutoFill })
+    }
+
     @OptIn(ExperimentalRoborazziApi::class)
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     @Config(sdk = [36], qualifiers = "w411dp-h891dp-mdpi")
@@ -262,7 +272,7 @@ class LibrarySettingsScreenTest {
         runBlocking { folders.add(Uri.parse("content://test/tree/root")) }
         manager.cancelAllWork().result.get()
         compose.setContent { if (renderScreen.value) DeftTheme { LibrarySettingsScreen({}, vm) } }
-        compose.onAllNodes(isToggleable()).assertCountEquals(10)
+        compose.onAllNodes(isToggleable()).assertCountEquals(11)
         compose.onNodeWithText("remove").performScrollTo().performClick()
         compose.onNodeWithText("cancel").performClick()
         compose.waitForIdle()

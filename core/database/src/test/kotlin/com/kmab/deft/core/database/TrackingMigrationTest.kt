@@ -32,8 +32,11 @@ class TrackingMigrationTest {
                         context,
                         AppDatabase::class.java,
                         name,
-                    ).addMigrations(DatabaseMigrations.FROM_4_TO_5, DatabaseMigrations.FROM_5_TO_6)
-                    .build()
+                    ).addMigrations(
+                        DatabaseMigrations.FROM_4_TO_5,
+                        DatabaseMigrations.FROM_5_TO_6,
+                        DatabaseMigrations.FROM_6_TO_7,
+                    ).build()
             try {
                 val book = db.bookDao().getById(1)!!
                 assertEquals("kept-locator", book.currentLocator)
@@ -81,7 +84,7 @@ class TrackingMigrationTest {
             val db =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, name)
-                    .addMigrations(DatabaseMigrations.FROM_5_TO_6)
+                    .addMigrations(DatabaseMigrations.FROM_5_TO_6, DatabaseMigrations.FROM_6_TO_7)
                     .build()
             try {
                 val sessions = db.trackingDao().getSessions(1)

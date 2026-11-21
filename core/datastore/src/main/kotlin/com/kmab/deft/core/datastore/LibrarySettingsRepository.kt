@@ -27,6 +27,11 @@ class LibrarySettingsRepository
         val settings =
             store.data.map { p ->
                 LibrarySettings(
+                    seriesAutoFill = p[SERIES_AUTO_FILL] ?: true,
+                    categoryFilter = p[CATEGORY_FILTER]?.takeIf { it > 0 },
+                    categoryTypeFilter = p[CATEGORY_TYPE_FILTER]?.takeIf { it >= 0 },
+                    groupCategoriesByType = p[GROUP_CATEGORIES] ?: false,
+                    categoryGridView = p[CATEGORY_GRID] ?: false,
                     enabledFormats =
                         p[FORMATS]?.mapNotNull { name -> BookFormat.entries.find { it.name == name } }?.toSet()
                             ?: BookFormat.entries.toSet(),
@@ -99,6 +104,28 @@ class LibrarySettingsRepository
             store.edit { it[ADVANCED_SEARCH] = value }
         }
 
+        suspend fun setSeriesAutoFill(value: Boolean) {
+            store.edit { it[SERIES_AUTO_FILL] = value }
+        }
+
+        suspend fun setCategoryFilter(value: Long?) {
+            require(value == null || value > 0)
+            store.edit { if (value == null) it.remove(CATEGORY_FILTER) else it[CATEGORY_FILTER] = value }
+        }
+
+        suspend fun setCategoryTypeFilter(value: Long?) {
+            require(value == null || value >= 0)
+            store.edit { if (value == null) it.remove(CATEGORY_TYPE_FILTER) else it[CATEGORY_TYPE_FILTER] = value }
+        }
+
+        suspend fun setGroupCategoriesByType(value: Boolean) {
+            store.edit { it[GROUP_CATEGORIES] = value }
+        }
+
+        suspend fun setCategoryGridView(value: Boolean) {
+            store.edit { it[CATEGORY_GRID] = value }
+        }
+
         suspend fun setShowMissing(value: Boolean) {
             store.edit { it[MISSING] = value }
         }
@@ -128,6 +155,11 @@ class LibrarySettingsRepository
         }
 
         private companion object {
+            val SERIES_AUTO_FILL = booleanPreferencesKey("series_auto_fill")
+            val CATEGORY_FILTER = longPreferencesKey("book_category_filter")
+            val CATEGORY_TYPE_FILTER = longPreferencesKey("category_type_filter")
+            val GROUP_CATEGORIES = booleanPreferencesKey("group_categories_by_type")
+            val CATEGORY_GRID = booleanPreferencesKey("category_grid_view")
             const val MIN_RATING_VALUE = 0.5
             const val MAX_RATING_VALUE = 5.0
             val STATES = stringSetPreferencesKey("book_state_filter")
