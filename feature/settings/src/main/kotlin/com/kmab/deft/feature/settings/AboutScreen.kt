@@ -5,6 +5,8 @@ import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.HorizontalDivider
@@ -25,9 +27,11 @@ import com.kmab.deft.core.designsystem.DeftNoticeKind
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.LocalDeftNoticeState
+import com.kmab.deft.core.designsystem.icons.DeftActionIcons
 
 private const val SOURCE_URL = "https://github.com/kmab5/deft"
 private const val LICENSE_URL = "$SOURCE_URL/blob/main/LICENSE"
+private const val AUTHOR_URL = "https://kmab5.github.io"
 
 @Composable
 internal fun AboutScreen(onBack: () -> Unit) {
@@ -60,6 +64,7 @@ internal fun AboutScreen(onBack: () -> Unit) {
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 internal fun AboutContent(
     versionName: String,
     onBack: () -> Unit,
@@ -79,12 +84,35 @@ internal fun AboutContent(
                     Text("version $versionName", style = DeftTypography.mono, color = colors.muted)
                 }
             }
-            Text("Made by Samuel Worash Getaneh.", style = DeftTypography.body)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Made by", style = DeftTypography.body)
+                DeftButton(
+                    "kmab",
+                    { openUri(AUTHOR_URL) },
+                    style = DeftButtonStyle.Text,
+                    icon = DeftActionIcons.ExternalLink,
+                )
+            }
             HorizontalDivider(color = colors.line)
             Text("license", style = DeftTypography.title)
             Text("GNU General Public License v3.0", style = DeftTypography.body, color = colors.muted)
-            DeftButton("GPL-3.0", { openUri(LICENSE_URL) }, style = DeftButtonStyle.Text)
-            DeftButton("source code", { openUri(SOURCE_URL) }, style = DeftButtonStyle.Secondary)
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                DeftButton(
+                    "source code",
+                    { openUri(SOURCE_URL) },
+                    style = DeftButtonStyle.Secondary,
+                    icon = DeftActionIcons.Source,
+                )
+                DeftButton(
+                    "GPL-3.0",
+                    { openUri(LICENSE_URL) },
+                    style = DeftButtonStyle.Secondary,
+                    icon = DeftActionIcons.License,
+                )
+            }
         }
         SettingsPanel {
             Text("privacy", style = DeftTypography.title)

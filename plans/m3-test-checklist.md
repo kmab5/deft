@@ -1,6 +1,6 @@
 # M3 — reading tracking device checklist
 
-**Current retest: 0.3.1.** Install `deft-0.3.1.apk` as an update and use the fresh checklist at the end of this file. The original 0.3.0 review and all comments are preserved below.
+**Final M3 revision: 0.3.2.** All 0.3.1 device checks passed. The author authorized the remaining fixes, local verification and merge without another feedback gate. Install `deft-0.3.2.apk` as an update. Original reviews and comments are preserved below.
 
 ## Original 0.3.0 review
 
@@ -74,37 +74,86 @@ Write observations beneath the relevant checkbox; add screenshots/recordings to 
 Install `deft-0.3.1.apk` over the existing app; do not uninstall. The same release key is used. Local validation and the timestamp failure explanation are in [the 0.3.1 report](2026-11-20-m3-031-validation.md). These boxes are for device results, not local automated checks.
 
 ### Session saving and accuracy
-- [ ] Upgrade: books, folders, reader settings, positions, bookmarks, manual states, dates, ratings/favorite/reviews and existing history remain.
-- [ ] Tracking → minimum session defaults to **30 seconds**. Read a not-read book for 35–45 seconds, turn a page and leave: a session is saved and state becomes Reading. No save-error notice appears.
-- [ ] Read the same book for 2 minutes with several page turns, leave, reopen and read again: two sessions under one read-through; the first session does not duplicate. Test both paged and continuous reading.
-- [ ] Leave after less than 30 seconds: no new session. Set minimum to 10 seconds, read 15 seconds and leave: session is saved and its duration is shown in seconds. Change minimum to 120; previous shorter accepted sessions remain in history/totals after restart.
-- [ ] Edit minimum to 1 and 300 seconds; both save. Blank, 0, negative, decimal and 301 are rejected. Restart retains the last valid value. Restore 30 seconds for the remaining tests.
-- [ ] With 1-minute idle pause, read with regular interactions for 3 minutes, then leave untouched for 2 minutes and exit: only active reading counts. Repeat with default 5 minutes and a 6-minute idle gap: about 3 minutes, not 9.
-- [ ] After idle pause, turn a page and read again; resumed reading is added once. Page turns/scroll count movement, while TOC/search/progress jumps and typography changes do not inflate page counts.
-- [ ] Background, lock, rotate and switch books: hidden/locked time is excluded. Each visible segment needs the selected minimum. Return and continue without duplicate time.
-- [ ] With idle pause Off, leave untouched for 15 minutes: keep-awake releases, screen-off stops time, and the next reading interaction restores keep-awake.
-- [ ] Read/interact long enough to checkpoint, force-stop and reopen: confirmed history survives without counting closed time or duplicating a session. Current-page unconfirmed dwell and up to 30 seconds of confirmed time may be lost after force-stop.
-- [ ] Change the device clock while reading: duration remains sensible. Mark Reading as Paused: a short reopen preserves Paused; a qualifying session resumes the same read-through.
-- [ ] Open a finished book as Just browsing and read for 35–45 seconds: labelled Browsing session appears, excluded from reading totals. Re-read instead creates a new read-through and resets position.
-- [ ] Reach the end and accept the finish prompt: session saves, state finishes, celebration appears once. Declining still suppresses repeats for that read-through.
+- [X] Upgrade: books, folders, reader settings, positions, bookmarks, manual states, dates, ratings/favorite/reviews and existing history remain.
+- [X] Tracking → minimum session defaults to **30 seconds**. Read a not-read book for 35–45 seconds, turn a page and leave: a session is saved and state becomes Reading. No save-error notice appears.
+- [X] Read the same book for 2 minutes with several page turns, leave, reopen and read again: two sessions under one read-through; the first session does not duplicate. Test both paged and continuous reading.
+- [X] Leave after less than 30 seconds: no new session. Set minimum to 10 seconds, read 15 seconds and leave: session is saved and its duration is shown in seconds. Change minimum to 120; previous shorter accepted sessions remain in history/totals after restart.
+- [X] Edit minimum to 1 and 300 seconds; both save. Blank, 0, negative, decimal and 301 are rejected. Restart retains the last valid value. Restore 30 seconds for the remaining tests.
+- [X] With 1-minute idle pause, read with regular interactions for 3 minutes, then leave untouched for 2 minutes and exit: only active reading counts. Repeat with default 5 minutes and a 6-minute idle gap: about 3 minutes, not 9.
+-- for idle pauses, show a very translucent film over the screen (like accidental touch protection of android) that disappears when the screen is touched with a very faint "idling" text that pulses
+- [X] After idle pause, turn a page and read again; resumed reading is added once. Page turns/scroll count movement, while TOC/search/progress jumps and typography changes do not inflate page counts.
+- [X] Background, lock, rotate and switch books: hidden/locked time is excluded. Each visible segment needs the selected minimum. Return and continue without duplicate time.
+- [X] With idle pause Off, leave untouched for 15 minutes: keep-awake releases, screen-off stops time, and the next reading interaction restores keep-awake.
+- [X] Read/interact long enough to checkpoint, force-stop and reopen: confirmed history survives without counting closed time or duplicating a session. Current-page unconfirmed dwell and up to 30 seconds of confirmed time may be lost after force-stop.
+- [X] Change the device clock while reading: duration remains sensible. Mark Reading as Paused: a short reopen preserves Paused; a qualifying session resumes the same read-through.
+- [X] Open a finished book as Just browsing and read for 35–45 seconds: labelled Browsing session appears, excluded from reading totals. Re-read instead creates a new read-through and resets position.
+- [X] Reach the end and accept the finish prompt: session saves, state finishes, celebration appears once. Declining still suppresses repeats for that read-through.
 
 ### Book controls and dates
-- [ ] State control opens all five states. Rating, heart and review have clear grouping, aligned spacing and no wasted rows at normal and 150% text in both app themes.
-- [ ] Set 0.5, 3.5 and 5 stars: filled areas align with outlines, the value is readable, and clear rating works. Tap the heart on/off: filled/outline state, a subtle pop each way, and persisted value after restart.
-- [ ] Write/edit/clear a multiline review; text stays readable and controls remain usable. Reading history clearly separates read-throughs with dates and real totals. Open session details and the history management menu.
-- [ ] Manual Finished opens a calendar. Cancel, reopen and choose a date; no state changes on cancel. Edit start/end dates through calendars, including year/month navigation; invalid reversed dates are rejected. Cancel/delete confirmations preserve existing history unless explicitly confirmed.
-- [ ] Ignore/un-ignore and missing files preserve history. Rating and manual state remain usable on missing/Protected books. Filters and rating/state sorts still update and persist.
+- [X] State control opens all five states. Rating, heart and review have clear grouping, aligned spacing and no wasted rows at normal and 150% text in both app themes.
+--
+- [X] Set 0.5, 3.5 and 5 stars: filled areas align with outlines, the value is readable, and clear rating works. Tap the heart on/off: filled/outline state, a subtle pop each way, and persisted value after restart.
+- [X] Write/edit/clear a multiline review; text stays readable and controls remain usable. Reading history clearly separates read-throughs with dates and real totals. Open session details and the history management menu.
+- [X] Manual Finished opens a calendar. Cancel, reopen and choose a date; no state changes on cancel. Edit start/end dates through calendars, including year/month navigation; invalid reversed dates are rejected. Cancel/delete confirmations preserve existing history unless explicitly confirmed.
+- [X] Ignore/un-ignore and missing files preserve history. Rating and manual state remain usable on missing/Protected books. Filters and rating/state sorts still update and persist.
 
 ### Reader, appearance and completion
-- [ ] Enable reading indicator: page on left, reading/paused centered, clock/battery on right. Plug/unplug charging: the bolt follows charging. Test 150% text with no overlap. Disable status details: the separately enabled reading indicator remains centered. Disable indicator: it disappears.
-- [ ] Any notice has centered message/icon/close, including a multiline error and a scan notice with action. Notices still slide, stack and dismiss correctly.
-- [ ] Every settings switch has a clearly visible off thumb/track in Light, Dark and reader themes. Settings, Library, Reader, Tracking, Appearance and About titles have consistent vertical breathing room.
-- [ ] Appearance → System/Light/Dark changes library, book and settings immediately, including readable system-bar icons. Restart retains it. System follows Android; reader theme remains independently selected.
-- [ ] About shows installed version 0.3.1, author, GPL license, source and offline privacy information. Source opens the browser only after tapping its action. Back returns to Settings.
-- [ ] Finish with celebrations enabled: intro plays and then stays on screen beyond 5 seconds. Close eases in. Tap anywhere or close to open rating/favorite; do not auto-exit. Tap early also skips cleanly.
-- [ ] Rotate/background the held celebration, then dismiss: no replay or duplicate completion. With celebrations or Android animation scale off, finish goes directly to the quiet sheet. Heart motion respects disabled animations.
-- [ ] TalkBack announces state, half-star rating, favorite selected state, history actions, date and theme choices. At large text/landscape all actions remain reachable, without clipping.
+- [X] Enable reading indicator: page on left, reading/paused centered, clock/battery on right. Plug/unplug charging: the bolt follows charging. Test 150% text with no overlap. Disable status details: the separately enabled reading indicator remains centered. Disable indicator: it disappears.
+- [X] Any notice has centered message/icon/close, including a multiline error and a scan notice with action. Notices still slide, stack and dismiss correctly.
+- [X] Every settings switch has a clearly visible off thumb/track in Light, Dark and reader themes. Settings, Library, Reader, Tracking, Appearance and About titles have consistent vertical breathing room.
+- [X] Appearance → System/Light/Dark changes library, book and settings immediately, including readable system-bar icons. Restart retains it. System follows Android; reader theme remains independently selected.
+- [X] About shows installed version 0.3.1, author, GPL license, source and offline privacy information. Source opens the browser only after tapping its action. Back returns to Settings.
+- [X] Finish with celebrations enabled: intro plays and then stays on screen beyond 5 seconds. Close eases in. Tap anywhere or close to open rating/favorite; do not auto-exit. Tap early also skips cleanly.
+- [X] Rotate/background the held celebration, then dismiss: no replay or duplicate completion. With celebrations or Android animation scale off, finish goes directly to the quiet sheet. Heart motion respects disabled animations.
+- [X] TalkBack announces state, half-star rating, favorite selected state, history actions, date and theme choices. At large text/landscape all actions remain reachable, without clipping.
 
 ### Feedback for 0.3.1
 
 Add observations under the relevant checkbox and new screenshots/recordings to `plans/feedback/`. M3 remains on its feature branch until this review is accepted.
+
+- in the timer settings, put the apply buttons next to the inputs instead of on a new line
+- in the about, instead of Samuel Worash Getaneh, make it kmab and make it link to kmab5.github.io, and for the gpl-3.0 link, put it next to the source code buttons and give them both icons
+- the rating stars ui/design is still bad, the half ratings are working but the organizations and sizing and empty speace and orientation is bad, fix it, the other redesigned parts are good
+- in the reading state selector, use different colors for each state abd use icons for them and the orientation and spacing, the way they take up the entire width does not look good, fix the design
+- we need haptics in our app, when selecting words, when celebrating, on back, etc etc
+- for when we start higlighting features, write down allowing different color highlights (including a colorless one that means no highlight when selecting)
+- feature implementation ideas, put these in the correct m phase where they belong:
+-- auto scroll feature based on reading speed or custom input intervals
+- i just want your thoughts on these ideas, no implementation, just a reality check:
+-- as of now, we havent implemented file type support for any other types except epub. can we make these file type support additional features/plugins that users can download when they want? can we make it modular and allow the development of any kind of file support as long as they are coded? maybe we can take it further by making a module for online book sources like royalroad, ao3, etc etc. ideas on this?
+-- i want your thoughts alone (without the modular thing) for how we could support online fiction platforms (like royalroad) and how we can implement it into our app
+
+
+## 0.3.2 — final polish coverage
+
+The author accepted 0.3.1 and requested these final changes before merging M3.
+These optional device smoke checks document changes; they are not claimed as
+physical-device tests or a new merge gate.
+
+- [ ] Upgrade from 0.3.1 without uninstalling; session history and all preferences remain.
+- [ ] Set idle pause to one minute, stop interacting, and see a faint film with pulsing
+  `idling`. Tap once: film fades, tracking resumes, page stays unchanged. A subsequent
+  tap/gesture reads normally. No idle time or fake page turn enters history.
+- [ ] Open/close reader settings, background/lock, then return: no stale idle film
+  covers dialogs or starts tracking while hidden. Disable animations: idle label is steady.
+- [ ] Timer Apply buttons sit beside their fields in normal and 150% text. Apply and
+  keyboard Done both save valid values and reject invalid values; Off still works.
+- [ ] About links `kmab` to https://kmab5.github.io. Icon-led source and GPL actions
+  are grouped and open the correct external pages only after a tap.
+- [ ] Book and finish-sheet rating controls are compact, with clear and heart aligned.
+  Select half stars by touch and TalkBack; clear/favorite and large text remain usable.
+- [ ] Reading-state choices wrap with icons and semantic colors, and clearly identify
+  the current state. Confirm Finished/Not read prompts still protect dates/history.
+- [ ] With Android touch vibration enabled, native word selection, Back, direct
+  assessment changes, state confirmation and celebration have subtle feedback.
+  Selection-handle movement and stale/repeated Back do not add app-generated pulses.
+  Disable system touch vibration: Deft does not bypass that setting.
+
+### Requested planning notes and thoughts
+
+- M5: four highlight colors plus colorless/no-highlight; selecting text alone does
+  not persist a highlight, and removing color retains any explicitly saved note.
+- M6 after speed metrics: opt-in auto-scroll using measured speed or a custom interval,
+  with idle/visibility safeguards and no false reading interactions from automatic motion.
+- [Format extensions and online fiction: my assessment](2026-11-21-format-and-online-fiction-thoughts.md).
+  This is discussion only; neither feature is implemented or approved by these notes.

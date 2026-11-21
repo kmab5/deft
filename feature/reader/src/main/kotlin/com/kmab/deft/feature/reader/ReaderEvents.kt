@@ -27,6 +27,11 @@ sealed interface ReaderEvent {
         override val position: ReadingPosition,
     ) : ReaderEvent
 
+    data class Resume(
+        override val bookId: Long,
+        override val position: ReadingPosition,
+    ) : ReaderEvent
+
     data class Location(
         override val bookId: Long,
         override val position: ReadingPosition,

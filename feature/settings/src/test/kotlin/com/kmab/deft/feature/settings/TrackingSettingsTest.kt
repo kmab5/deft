@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
@@ -16,6 +17,7 @@ import com.kmab.deft.core.designsystem.DeftTheme
 import com.kmab.deft.core.model.TrackingPreferences
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -64,6 +66,30 @@ class TrackingSettingsTest {
         compose.setContent { DeftTheme(darkTheme = true) { TrackingSettingsContent(TrackingPreferences(), {}, {}) } }
         compose.onNodeWithText("minimum session · 30 seconds").performScrollTo().assertExists()
         capture("tracking-settings-ink-large")
+        val field = compose.onNodeWithContentDescription("minimum session · seconds")
+        val apply = compose.onNodeWithContentDescription("apply minimum session")
+        field.performScrollTo()
+        val fieldBounds = field.fetchSemanticsNode().boundsInRoot
+        val applyBounds = apply.fetchSemanticsNode().boundsInRoot
+        assertTrue("Apply stays beside the field", applyBounds.left >= fieldBounds.right)
+        assertTrue("Apply vertically overlaps the field", applyBounds.top < fieldBounds.bottom)
+    }
+
+    @Test fun keyboardDoneValidatesAndSavesMinimumSession() {
+        val preferences = mutableStateOf(TrackingPreferences())
+        compose.setContent {
+            DeftTheme {
+                TrackingSettingsContent(preferences.value, {}, { preferences.value = it(preferences.value) })
+            }
+        }
+        val field = compose.onNodeWithContentDescription("minimum session · seconds")
+        field.performScrollTo().performTextReplacement("0")
+        field.performImeAction()
+        assertEquals(30, preferences.value.minimumSessionSeconds)
+        compose.onNodeWithText("Enter a whole number from 1 to 300.").assertExists()
+        field.performTextReplacement("45")
+        field.performImeAction()
+        assertEquals(45, preferences.value.minimumSessionSeconds)
     }
 
     @Test fun validatesMinimumSessionSecondsAndAppliesTheBoundary() {

@@ -2,15 +2,14 @@ package com.kmab.deft.feature.celebrate
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,13 +19,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
+import com.kmab.deft.core.designsystem.DeftHaptic
 import com.kmab.deft.core.designsystem.DeftMotion
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.RatingBar
+import com.kmab.deft.core.designsystem.icons.DeftActionIcons
 import com.kmab.deft.core.designsystem.icons.DeftIcons
+import com.kmab.deft.core.designsystem.performDeftHaptic
+import java.util.Locale
 
 @Composable
 fun AssessmentControls(
@@ -37,24 +40,48 @@ fun AssessmentControls(
     enabled: Boolean = true,
 ) {
     val c = LocalDeftColors.current
-    Column {
+    val view = LocalView.current
+    val chooseRating: (Double?) -> Unit = { value ->
+        if (value != rating) {
+            view.performDeftHaptic(DeftHaptic.CHOICE)
+            onRating(value)
+        }
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("your rating", Modifier.weight(1f), style = DeftTypography.label, color = c.text)
-            if (rating != null) {
-                TextButton(
-                    onClick = { onRating(null) },
-                    modifier = Modifier.semantics { contentDescription = "clear rating" },
-                    enabled = enabled,
-                ) { Text("clear", style = DeftTypography.label) }
-            }
-            FavoriteHeart(favorite, onFavorite, enabled)
+            Text(
+                rating?.let { String.format(Locale.ROOT, "%.1f / 5", it) } ?: "not rated",
+                style = DeftTypography.mono,
+                color = c.muted,
+            )
         }
-        RatingBar(
-            (rating ?: 0.0).toFloat(),
-            { onRating(it.toDouble().takeIf { value -> value > 0 }) },
-            Modifier.horizontalScroll(rememberScrollState()),
-            enabled = enabled,
-        )
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            RatingBar(
+                (rating ?: 0.0).toFloat(),
+                { chooseRating(it.toDouble().takeIf { value -> value > 0 }) },
+                Modifier.weight(1f),
+                enabled = enabled,
+                showValue = false,
+            )
+            IconButton(onClick = { chooseRating(null) }, enabled = enabled && rating != null) {
+                Icon(DeftActionIcons.Close, "clear rating")
+            }
+            FavoriteHeart(
+                favorite,
+                { value ->
+                    if (value != favorite) {
+                        view.performDeftHaptic(DeftHaptic.CHOICE)
+                        onFavorite(value)
+                    }
+                },
+                enabled,
+            )
+        }
     }
 }
 

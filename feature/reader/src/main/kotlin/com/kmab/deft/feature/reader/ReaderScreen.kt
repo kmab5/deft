@@ -75,12 +75,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kmab.deft.core.designsystem.DeftColors
+import com.kmab.deft.core.designsystem.DeftHaptic
 import com.kmab.deft.core.designsystem.DeftNoticeHost
 import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.LocalDeftNoticeState
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
+import com.kmab.deft.core.designsystem.performDeftHaptic
 import com.kmab.deft.core.designsystem.rememberDeftNoticeState
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReaderTheme
@@ -232,6 +234,12 @@ internal fun ReaderScreen(
                         FilledTonalButton(onClick = activity::finish) { Text("back to library") }
                     }
                 }
+                ReaderIdleOverlay(
+                    visible =
+                        tracking.idle && state.rendered && !tracking.finishPrompt &&
+                            listOf(sheet, imageHref, externalHref).all { it == null },
+                    onResume = model.interaction::resumeReading,
+                )
                 DeftNoticeHost(notices, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
             }
             ReaderSheets(sheet, state, model, navigator, contentsState) {
@@ -320,9 +328,15 @@ private fun ReaderNavigationEffects(
         }
     }
     BackHandler(!overlayOpen && state.canReturn) {
-        model.interaction.returnPoint()?.let { navigator?.go(it, remember = false) }
+        model.interaction.returnPoint()?.let {
+            navigator?.go(it, remember = false)
+            activity.window.decorView.performDeftHaptic(DeftHaptic.BACK)
+        }
     }
-    BackHandler(sheetOpen, onBack = dismissSheet)
+    BackHandler(sheetOpen) {
+        dismissSheet()
+        activity.window.decorView.performDeftHaptic(DeftHaptic.BACK)
+    }
 }
 
 @Composable

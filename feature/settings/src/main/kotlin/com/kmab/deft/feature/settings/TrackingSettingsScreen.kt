@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -28,7 +29,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -137,18 +140,11 @@ private fun MinimumSessionSetting(
     save: (Int) -> Unit,
 ) {
     var text by rememberSaveable(seconds) { mutableStateOf(seconds.toString()) }
-    var invalid by rememberSaveable { mutableStateOf(false) }
     val unit = if (seconds == 1) "second" else "seconds"
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("minimum session · $seconds $unit", style = DeftTypography.label)
         val range = TrackingPreferences.MINIMUM_SESSION_RANGE
-        DurationField("minimum session", "seconds", text, invalid, range) {
-            text = it
-            invalid = false
-        }
-        ApplyDuration("minimum session", text, range) { value ->
-            if (value == null) invalid = true else save(value)
-        }
+        DurationField("minimum session", "seconds", text, range, { text = it }, save)
     }
 }
 
@@ -200,7 +196,6 @@ private fun TimeoutSetting(
             TrackingPreferences.DEFAULT_REFLOWABLE_MINUTES
         }
     var text by rememberSaveable(label, minutes) { mutableStateOf((minutes ?: defaultMinutes).toString()) }
-    var invalid by rememberSaveable(label) { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SettingSwitch(
             label,
@@ -224,13 +219,7 @@ private fun TimeoutSetting(
         }
         if (minutes != null) {
             val range = 1..TrackingPreferences.MAX_IDLE_MINUTES
-            DurationField(label, "minutes", text, invalid, range) {
-                text = it
-                invalid = false
-            }
-            ApplyDuration(label, text, range) { value ->
-                if (value == null) invalid = true else save(value)
-            }
+            DurationField(label, "minutes", text, range, { text = it }, save)
         }
     }
 }
@@ -240,42 +229,55 @@ private fun DurationField(
     setting: String,
     unit: String,
     text: String,
-    invalid: Boolean,
     range: IntRange,
     change: (String) -> Unit,
+    save: (Int) -> Unit,
 ) {
+    val colors = LocalDeftColors.current
+    var invalid by rememberSaveable(setting) { mutableStateOf(false) }
+    val apply = {
+        val value = text.toIntOrNull()?.takeIf { it in range }
+        invalid = value == null
+        if (value != null) save(value)
+    }
     val help =
         if (invalid) {
             "Enter a whole number from ${range.first} to ${range.last}."
         } else {
             "${range.first}–${range.last} $unit"
         }
-    OutlinedTextField(
-        value = text,
-        onValueChange = change,
-        modifier = Modifier.fillMaxWidth().semanticsLabel("$setting · $unit"),
-        label = { Text(unit) },
-        supportingText = { Text(help) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        singleLine = true,
-        isError = invalid,
-    )
-}
-
-@Composable
-private fun ApplyDuration(
-    setting: String,
-    text: String,
-    range: IntRange,
-    apply: (Int?) -> Unit,
-) {
-    DeftButton(
-        "apply",
-        { apply(text.toIntOrNull()?.takeIf { it in range }) },
-        modifier = Modifier.semanticsLabel("apply $setting"),
-        style = DeftButtonStyle.Text,
-        icon = DeftActionIcons.Check,
-    )
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OutlinedTextField(
+                value = text,
+                onValueChange = {
+                    invalid = false
+                    change(it)
+                },
+                modifier =
+                    Modifier.weight(1f).semanticsLabel("$setting · $unit").semantics {
+                        if (invalid) error(help)
+                    },
+                label = { Text(unit) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { apply() }),
+                singleLine = true,
+                isError = invalid,
+            )
+            DeftButton(
+                "apply",
+                apply,
+                modifier = Modifier.semanticsLabel("apply $setting"),
+                style = DeftButtonStyle.Text,
+                icon = DeftActionIcons.Check,
+            )
+        }
+        Text(help, style = DeftTypography.mono, color = if (invalid) colors.error else colors.muted)
+    }
 }
 
 private fun Modifier.semanticsLabel(label: String): Modifier =

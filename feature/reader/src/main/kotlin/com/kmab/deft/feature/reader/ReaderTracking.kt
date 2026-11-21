@@ -37,6 +37,7 @@ internal data class ReaderTrackingState(
     val active: Boolean = false,
     val keepAwake: Boolean = true,
     val finishPrompt: Boolean = false,
+    val idle: Boolean = false,
 )
 
 /** Application-owned FIFO: lifecycle timestamps are captured before asynchronous database work. */
@@ -176,18 +177,11 @@ internal class ReaderTracking(
             event.position?.let { position = it }
             val writes =
                 when (event) {
-                    is ReaderEvent.Visibility ->
-                        if (event.visible && !state.value.finishPrompt) {
-                            event.position
-                                ?.let {
-                                    show(event.bookId, it)
-                                }.orEmpty()
-                        } else {
-                            tracker.hide()
-                        }
+                    is ReaderEvent.Visibility -> trackVisibility(event)
                     is ReaderEvent.PageTurn -> tracker.interact(event.position, ReadingActivity.PAGE)
                     is ReaderEvent.ScrollStep -> tracker.interact(event.position, ReadingActivity.SCROLL)
                     is ReaderEvent.Selection -> tracker.interact(event.position, ReadingActivity.SELECTION)
+                    is ReaderEvent.Resume -> resumeReading(event)
                     is ReaderEvent.Location -> {
                         tracker.position(event.position)
                         emptyList()
@@ -195,6 +189,20 @@ internal class ReaderTracking(
                 }
             save(writes)
             maybePrompt()
+        }
+
+    private fun trackVisibility(event: ReaderEvent.Visibility): List<ReadingSession> =
+        if (event.visible && !state.value.finishPrompt) {
+            event.position?.let { show(event.bookId, it) }.orEmpty()
+        } else {
+            tracker.hide()
+        }
+
+    private fun resumeReading(event: ReaderEvent.Resume): List<ReadingSession> =
+        if (readerVisible && tracker.idle && !state.value.finishPrompt) {
+            tracker.interact(event.position, ReadingActivity.RESUME)
+        } else {
+            emptyList()
         }
 
     fun dismissFinishPrompt() =
@@ -293,7 +301,12 @@ internal class ReaderTracking(
         tracker.show(book, readThroughId, browsing, location, idleMillis(), preferences.minimumSessionSeconds)
 
     private fun publish() {
-        mutableState.value = mutableState.value.copy(active = tracker.active, keepAwake = tracker.keepAwake)
+        mutableState.value =
+            mutableState.value.copy(
+                active = tracker.active,
+                keepAwake = tracker.keepAwake,
+                idle = readerVisible && tracker.idle && !gated && !mutableState.value.finishPrompt,
+            )
     }
 
     private fun failed(

@@ -3,9 +3,11 @@ package com.kmab.deft.feature.book
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
@@ -72,6 +74,14 @@ class BookDetailScreenshotTest {
         scrollSectionToTop("reading history")
         compose.onNodeWithText("reading history").assertIsDisplayed()
         capture("book-history-$name")
+        compose.onNodeWithContentDescription("change reading state").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("mark as reading").assertIsDisplayed()
+        compose.onNodeWithContentDescription("mark as abandoned").assertIsDisplayed()
+        val stateOutput = File("build/reports/screenshots/book-state-$name.png")
+        compose.onNodeWithTag("reading_state_sheet").captureRoboImage(
+            stateOutput.path,
+            roborazziOptions = RoborazziOptions(taskType = RoborazziTaskType.Record),
+        )
     }
 
     private fun bookFixture(): BookDetails {

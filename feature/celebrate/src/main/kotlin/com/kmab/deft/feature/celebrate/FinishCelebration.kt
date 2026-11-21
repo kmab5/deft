@@ -3,7 +3,6 @@
 package com.kmab.deft.feature.celebrate
 
 import android.animation.ValueAnimator
-import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -60,12 +59,14 @@ import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import com.kmab.deft.core.designsystem.CoverImage
 import com.kmab.deft.core.designsystem.DeftButton
+import com.kmab.deft.core.designsystem.DeftHaptic
 import com.kmab.deft.core.designsystem.DeftMotion
 import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.GeneratedCover
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
+import com.kmab.deft.core.designsystem.performDeftHaptic
 import java.io.File
 import java.util.Random
 import kotlin.math.cos
@@ -104,7 +105,6 @@ fun FinishCelebration(
     }
     var elapsed by rememberSaveable(bookId) { mutableFloatStateOf(0f) }
     val progress = remember(bookId) { Animatable(elapsed) }
-    val view = LocalView.current
     var hapticPlayed by rememberSaveable(bookId) { mutableStateOf(false) }
     LaunchedEffect(phase, enabled, animationsEnabled) {
         if (phase != "animation") return@LaunchedEffect
@@ -117,18 +117,6 @@ fun FinishCelebration(
             tween((FINISH_DURATION - elapsed).toInt().coerceAtLeast(1), easing = LinearEasing),
         ) {
             elapsed = value
-            if (value >= 750 && !hapticPlayed) {
-                hapticPlayed = true
-                view.performHapticFeedback(
-                    if (android.os.Build.VERSION.SDK_INT >=
-                        30
-                    ) {
-                        HapticFeedbackConstants.CONFIRM
-                    } else {
-                        HapticFeedbackConstants.CONTEXT_CLICK
-                    },
-                )
-            }
         }
     }
     if (phase == "animation") {
@@ -136,6 +124,13 @@ fun FinishCelebration(
             phase = "rating"
         }, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
             val t = progress.value
+            val dialogView = LocalView.current
+            LaunchedEffect(t >= 750f, dialogView) {
+                if (t >= 750f && !hapticPlayed) {
+                    hapticPlayed = true
+                    dialogView.performDeftHaptic(DeftHaptic.CONFIRM)
+                }
+            }
             BoxWithConstraints(
                 Modifier
                     .fillMaxSize()

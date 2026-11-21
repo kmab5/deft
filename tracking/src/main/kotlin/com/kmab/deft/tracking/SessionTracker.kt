@@ -14,7 +14,7 @@ interface TrackingClock {
     fun zoneOffsetSeconds(): Int
 }
 
-enum class ReadingActivity { PAGE, SCROLL, SELECTION, ZOOM_PAN }
+enum class ReadingActivity { PAGE, SCROLL, SELECTION, ZOOM_PAN, RESUME }
 
 /**
  * Deterministic session policy. Call serially with the timestamp of the original lifecycle/input
@@ -53,6 +53,7 @@ class SessionTracker(
     private var context: Context? = null
     private var current: OpenSession? = null
     val active: Boolean get() = current != null
+    val idle: Boolean get() = context != null && current == null
     val activeSeconds: Long
         get() = current?.let { (clock.elapsedMillis() - it.started).coerceAtLeast(0) / MILLIS_PER_SECOND } ?: 0
     val qualifiesActiveSession: Boolean

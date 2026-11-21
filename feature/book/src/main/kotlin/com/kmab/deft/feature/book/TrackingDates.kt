@@ -22,9 +22,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.kmab.deft.core.designsystem.DeftButton
+import com.kmab.deft.core.designsystem.DeftHaptic
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
+import com.kmab.deft.core.designsystem.performDeftHaptic
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -120,7 +122,10 @@ internal fun CalendarDialog(
             DatePickerDialog(
                 context,
                 style,
-                { _, year, month, day -> onSelect(LocalDate.of(year, month + 1, day).toString()) },
+                { picker, year, month, day ->
+                    picker.performDeftHaptic(DeftHaptic.CONFIRM)
+                    onSelect(LocalDate.of(year, month + 1, day).toString())
+                },
                 date.year,
                 date.monthValue - 1,
                 date.dayOfMonth,

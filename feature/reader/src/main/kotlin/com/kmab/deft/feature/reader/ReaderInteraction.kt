@@ -100,6 +100,15 @@ internal class ReaderInteraction(
         }
     }
 
+    fun resumeReading() {
+        val current = state.value
+        val book = current.session?.bookId
+        val position = current.locator?.toPosition()
+        if (visible && current.rendered) {
+            if (book != null && position != null) events.emit(ReaderEvent.Resume(book, position))
+        }
+    }
+
     fun renderingFailed() {
         visibility.rendered(false)
         state.update { it.copy(rendered = false) }

@@ -61,19 +61,29 @@ class AppearanceSettingsTest {
         assertEquals(AppTheme.Dark, theme.value)
     }
 
-    @Test fun aboutShowsVersionAndOpensSourceOnlyWhenTapped() {
+    @Test fun aboutShowsVersionAndOpensLinksOnlyWhenTapped() {
         RuntimeEnvironment.setFontScale(1.5f)
         var openedUri: String? = null
         compose.setContent {
-            DeftTheme(darkTheme = true) { AboutContent("0.3.1", {}, { openedUri = it }) }
+            DeftTheme(darkTheme = true) { AboutContent("0.3.2", {}, { openedUri = it }) }
         }
         capture("settings-about-ink-large")
-        compose.onNodeWithText("version 0.3.1").assertExists()
+        compose.onNodeWithText("version 0.3.2").assertExists()
         compose.onNodeWithText("GPL-3.0").performScrollTo().assertExists()
         compose.onNodeWithText("privacy").performScrollTo().assertExists()
         assertEquals(null, openedUri)
+        compose.onNodeWithText("kmab").performScrollTo().performClick()
+        assertEquals("https://kmab5.github.io", openedUri)
+        compose.onNodeWithText("GPL-3.0").performScrollTo().performClick()
+        assertEquals("https://github.com/kmab5/deft/blob/main/LICENSE", openedUri)
         compose.onNodeWithText("source code").performScrollTo().performClick()
         assertEquals("https://github.com/kmab5/deft", openedUri)
+    }
+
+    @Test fun aboutLightThemeShowsCompactLinkGroup() {
+        compose.setContent { DeftTheme(darkTheme = false) { AboutContent("0.3.2", {}, {}) } }
+        compose.onNodeWithText("kmab").assertExists()
+        capture("settings-about-paper")
     }
 
     private fun capture(name: String) {

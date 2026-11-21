@@ -34,14 +34,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.kmab.deft.core.designsystem.DeftButton
-import com.kmab.deft.core.designsystem.DeftButtonStyle
 import com.kmab.deft.core.designsystem.DeftDialog
+import com.kmab.deft.core.designsystem.DeftHaptic
 import com.kmab.deft.core.designsystem.DeftReadingState
 import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTypography
@@ -50,6 +51,7 @@ import com.kmab.deft.core.designsystem.StateChip
 import com.kmab.deft.core.designsystem.color
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
 import com.kmab.deft.core.designsystem.icons.DeftIcons
+import com.kmab.deft.core.designsystem.performDeftHaptic
 import com.kmab.deft.core.model.BookState
 import com.kmab.deft.core.model.BookTrackingSnapshot
 import com.kmab.deft.core.model.ReadThroughOutcome
@@ -67,18 +69,6 @@ internal fun BookTrackingCards(
 ) {
     var sheet by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
-    val view = LocalView.current
-    val confirm: () -> Unit = {
-        view.performHapticFeedback(
-            if (android.os.Build.VERSION.SDK_INT >=
-                android.os.Build.VERSION_CODES.R
-            ) {
-                android.view.HapticFeedbackConstants.CONFIRM
-            } else {
-                android.view.HapticFeedbackConstants.CONTEXT_CLICK
-            },
-        )
-    }
     TrackingCard("your reading", DeftIcons.Books) {
         Row(
             Modifier
@@ -130,28 +120,18 @@ internal fun BookTrackingCards(
     val selected = snapshot.readThroughs.firstOrNull { it.id == selectedId }
     when (sheet) {
         "state" ->
-            TrackingSheet("reading state", { sheet = null }) {
-                BookState.entries.forEach { target ->
-                    DeftButton(
-                        target.appearance().label,
-                        {
-                            when (target) {
-                                BookState.NOT_STARTED -> sheet = "reset"
-                                BookState.FINISHED -> sheet = "finish"
-                                else -> {
-                                    actions.setState(target, Instant.now(), false)
-                                    confirm()
-                                    sheet = null
-                                }
-                            }
-                        },
-                        Modifier.fillMaxWidth().semantics {
-                            contentDescription = "mark as ${target.appearance().label}"
-                        },
-                        style = DeftButtonStyle.Text,
-                        enabled = !busy,
-                        icon = if (target == snapshot.state) DeftActionIcons.Check else null,
-                    )
+            TrackingSheet("reading state", { sheet = null }, Modifier.testTag("reading_state_sheet")) {
+                val sheetView = LocalView.current
+                ReadingStateChoices(snapshot.state, !busy) { target ->
+                    when (target) {
+                        BookState.NOT_STARTED -> sheet = "reset"
+                        BookState.FINISHED -> sheet = "finish"
+                        else -> {
+                            actions.setState(target, Instant.now(), false)
+                            sheetView.performDeftHaptic(DeftHaptic.CONFIRM)
+                            sheet = null
+                        }
+                    }
                 }
             }
         "reset" ->
@@ -174,7 +154,6 @@ internal fun BookTrackingCards(
             val original = Instant.parse(reference)
             CalendarDialog(original.localDate(), { sheet = null }) { date ->
                 actions.setState(BookState.FINISHED, dateInstant(date, original), false)
-                confirm()
                 sheet = null
             }
         }
@@ -240,6 +219,7 @@ private fun TrackingCard(
 internal fun TrackingSheet(
     title: String,
     dismiss: () -> Unit,
+    modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = LocalDeftColors.current
@@ -252,7 +232,7 @@ internal fun TrackingSheet(
         dragHandle = null,
     ) {
         Column(
-            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
+            modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {

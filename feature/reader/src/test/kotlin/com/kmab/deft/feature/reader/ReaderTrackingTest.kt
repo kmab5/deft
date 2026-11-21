@@ -96,6 +96,41 @@ class ReaderTrackingTest {
             database.close()
         }
 
+    @Test fun idleWakeResumesWithoutCountingIdleTimeOrTurningAPage() =
+        runBlocking {
+            settings.update { it.copy(reflowableIdleMinutes = 1) }
+            tracking.prepare(book)
+            tracking.accept(ReaderEvent.Visibility(book, position, true))
+            withTimeout(5_000) { tracking.state.first { it.active } }
+            elapsed = 40_000
+            tracking.accept(ReaderEvent.PageTurn(book, position))
+            elapsed = 105_000
+            withTimeout(5_000) { tracking.state.first { !it.active } }
+            assertTrue(tracking.state.value.idle)
+            tracking.accept(ReaderEvent.Resume(book, position))
+            withTimeout(5_000) { tracking.state.first { it.active } }
+            assertFalse(tracking.state.value.idle)
+            elapsed = 145_000
+            tracking.accept(ReaderEvent.Visibility(book, position, false))
+            tracking.prepare(other)
+            val saved = reads.get(book).sessions
+            assertEquals(2, saved.size)
+            assertEquals(80L, saved.sumOf { it.activeSeconds })
+            assertEquals(1, saved.sumOf { it.pagesTurned })
+        }
+
+    @Test fun wakeAfterReaderHiddenCannotRestartTracking() =
+        runBlocking {
+            tracking.prepare(book)
+            tracking.accept(ReaderEvent.Visibility(book, position, true))
+            tracking.accept(ReaderEvent.Visibility(book, position, false))
+            tracking.accept(ReaderEvent.Resume(book, position))
+            elapsed = 60_000
+            tracking.prepare(other)
+            assertFalse(tracking.state.value.idle)
+            assertTrue(reads.get(book).sessions.isEmpty())
+        }
+
     @Test fun queuedReadingAndFinalVisibilityAreNeverDroppedUnderBurstLoad() =
         runBlocking {
             tracking.prepare(book)

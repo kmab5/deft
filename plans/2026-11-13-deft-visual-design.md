@@ -195,13 +195,17 @@ Longest session, most time in a day, longest book finished, fastest finish (page
 
 ## 10. Haptics
 
-Only these, all subtle (`HapticFeedbackConstants`):
+All subtle (`HapticFeedbackConstants`), respecting Android touch-feedback settings:
 - long-press selection → `LONG_PRESS`
 - confirming a state change (finished, abandoned, paused) → `CONFIRM` (API 30+), else `CONTEXT_CLICK`
 - volume-key page turns (setting, **off** by default) → `CLOCK_TICK`
 - the moment the celebration burst fires → `CONFIRM`
 
-Nothing else vibrates.
+- committed Back navigation → `CONTEXT_CLICK`; no feedback for cancelled or stale navigation
+- rating, favorite and clear-rating choices → `CLOCK_TICK`; no feedback from recomposition
+- accepted calendar date → `CONFIRM` (same fallback as state confirmation), sent through the active picker view
+
+WebView supplies native word-selection feedback; do not add a second pulse when its selection toolbar is created or handles move. No continuous scrolling or idle-pulse vibration.
 
 ## 11. Screens
 
@@ -388,3 +392,9 @@ The full finish celebration holds its final composition until tap or close; the 
 Reader status uses three aligned areas: page left, optional reading/paused state centered, clock and battery right with a charging bolt. At large text the side labels may wrap within their columns without overlapping the center. Disabling status details still allows the separately enabled tracking indicator to remain centered. Notices align text, icon and close vertically.
 
 Settings titles gain 8dp vertical padding on each side. All switches use a visible off thumb and distinct track/outline in the active palette. Appearance offers System, Light and Dark for the app independently of reader themes, and celebrations. About shows the installed version, GPL license, source, author and offline privacy statement. Tracking exposes a 30-second default minimum, editable from 1 to 300 seconds, explained as applying to new sessions.
+
+### Final M3 device polish — 2026-11-21
+
+Ratings group five stars in one compact adjustable control alongside clear and favorite; avoid wide isolated star gaps and detached hearts. Reading-state choices wrap at their content width with distinct semantic colors, icons and a selected marker rather than full-width centered rows. Keep 48dp targets and large-text wrapping. Timer fields and their Apply action share a row, with validation below. About uses the kmab profile link and adjacent icon-led source/GPL actions.
+
+Idle readers show a very translucent theme-aware film and faint centered `idling` label. Its slow pulse stops with reduced motion; one touch removes it and resumes at the existing page. Fade changes smoothly, consume the wake gesture, and never obscure overlays or count idle time.

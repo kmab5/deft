@@ -18,10 +18,13 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
+import com.kmab.deft.core.designsystem.DeftHaptic
+import com.kmab.deft.core.designsystem.performDeftHaptic
 import com.kmab.deft.core.model.ReaderOrientation
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
+@Suppress("TooManyFunctions") // Android lifecycle, window and key callbacks belong to their Activity host.
 class ReaderActivity : FragmentActivity() {
     private val model: ReaderViewModel by viewModels()
     internal var navigator: ReaderNavigator? = null
@@ -59,6 +62,15 @@ class ReaderActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         model.interaction.visibility(getSystemService(PowerManager::class.java).isInteractive)
+    }
+
+    override fun finish() {
+        // Both toolbar Back and committed system Back reach here. Native selection still
+        // consumes its own Back, and automatic completion already plays confirmation.
+        if (!isFinishing && model.state.value.completedBookId == null) {
+            window.decorView.performDeftHaptic(DeftHaptic.BACK)
+        }
+        super.finish()
     }
 
     override fun onPause() {

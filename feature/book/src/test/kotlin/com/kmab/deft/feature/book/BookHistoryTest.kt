@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -59,6 +60,16 @@ class BookHistoryTest {
         compose.onNodeWithText("reading history").performScrollTo().assertExists()
         assertEquals(120L, history.activeSeconds)
         assertEquals(1, history.sessionCount)
+    }
+
+    @Test fun statePickerIdentifiesTheCurrentChoiceAndWrapsCompactChoices() {
+        show()
+        compose.onNodeWithContentDescription("change reading state").performClick()
+        compose.onNodeWithContentDescription("mark as finished").assertIsSelected()
+        val notRead = compose.onNodeWithContentDescription("mark as not read").fetchSemanticsNode().boundsInRoot
+        val reading = compose.onNodeWithContentDescription("mark as reading").fetchSemanticsNode().boundsInRoot
+        org.junit.Assert.assertEquals(notRead.top, reading.top, 1f)
+        org.junit.Assert.assertTrue(notRead.right <= reading.left)
     }
 
     @Test fun deletionWaitsForSpecificHistoryConfirmation() {
