@@ -6,13 +6,15 @@
 
 **Rule for every milestone:** it ends with an installable app that is better than the previous milestone's, all tests green, CI green, and the design doc updated if a decision changed (add a row to the design doc's Decision log, §20).
 
-**Merged: M4, `v0.4.3-1`. The author accepted 0.4.2 and authorized the final switch-contrast adjustment, merge/tag/push without local build verification. Next: M5 — highlights, notes and search.**
+**Completed: M1–M4. Current release: `v0.4.3-2`. M4 was accepted and merged as `v0.4.3-1`; build 2 added verified, permanent-key APK publication through GitHub Actions. Both the main and tag runs passed, and the downloaded release APK was verified. Next: M5 — highlights, notes and search.**
 
-**Author-directed handover:** M1 was merged as `v0.1.2-1`. The author passed every 0.2.4 device-retest item and accepted M2, explicitly authorizing final minor polish as `0.2.5-1` followed by a verified merge/tag/push without another feedback round or waiting for GitHub CI. Offline EPUB/library search, image viewing, launch-last-book and navigation refinements are included. M3 tracking/ratings/favorite, M5 highlights/notes and M7/M8 additional formats retain their milestone boundaries. M2 merged with the accepted final version preserved. The author subsequently accepted the M3 device review and authorized the final 0.3.2 fixes followed by build verification and merge without another feedback gate or CI wait.
+**Review history:** M1 merged as `v0.1.2-1`, M2 as `v0.2.5-1`, and M3 after its accepted review and final polish. EPUB/library search, image viewing, launch-last-book and navigation refinements shipped ahead of the original M5 boundary. M4 acceptance and final changes are recorded in its checklist. Dated plans and validation reports remain historical evidence; see the [documentation index](README.md) for current guidance and review records.
+
+**2026-11-22 reorder:** data exchange moves from M9 to M7; fixed-layout readers move from M7 to M8; converters move from M8 to M9. Their feature scopes are retained. Planned initial versions are 0.5.0 through 0.9.0 for M5–M9; M10 ships 1.0.0.
 
 ## Branching, handover, tagging
 1. Work on `feat/mN-<name>` (fixes: `fix/<topic>`), branched from `main`. Push the branch so CI runs.
-2. When the milestone's acceptance criteria pass, build a signed, R8-minified release APK (`./gradlew assembleRelease`) using the persistent Deft release key and write `plans/mN-test-checklist.md`: the roadmap acceptance criteria plus anything risky the milestone touched, as tickable device steps, ending with a **"how does it look"** section for every screen or animation the milestone touched (visual feedback happens here, not at separate checkpoints). Give the author the APK path and the checklist in chat. Visual feedback updates the visual design doc + preview and is logged in §20.
+2. When the milestone's acceptance criteria pass, provide a signed, R8-minified release APK using the persistent Deft release key and write `plans/mN-test-checklist.md`: the roadmap acceptance criteria plus anything risky the milestone touched, as tickable device steps, ending with a **"how does it look"** section for every screen or animation the milestone touched (visual feedback happens here, not at separate checkpoints). Version tags build and publish verified APKs through GitHub Actions; local `./gradlew assembleRelease` remains available for development verification. Give the author the release download/path and checklist in chat. A requested pre-merge revision tag is a handover, not merge authorization. Visual feedback updates the visual design doc + preview and is logged in §20.
 3. Merge only after the author explicitly says the checklist passed: `git merge --no-ff` into `main` (merge commit; history is not squashed).
 4. Tag every merge to `main` (§3 of the design): milestone → bump B (M1 = `v0.1.0-1`), fix → bump C, build/CI/packaging-only → bump D. Push the tag; CI publishes a GitHub Release (pre-release while A = 0).
 
@@ -43,7 +45,7 @@
 
 ## M5 — Highlights, notes, search
 **Spec:** §10.1 (selection, search, define), §11, §15 (`Highlight`, `PageNote`).
-**Delivers:** text selection actions (4 highlight colors plus a colorless/no-highlight choice, note, copy, share, define via `ACTION_PROCESS_TEXT`), Readium decorations, in-book search, per-book notes tab, global Notes screen with filters/search, export a book's notes as Markdown.
+**Delivers:** text selection actions (4 highlight colors plus a colorless/no-highlight choice, note, copy, share, define via `ACTION_PROCESS_TEXT`), Readium decorations, integration/refinement of the in-book search already shipped in M2, per-book notes tab, global Notes screen with filters/search, export a book's notes as Markdown.
 **Acceptance:** highlights render on reopen at the same text; selecting text alone creates no persistent highlight. Colorless removes the visible highlight while retaining an explicitly saved note. Deleting the file keeps notes visible on the Notes screen.
 
 ## M6 — Stats, goals, year in review
@@ -52,27 +54,31 @@
 **Reader addition after speed metrics:** opt-in auto-scroll for reflowable books, using measured reading speed or a custom interval. Start/pause explicitly, pause on touch/selection, overlays, background and chapter/end boundaries as appropriate; automated motion never masquerades as human interaction or defeats idle/screen-off protection. Calibrate only from manual reading and expose a manual fallback when speed data is insufficient.
 **Acceptance:** golden-dataset tests for every metric, including sessions crossing midnight and zone changes; auto-scroll respects explicit stop and tracking safeguards, without counting unattended automatic movement as reading.
 
-## M7 — Fixed-layout viewer: PDF, CBZ, DjVu
-**Spec:** §5.3 (`PageSource`), §10.2, §6.5 (PDF encryption vs password), §3 (F-Droid native builds).
-**Delivers:** Deft's own fixed-layout viewer (paged/continuous, fit modes, zoom, crop, inversion, RTL for CBZ, per-book prefs), PDFium and djvulibre built from source via NDK/CMake, CBZ image source, page notes, TOC, metadata extractors for PDF/DjVu/CBZ (ComicInfo.xml), sessions/progress integrated with M3.
-**Acceptance:** large PDFs (500+ pages) scroll smoothly; DjVu opens; CBZ RTL works; native libs build in CI from source.
-
-## M8 — Converters: TXT, FB2, MOBI/AZW/AZW3
-**Spec:** §5.3 (`BookConverter`, conversion cache, locator fallback), §6.3, §6.5 (MOBI/AZW DRM detection).
-**Delivers:** converter framework + cache (LRU, size setting, background preparation), TXT (encoding detection, chapter heuristics), FB2 (incl. `.fb2.zip`), MOBI/AZW/AZW3 via libmobi (built from source) or pure Kotlin; metadata extractors for each; "Protected" handling for DRM files (badge, explanation, still categorizable/ratable).
-**Acceptance:** fixture books in each format open with identical reader features to EPUB; bumping a converter version falls back to `totalProgression` without losing position.
-
-## M9 — Data exchange: matching, exports, backup
+## M7 — Data exchange: matching, exports, backup
 **Spec:** §12 (all).
 **Delivers:** `data/matching` (Open Library → Google Books → Hardcover with token), single and bulk matching UI, "Use matched metadata", cover download; Goodreads-format CSV export (verify against current Goodreads/StoryGraph/Hardcover import docs); Deft Reading Profile JSON + committed `plans/deft-profile.schema.json` + sample; backup zip + restore with migration and folder re-grant checklist; optional weekly auto-backup.
-**Acceptance:** golden-file tests for CSV/JSON; backup → wipe app → restore → rescan restores everything; network isolation test still passes (only `data/matching` has HTTP).
+**Dependencies:** library metadata and identity (M1), reading history/assessments (M3), categories/authors (M4), notes/highlights (M5), and stats/goals (M6). Matching/export does not open a renderer or invoke a converter. Backup covers persisted app data and user-owned custom assets, excluding source book files and rebuildable caches. Scanned formats without readers remain valid metadata/export records. Neither M8 nor M9 is required.
+**Acceptance:** golden-file tests for CSV/JSON; backup → wipe app → restore → rescan restores everything supported at this milestone, including notes, goals, custom covers and fonts; matching/export handles missing books and scanned formats that cannot yet be opened; network isolation test still passes (only `data/matching` has HTTP).
+**Produces for later:** versioned export/backup contracts and restoration/migration fixtures. M8/M9 extend these for their persisted additions and prove that older M7 backups remain restorable; they do not require completing all reader engines before M7 ships.
+
+## M8 — Fixed-layout viewer: PDF, CBZ, DjVu
+**Spec:** §5.3 (`PageSource`), §10.2, §6.5 (PDF encryption vs password), §3 (F-Droid native builds).
+**Delivers:** Deft's own fixed-layout viewer (paged/continuous, fit modes, zoom, crop, inversion, RTL for CBZ, per-book prefs), PDFium and djvulibre built from source via NDK/CMake, CBZ image source, page notes, TOC, metadata extractors for PDF/DjVu/CBZ (ComicInfo.xml), sessions/progress integrated with M3.
+**Acceptance:** large PDFs (500+ pages) scroll smoothly; DjVu opens; CBZ RTL works; native libs build in CI from source. Extend M7 export/backup coverage for page notes and per-book viewer preferences, and verify restoring an older M7 backup into the new schema.
+
+## M9 — Converters: TXT, FB2, MOBI/AZW/AZW3
+**Spec:** §5.3 (`BookConverter`, conversion cache, locator fallback), §6.3, §6.5 (MOBI/AZW DRM detection).
+**Delivers:** converter framework + cache (LRU, size setting, background preparation), TXT (encoding detection, chapter heuristics), FB2 (incl. `.fb2.zip`), MOBI/AZW/AZW3 via libmobi (built from source) or pure Kotlin; metadata extractors for each; "Protected" handling for DRM files (badge, explanation, still categorizable/ratable).
+**Acceptance:** fixture books in each format open with identical reader features to EPUB; bumping a converter version falls back to `totalProgression` without losing position. Extend M7 export/backup coverage for conversion preferences and saved positions; restore older backups and regenerate conversions from re-granted source files rather than backing up the conversion cache.
 
 ## M10 — Polish and first release
 **Spec:** §14 (visual direction), §16 (performance, accessibility), §3 (distribution).
-**Delivers:** performance pass against §16 targets (5 000-book library), accessibility audit, empty states and copy, app icon, About/third-party licenses screen, release signing continuity via GitHub Actions secrets (persistent key established in M1), GitHub Release workflow on tags, F-Droid metadata (`fastlane/metadata/android/...`, reproducible build notes), README with screenshots and privacy statement.
+**Delivers:** performance pass against §16 targets (5 000-book library), accessibility audit, empty states and copy, final app icon and About/third-party licenses audit, F-Droid metadata (`fastlane/metadata/android/...`, reproducible build notes), README with screenshots and privacy statement. Persistent signing and tag-triggered GitHub Release publication already shipped in `v0.4.3-2`; audit their continuity and retain publication as a release regression check.
 **Acceptance:** tagged build produces a signed APK on a GitHub Release; F-Droid build recipe builds from a clean checkout.
 
 ---
 
 ## Dependency order
-M1 → M2 → M3 → (M4, M5, M6 in any order; M6 is most useful after M4) → M7 → M8 → M9 → M10. M7 and M8 only depend on M3 and can be swapped.
+**Planned sequence:** M1 → M2 → M3 → M4 → M5 → M6 → **M7 data exchange** → **M8 fixed-layout** → **M9 converters** → M10.
+
+**Actual dependencies:** M7 consumes M1–M6 persisted data and stats; it has no renderer/converter dependency. The M8/M9 reader engines build on M2/M3 reader/tracking contracts and can be implemented independently of each other. In this sequence they also extend the M5 notes and M7 backup/export contracts as applicable. Moving data exchange earlier requires that later schema/format additions maintain these contracts; it does not reduce their scope.

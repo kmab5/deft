@@ -18,7 +18,7 @@ positions, search, DRM detection,
 licensing and native builds still need work for each engine.
 
 Downloadable engines are a separate distribution feature. I recommend keeping
-M7/M8 engines bundled for v1 and measuring their actual size before adding an
+M8/M9 engines (renumbered on 2026-11-22) bundled for v1 and measuring their actual size before adding an
 extension system. Google Play's on-demand delivery is built around Play delivery,
 so it is not a common solution for Deft's GitHub APK and F-Droid channels.
 [Android's delivery overview](https://developer.android.com/guide/playcore/feature-delivery).

@@ -4,6 +4,8 @@
 
 Companion to the product spec `plans/2026-11-13-deft-design.md`. The visual reference is `plans/design/preview.html`; when the preview and this doc disagree, this doc wins and the preview gets fixed.
 
+M1–M4 are implemented and accepted. Dated sections below record design evolution; later device refinements override earlier examples. Current delivery order is M5 notes, M6 stats, M7 data exchange, M8 fixed-layout readers, M9 converters and M10 final polish; see the [roadmap](2026-11-13-deft-roadmap.md).
+
 ---
 
 ## 1. Identity in one paragraph
@@ -461,3 +463,10 @@ average. Add books is the primary action in the member section, alongside a
 coherent ordering/reorder/display toolbar. Category management is clearly named,
 with merge/delete confirmations retained. Preserve the accepted suggestion-review
 panel and scan-notice design.
+
+### M4 acceptance — 0.4.3
+
+The category filter's group-by-type control uses the shared `DeftSwitch`, matching
+Settings: off-state thumb uses `colors.text`, track uses `colors.surface2`, and
+outline uses `colors.muted`. Preserve this contrast in both palettes. M4 is
+accepted; build `v0.4.3-2` adds CI publication without changing this design.

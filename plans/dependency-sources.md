@@ -1,4 +1,4 @@
-# Foundation dependency sources
+# Dependency sources
 
 ## M2 reader additions
 
@@ -21,7 +21,7 @@ Pinned versions are defined in `gradle/libs.versions.toml`, the build convention
 - Robolectric (MIT), JUnit (EPL-1.0), ktlint (MIT), detekt (Apache-2.0): JVM-only build/test dependencies, never packaged into the app.
 - Space Grotesk: https://github.com/floriankarsten/space-grotesk (SIL OFL-1.1). Bundled 400/500/600 subsets.
 - Space Mono: https://github.com/googlefonts/spacemono (SIL OFL-1.1). Bundled 400/700 subsets.
-- App font source is Google Fonts' original TTF resources; subsets keep existing Latin, Latin Extended, Greek, Cyrillic and punctuation glyphs, including Android system fallback where upstream Space fonts lack glyphs (notably full Greek/Cyrillic coverage). OFL notices are packaged in assets/licenses. M2 reader fonts and provenance are described below.
+- App font source is Google Fonts' original TTF resources; subsets keep existing Latin, Latin Extended, Greek, Cyrillic and punctuation glyphs, including Android system fallback where upstream Space fonts lack glyphs (notably full Greek/Cyrillic coverage). OFL notices are packaged in assets/licenses. M2 reader fonts and provenance are described above.
 - Original outline icon geometry follows Lucide (ISC): https://github.com/lucide-icons/lucide/blob/main/LICENSE . Only used icons are included, with square caps/joins.
 - Palette source: https://github.com/kmab5/kmab-brand/blob/main/design-tokens.css . Full purple/green/amber scales are preserved; semantic paper accessibility adjustments are logged in the spec.
 

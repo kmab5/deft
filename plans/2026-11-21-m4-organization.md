@@ -1,5 +1,7 @@
 # M4 — categories, types, series and authors
 
+> **Historical record:** M1-M4 are complete. This document preserves the implementation/review state at its original handover; pending status and task checkboxes below are not current work. See the [documentation index](README.md) and [roadmap](2026-11-13-deft-roadmap.md) for current status and milestone numbering.
+
 > **For agentic workers:** Use subagent-driven development, test-driven development and codebase-design. Execute focused implementation tasks, then one combined verification/audit as the author requested. Only the root agent runs Gradle on this 8 GB host.
 
 **Status:** Implementation, source audit and local verification complete. Device acceptance remains open in `m4-test-checklist.md`; M4 is not merged.

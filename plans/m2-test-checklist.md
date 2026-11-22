@@ -1,5 +1,7 @@
 # M2 — EPUB reader + M1 feedback test checklist
 
+**Archived device review:** M2 is merged as `v0.2.5-1`. Original comments/results below are preserved. See the [documentation index](README.md) for current releases and milestone order.
+
 ## 0.2.5 — final polish and merge authorization
 
 You passed all twelve 0.2.4 checks and explicitly authorized the remaining minor fixes followed by merge/push without a further feedback round. The review below is preserved. Final changes cover the larger title, centered progress thumb and footer spacing, swipeable settings tabs with icons, adaptive grid title spacing, compact scan notices and the notification-permission control. Local verification passed; release evidence is recorded below.
@@ -280,7 +282,7 @@ These device steps remain unverified until the author tests them. Robolectric at
 
 ## 0.2.2 — complete feedback retest
 
-Keep the original results/comments above. Record this version's results here. The complete comment-to-change index is `plans/2026-11-19-m2-feedback-coverage.md`. The author confirmed that ratings/favorite/tracking stay in M3, highlights/notes in M5, PDF/CBZ/DjVu readers in M7 and converted formats in M8.
+Keep the original results/comments above. Record this version's results here. The complete comment-to-change index is `plans/2026-11-19-m2-feedback-coverage.md`. The scope decision kept ratings/favorite/tracking in M3 and highlights/notes in M5. After the 2026-11-22 roadmap reorder, PDF/CBZ/DjVu readers are M8 and converted formats are M9; the original M2 scope remains unchanged.
 
 ### Update, library and details
 

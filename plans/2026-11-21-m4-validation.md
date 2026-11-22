@@ -1,5 +1,7 @@
 # M4 implementation and validation
 
+> **Historical record:** M1-M4 are complete. This document preserves the implementation/review state at its original handover; pending status and task checkboxes below are not current work. See the [documentation index](README.md) and [roadmap](2026-11-13-deft-roadmap.md) for current status and milestone numbering.
+
 M4 lives on `feat/m4-organization`; it awaits the author's device checklist
 before merge. The preceding reader fixes were verified and pushed directly to
 main as `v0.3.3-1`, as requested. M4 uses `0.4.0-1` (code 40001).

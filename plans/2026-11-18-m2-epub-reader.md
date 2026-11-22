@@ -1,5 +1,7 @@
 # M2 EPUB reader implementation plan
 
+> **Historical record:** M1-M4 are complete. This document preserves the implementation/review state at its original handover; pending status and task checkboxes below are not current work. See the [documentation index](README.md) and [roadmap](2026-11-13-deft-roadmap.md) for current status and milestone numbering.
+
 > **For agentic workers:** Use subagent-driven-development with the author's batched implementation/verification override. Write regression tests alongside each implementation slice; only the root runs Gradle, after sources are frozen. One whole-change audit at the end.
 
 **Goal:** Read local EPUBs with persistent positions/bookmarks and complete global reader controls, then hand over one signed release containing M1 feedback fixes and M2.

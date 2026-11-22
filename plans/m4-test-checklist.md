@@ -4,6 +4,8 @@ Accepted device build: **0.4.2-1**, version code **40201**, signed release `deft
 
 Merge version: **0.4.3-1**, version code **40301**. The category filter's group-by-type switch now uses the shared settings switch colors for a readable off-state thumb. The author authorized this final color adjustment and merge/tag/push without local build verification. No new local 0.4.3 APK was built; device results below apply to 0.4.2.
 
+**M4 is accepted and merged. Current release: `v0.4.3-2`, version code 40302.** GitHub Actions built and published the signed [0.4.3 APK](https://github.com/kmab5/deft/releases/download/v0.4.3-2/deft-0.4.3.apk); both main and tag checks passed. The downloaded APK's permanent signature, checksum, version and source commit were verified. Build 2 adds release automation and fixes a test teardown race; it makes no further app-behavior changes. This CI verification does not add device-test claims to the original results below.
+
 ## Original 0.4.0 review (preserved)
 Install over your existing Deft app; do not uninstall. The original device results and comments remain below. New 0.4.1 retests are at the end. Add comments and screenshots beneath each
 section; put media in `plans/feedback/`.

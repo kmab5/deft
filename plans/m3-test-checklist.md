@@ -1,6 +1,6 @@
 # M3 — reading tracking device checklist
 
-**Final M3 revision: 0.3.2.** All 0.3.1 device checks passed. The author authorized the remaining fixes, local verification and merge without another feedback gate. Install `deft-0.3.2.apk` as an update. Original reviews and comments are preserved below.
+**Archived device review:** M3 merged as `v0.3.2-1`, with follow-up `v0.3.3-1` and the later idle-label adjustment included in accepted M4. The author authorized the final fixes and merge without another feedback gate. Original reviews and comments are preserved below; see the [documentation index](README.md) for current releases.
 
 ## Original 0.3.0 review
 

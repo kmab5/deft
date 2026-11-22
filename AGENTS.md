@@ -4,6 +4,7 @@ Deft is an offline, accountless Android ebook reader with a built-in reading tra
 
 ## Where things are
 
+- `plans/README.md` indexes current guidance, completed milestone records and review checklists. Dated implementation/validation records describe their original handover; use the roadmap for current status and milestone numbering.
 - `plans/2026-11-13-deft-design.md` is the **spec**: what Deft is, plus every decision already made. Read it before planning or building any feature. Section numbers (§n) in other docs point into it.
 - `plans/2026-11-13-deft-roadmap.md` lists the **milestones** (M1–M10), each with its scope, acceptance criteria and the interfaces it hands on to later milestones.
 - `plans/2026-11-13-deft-visual-design.md` is the **visual design**: colours, type, components, screens, motion, celebrations, copy. Every UI change follows it; `plans/design/preview.html` is its visual reference. It is a living doc: the author's feedback on a device overrides it, logged in the spec's §20.
@@ -13,12 +14,12 @@ Deft is an offline, accountless Android ebook reader with a built-in reading tra
 
 ## Workflow
 
-1. Find the first milestone in the roadmap that isn't finished (the latest `v0.B.0-*` tag on `main` names the last merged one).
+1. Find the first unfinished milestone in the roadmap and confirm its status against tags merged into `main`. Accepted milestones can finish on patch tags (for example M4 at `v0.4.3-1`); do not require a `v0.B.0-*` tag. The remaining order is M5 notes, M6 stats, M7 data exchange, M8 fixed-layout readers, M9 converters, M10 polish.
 2. Branch from `main`: `feat/mN-<name>` (fixes: `fix/<topic>`). There are no pull requests. Push the branch so CI runs on it.
 3. If the milestone has no plan in `plans/` yet, write one with superpowers:writing-plans, using the spec and the roadmap. Commit it on the branch before writing code.
 4. Execute the plan task by task with superpowers:subagent-driven-development. Each change goes red → green → commit (superpowers:test-driven-development). Shape modules with mattpocock-skills:codebase-design.
 5. Before handover, run superpowers:requesting-code-review on the branch and superpowers:verification-before-completion. `./gradlew check assembleRelease` must be green.
-6. **Handover:** build `./gradlew assembleRelease` with R8 minification and resource shrinking enabled, signed with the persistent Deft release key, and write `plans/mN-test-checklist.md` (the roadmap acceptance criteria plus anything risky, as tickable device steps). Give the author the signed release APK path and the checklist. Reuse the same release key for every release so updates preserve app data; never regenerate or commit the key or its credentials.
+6. **Handover:** provide a release APK with R8 minification and resource shrinking enabled, signed with the persistent Deft release key, and write `plans/mN-test-checklist.md` (the roadmap acceptance criteria plus anything risky, as tickable device steps). Version tags now build, verify and publish that APK directly through GitHub Actions; see `plans/release-signing.md`. Give the author the signed release download/path and checklist. Local `./gradlew assembleRelease` remains available for development verification. Never distribute a branch CI-only APK. Reuse the same release key for every release so updates preserve app data; never regenerate or commit the key or its credentials.
 7. **Merge only after the author says the checklist passed:** `git merge --no-ff` into `main`, then tag and push the tag (see Versioning).
 8. When a decision changes, or the spec is silent and you make a call, add a row to the spec's **Decision log** (§20) in the same commit.
 

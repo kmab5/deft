@@ -2,12 +2,27 @@
 
 Deft is an offline Android ebook reader with a reading tracker built in. Open a book and the clock starts; finish it and it's recorded. No accounts, no cloud, no forgotten timers.
 
+The full 1.0 roadmap includes:
+
 - **Reader:** EPUB, MOBI, AZW, AZW3, FB2, TXT, PDF, DjVu (`.djvu`/`.djv`), CBZ. Themes, fonts, size, line spacing, margins, alignment, bookmarks, table of contents, highlights and notes.
 - **Library:** built from the folders you choose. Your own categories (series, TBR, book clubs, anything), automatic authors, five reading states, half-star ratings and favorites.
 - **Tracker:** accurate reading time, sessions, streaks, goals, per-book/category/author stats, and a year in review.
 - **Portable:** optional edition matching, export to Goodreads/StoryGraph/Hardcover CSV, and local zip backups.
 
-Status: M1–M4 are merged (`v0.4.3-1`). M4 adds categories, series and authors, with sorting, filters, member ordering and aggregate summaries. The author accepted 0.4.2 and authorized the final switch-contrast adjustment in 0.4.3 without local build verification. Next is M5: highlights, notes and search. The feature list above describes the full roadmap; global stats/goals and additional readers remain in later milestones. See [`plans/`](plans/) and the [M4 test checklist](plans/m4-test-checklist.md).
+Current release: **0.4.3**, build [`v0.4.3-2`](https://github.com/kmab5/deft/releases/tag/v0.4.3-2). M1–M4 are merged: EPUB reading/search, folder scanning, automatic reading sessions, states, ratings, favorites, categories, series and authors. Scanning other file formats does not yet mean Deft can open them. The signed APK is built and published by GitHub Actions using the persistent release key.
+
+Next is M5. The remaining order is:
+
+| Milestone | Scope | Initial version |
+|---|---|---|
+| M5 | Highlights, notes and search refinements | 0.5.0 |
+| M6 | Statistics, goals, year in review and optional auto-scroll | 0.6.0 |
+| M7 | Edition matching, exports and local backup/restore | 0.7.0 |
+| M8 | PDF, CBZ and DjVu readers | 0.8.0 |
+| M9 | TXT, FB2 and MOBI/AZW/AZW3 conversion | 0.9.0 |
+| M10 | Final polish, accessibility, performance and F-Droid preparation | 1.0.0 |
+
+See the [roadmap](plans/2026-11-13-deft-roadmap.md), [documentation index](plans/README.md) and [accepted M4 checklist](plans/m4-test-checklist.md).
 
 Distribution: [GitHub Releases](https://github.com/kmab5/deft/releases). GitHub Actions builds, verifies and publishes the signed release APK on every version tag; branch builds do not publish APKs. F-Droid is planned.
 

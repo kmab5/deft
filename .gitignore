@@ -37,3 +37,7 @@ __pycache__/
 
 # Local feedback files
 plans/feedback/
+
+# Local agent scratch files and tool diagnostics
+/.superpowers/
+/error.log

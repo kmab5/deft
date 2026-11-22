@@ -49,7 +49,7 @@ All 22 JPG screenshots in `plans/feedback/` and both complete recording spans we
 | Bookmarks unclear | Expose bookmark navigation explicitly; retain add/rename/remove and persistence. |
 | Ratings/likes, reading states and time estimates | Author confirmed later milestone boundaries; M3 tracking owns these features. No fake counters or inert controls. |
 | Notes/highlights | M5, as explicitly confirmed by the author. Existing text selection remains available. |
-| Other formats | Keep M7 fixed-layout and M8 converter scope; 0.2.2 reader remains EPUB. Library scanning support is distinct from reading support. |
+| Other formats | Keep fixed-layout and converter scope in their own milestones (now M8 and M9 after the 2026-11-22 reorder); 0.2.2 reader remains EPUB. Library scanning support is distinct from reading support. |
 | Accessibility, motion, privacy and general polish | Repeat normal/large-text renders, reduced-motion behavior, labels and offline resource checks; retain full device checklist. |
 | Previously passing update/scanning/filter/history behaviors | Preserve them and include regression checks alongside reader changes. No Room schema change planned. |
 
@@ -63,4 +63,4 @@ The whole-change audit and focused follow-ups have no remaining actionable criti
 
 ## Full Lithium settings reference
 
-`Screenshot_20261118_194633_Lithium.jpg` includes keep-screen-on, fullscreen, app theme, backups/sync, edge taps, volume turns, external-link confirmation, drawer gestures, rotation, launch-last-book, library folders, folder drawer and book-wide progress. 0.2.2 includes the relevant reader controls, including fullscreen/tap-edge/orientation preferences. Deft already follows Android's app theme and has SAF library roots. External links remain closed under the offline guardrail; no folder drawer exists; backups are M9 and sync is outside the offline/accountless app. Notes/highlight actions shown in the recording remain M5 by the author's explicit scope decision.
+`Screenshot_20261118_194633_Lithium.jpg` includes keep-screen-on, fullscreen, app theme, backups/sync, edge taps, volume turns, external-link confirmation, drawer gestures, rotation, launch-last-book, library folders, folder drawer and book-wide progress. 0.2.2 includes the relevant reader controls, including fullscreen/tap-edge/orientation preferences. Deft already follows Android's app theme and has SAF library roots. External links remain closed under the offline guardrail; no folder drawer exists; backups are now M7 under the 2026-11-22 roadmap and sync is outside the offline/accountless app. Notes/highlight actions shown in the recording remain M5 by the author's explicit scope decision.

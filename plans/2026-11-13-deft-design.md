@@ -1,6 +1,6 @@
 # Deft — Design
 
-*Status: approved design, ready for implementation planning. Date: 2026-11-13.*
+*Approved 2026-11-13; living specification. M1–M4 are complete, the current release is `v0.4.3-2`, and M5 is next. Current milestone order is recorded in §17 and the roadmap.*
 
 > deft — read like you mean it.
 
@@ -276,6 +276,8 @@ One tap in the center opens: top bar (back, title, TOC, bookmark toggle, search,
 
 ## 12. Data exchange
 
+**Delivery: M7**, after notes/highlights (M5) and stats/goals (M6). Matching and exports consume library metadata and stored reading data; backup operates on the database, settings and app-owned assets. Neither fixed-layout rendering (M8) nor conversion (M9) is a prerequisite. Scanned books can be matched/exported even when their reader is not yet implemented. When M8/M9 add page notes, preferences or other persisted fields, they must extend export/backup coverage and test restoration of older M7 backups. Rebuildable conversion caches are excluded from backups.
+
 ### 12.1 Edition matching (opt-in, the only networked feature)
 - Purpose: attach a recognized identity (ISBN-10/13, Open Library work/edition IDs, Google Books ID, Hardcover ID) to a local book so exports are importable elsewhere.
 - Entry points: book page "Match edition", bulk "Match selected" in the library, and Settings → Matching (enable providers; Hardcover needs a user-supplied API token).
@@ -384,18 +386,17 @@ Rules: deleting a `BookFile` never cascades to `Book`. A `Book` is only deleted 
 - **CI:** GitHub Actions — build, ktlint/detekt, unit tests, assembleRelease on every push to any branch; every version tag builds a signed APK and publishes a GitHub Release (pre-release while major = 0). Signing key from repository secrets. See §3 for versioning.
 - **Privacy check:** a test asserting no module other than `data/matching` depends on the HTTP client; `INTERNET` permission is required only for matching (document this in the README).
 
-## 17. Implementation order (summary — full plan in the implementation plan doc)
-1. Repo skeleton, Gradle modules, CI, license, design system.
-2. Database, settings, SAF folders, scanner (EPUB first), Books screen.
-3. Readium EPUB reader with settings, TOC, bookmarks, progress.
-4. Session tracking, read-throughs, states, book page.
-5. Categories, types, series auto-fill, authors.
-6. Highlights, notes, search, Notes screen.
-7. Stats, goals, year in review.
-8. Fixed-layout viewer: PDF, CBZ, then DjVu.
-9. Converters: TXT, FB2, then MOBI/AZW/AZW3.
-10. Edition matching, CSV export, profile export, backup/restore.
-11. Polish, accessibility, performance pass, first release.
+## 17. Implementation order (milestones — acceptance criteria in the roadmap)
+1. **M1 — Foundation:** repo, build tooling, design system, database, settings, SAF folders, scanner and Books screen. Complete.
+2. **M2 — EPUB reader:** settings, TOC, bookmarks, progress and reader/library search. Complete.
+3. **M3 — Tracking:** sessions, read-throughs, states, ratings, favorites and finish flow. Complete.
+4. **M4 — Organization:** categories, types, series auto-fill and authors. Complete.
+5. **M5 — Highlights, notes and search:** selection actions, persistent notes/highlights, Notes screen and Markdown export.
+6. **M6 — Stats:** goals, year in review, personal bests and opt-in auto-scroll after speed metrics.
+7. **M7 — Data exchange:** edition matching, CSV export, Reading Profile JSON and local backup/restore.
+8. **M8 — Fixed-layout viewer:** PDF, CBZ, then DjVu; extend backup/export coverage for its persisted data.
+9. **M9 — Converters:** TXT, FB2, then MOBI/AZW/AZW3; extend backup/export coverage while excluding rebuildable caches.
+10. **M10 — First public release:** polish, accessibility, performance and F-Droid preparation. Signed GitHub Actions release publication is already implemented in `v0.4.3-2` and remains a regression check.
 
 ## 18. Left to the builder
 - Exact libraries where the doc names candidates (PDFium binding, libmobi vs pure Kotlin, charset detector, chart library or hand-drawn Compose charts).
@@ -414,6 +415,8 @@ Rules: deleting a `BookFile` never cascades to `Book`. A `Book` is only deleted 
 
 ## 20. Decision log
 Record every decision made or changed after approval: date, decision, reason.
+
+Historical rows retain the milestone numbers used when the decision was made. On 2026-11-22, data exchange moved from M9 to M7, fixed-layout readers from M7 to M8, and converters from M8 to M9; §17 and the roadmap use the current numbering.
 
 | Date | Decision | Reason |
 |---|---|---|
@@ -524,3 +527,5 @@ Record every decision made or changed after approval: date, decision, reason.
 | 2026-11-22 | Explicitly flagged older-checklist feedback is handled first on main, incrementing main's patch version, committing/tagging/pushing before resuming the active milestone. Small direct main fixes are authorized in that workflow. Requested milestone revision tags identify a handover without authorizing its merge. | Author's workflow clarification in the 0.4.1 review; use actual main versions rather than the illustrative numbers in the comment. |
 | 2026-11-22 | 0.4.3 uses the shared DeftSwitch for category filters, matching the settings off-state thumb, track and outline colors. | Author accepted M4 and requested this final contrast fix followed by merge/tag/push without local build verification. |
 | 2026-11-22 | 0.4.3 build 2 enables signed GitHub Actions tag publication now: full checks, permanent-certificate and tag/source validation, APK/checksum/mapping/provenance uploads, then a separate release job. Branch builds remain CI-only and unpublished. | Author requests CI to build and publish the latest 0.4.3 APK directly and to monitor the complete run. Reuses the existing key via encrypted repository secrets; preserves v0.4.3-1. |
+| 2026-11-22 | Move data exchange from M9 to M7, fixed-layout readers from M7 to M8, and converters from M8 to M9. M7 depends on M1-M6 data, not reader engines; M8/M9 extend export/backup coverage and test older-backup restoration. Conversion caches remain rebuildable and excluded. | Author requests earlier matching, exports and backup if independent. Dependency review of sections 5, 11-13 and 15 confirms this ordering; feature scope is preserved. |
+| 2026-11-22 | Refresh current release guidance to v0.4.3-2, index current versus historical documents, preserve author checklists/design evidence, and exclude local agent scratch/tool logs from Git. Documentation-only maintenance does not change the APK version or create a release tag. | Author requests repository/documentation cleanup before the next milestone. No tracked APKs, stray logs, empty files or duplicate screenshots were found; the obsolete local tool error log is removable. |

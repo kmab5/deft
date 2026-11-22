@@ -1,5 +1,7 @@
 # M1 — Foundation Implementation Plan
 
+> **Historical record:** M1-M4 are complete. This document preserves the implementation/review state at its original handover; pending status and task checkboxes below are not current work. See the [documentation index](README.md) and [roadmap](2026-11-13-deft-roadmap.md) for current status and milestone numbering.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** An installable Deft app that scans user-chosen folders, identifies books by content hash, extracts EPUB metadata, survives deleted/moved/duplicated files, and lists books on a Books screen.
@@ -53,7 +55,7 @@
 - [ ] **Step 4:** Write `SmokeTest` (Robolectric): launching `MainActivity` doesn't crash and displays "Deft".
 - [ ] **Step 5:** Run `./gradlew :app:testDebugUnitTest`. Expected: PASS.
 - [ ] **Step 6:** Configure ktlint and detekt in convention plugins, wired into `check`. Run `./gradlew check`. Expected: BUILD SUCCESSFUL.
-- [ ] **Step 7:** `ci.yml`: on push to any branch, run on `ubuntu-latest` with JDK 17: `./gradlew check assembleDebug assembleRelease` (release signed using secrets when available; untrusted CI uses a separate ephemeral CI-only key, never distributed as an author handover; M10 adds the tag-triggered GitHub Release job). Cache Gradle.
+- [ ] **Step 7:** `ci.yml`: on push to any branch, run on `ubuntu-latest` with JDK 17: `./gradlew check assembleDebug assembleRelease` (branch CI uses a separate ephemeral CI-only key, never distributed as an author handover). Cache Gradle. **Implemented follow-up:** `v0.4.3-2` adds permanent-key signing and verified GitHub Release publication on version tags; see [release signing](release-signing.md). The original plan checkbox is retained as historical task state.
 - [ ] **Step 7b:** Versioning: `app/build.gradle.kts` reads `deft.version=A.B.C-D` from `gradle.properties` (start at `0.1.0-1`), sets `versionName = "A.B.C"` and `versionCode = A*1_000_000 + B*10_000 + C*100 + D`; a `VersionTest` in `build-logic` asserts `0.1.0-1 → 10001` and `1.2.3-4 → 1020304`, and rejects D outside 1..99.
 - [ ] **Step 8:** Commit `build: scaffold multi-module project, theme and CI`.
 

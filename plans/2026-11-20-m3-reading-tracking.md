@@ -1,5 +1,7 @@
 # M3 reading tracking implementation plan
 
+> **Historical record:** M1-M4 are complete. This document preserves the implementation/review state at its original handover; pending status and task checkboxes below are not current work. See the [documentation index](README.md) and [roadmap](2026-11-13-deft-roadmap.md) for current status and milestone numbering.
+
 > Execute with subagent-driven-development and test-driven-development. The author requests complete implementation, grouped checks and one combined audit. Do not wait for CI. Do not merge M3 until device acceptance.
 
 **Goal:** Accurate automatic reading history, read-through state management, ratings/favorites/reviews and finished-book celebration, delivered as signed 0.3.0.

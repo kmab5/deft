@@ -1,5 +1,7 @@
 # M1 library polish and M2 recovery plan
 
+> **Historical record:** M1-M4 are complete. This document preserves the implementation/review state at its original handover; pending status and task checkboxes below are not current work. See the [documentation index](README.md) and [roadmap](2026-11-13-deft-roadmap.md) for current status and milestone numbering.
+
 > **For agentic workers:** Use subagent-driven-development with the author's batched checks/audit override. Only the root runs Gradle. Work in the explicitly assigned checkout and files.
 
 **Goal:** Finish the accepted M1 foundation, merge/tag/push it, then repair the M2 launch crash and redesign its settings and book detail for a signed patch handover.
