@@ -14,6 +14,7 @@ import java.io.IOException
 import javax.inject.Inject
 
 @HiltViewModel
+@Suppress("TooManyFunctions") // Separate actions keep folder and preference updates explicit.
 class LibrarySettingsViewModel
     @Inject
     constructor(
@@ -59,6 +60,12 @@ class LibrarySettingsViewModel
         }
 
         fun advancedSearch(value: Boolean) = perform { settings.setAdvancedSearch(value) }
+
+        fun seriesAutoFill(value: Boolean) =
+            perform {
+                settings.setSeriesAutoFill(value)
+                if (value) scheduler.scanNow()
+            }
 
         fun scanNow() = scheduler.scanNow()
 

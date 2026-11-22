@@ -71,6 +71,7 @@ private data class BookResult(
 @Suppress("TooManyFunctions") // One persistence action for each independent library preference.
 @HiltViewModel
 class BooksViewModel
+    @Suppress("LongParameterList") // Hilt supplies independent library data and scan services.
     @Inject
     constructor(
         repository: BookRepository,

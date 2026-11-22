@@ -1,6 +1,13 @@
 package com.kmab.deft
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Surface
@@ -16,20 +23,25 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.kmab.deft.core.designsystem.DeftBottomBar
+import com.kmab.deft.core.designsystem.DeftMotion
 import com.kmab.deft.core.designsystem.DeftNoticeHost
-import com.kmab.deft.core.designsystem.DeftNoticeKind
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.LocalDeftNoticeState
 import com.kmab.deft.core.designsystem.rememberDeftNoticeState
 import com.kmab.deft.feature.book.bookGraph
 import com.kmab.deft.feature.library.ScanDetailsSheet
 import com.kmab.deft.feature.library.libraryGraph
+import com.kmab.deft.feature.organization.organizationGraph
 import com.kmab.deft.feature.settings.settingsGraph
 import com.kmab.deft.library.scanner.ScanDetails
 import com.kmab.deft.library.scanner.ScanReport
@@ -71,14 +83,15 @@ internal fun DeftApp(
         memory = decision.memory
         if (scan.isScanning) outcomeNotice?.let(notices::dismiss)
         if (decision.show) {
-            val report = scan.report
+            val notice = scan.outcomeNotice()
             val selection = scan.reportSelection()
             outcomeNotice =
                 notices.show(
-                    scan.message ?: report?.let { "Scan complete · ${it.added} added" } ?: "Scan finished",
-                    if (report == null || report.errors > 0) DeftNoticeKind.Error else DeftNoticeKind.Success,
+                    notice.title,
+                    notice.kind,
                     actionLabel = "scan details",
                     onAction = { selectedReport = selection },
+                    detail = notice.detail,
                 )
         }
     }
@@ -100,15 +113,68 @@ internal fun DeftApp(
                         selectedReport = scan.reportSelection()
                     }
                 }
-                NavHost(navController, startDestination = "books") {
-                    libraryGraph(navController, onScanDetails = openDetails, onRead = onRead)
-                    bookGraph(navController, onRead)
-                    settingsGraph(navController, onScanDetails = openDetails)
+                DeftNavigation(navController, openDetails, onRead, scan.isFinished || scan.report != null) {
+                    DeftNoticeHost(notices, Modifier.align(Alignment.BottomCenter), paused = selectedReport != null)
                 }
-                DeftNoticeHost(notices, Modifier.align(Alignment.BottomCenter), paused = selectedReport != null)
             }
         }
         selectedReport?.let { report -> ReportPopup(report, reports) { selectedReport = null } }
+    }
+}
+
+@Composable
+private fun DeftNavigation(
+    navController: NavHostController,
+    openDetails: () -> Unit,
+    onRead: (Long) -> Unit,
+    hasScanDetails: Boolean,
+    overlay: @Composable BoxScope.() -> Unit,
+) {
+    val entry by navController.currentBackStackEntryAsState()
+    val tabs = listOf("books", "categories", "authors")
+    val selected = tabs.indexOf(entry?.destination?.route)
+    val selectTab: (Int) -> Unit = { index ->
+        navController.navigate(tabs[index]) {
+            popUpTo("books") { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+    Column(Modifier.fillMaxSize()) {
+        Box(Modifier.weight(1f)) {
+            NavHost(
+                navController,
+                startDestination = "books",
+                modifier = Modifier.fillMaxSize().testTag("main_pages").topLevelSwipe(selected, selectTab),
+                enterTransition = {
+                    val from = tabs.indexOf(initialState.destination.route)
+                    val to = tabs.indexOf(targetState.destination.route)
+                    if (from >= 0 && to >= 0) {
+                        slideInHorizontally(tween(DeftMotion.MEDIUM)) { if (to > from) it else -it }
+                    } else {
+                        fadeIn(tween(DeftMotion.MEDIUM))
+                    }
+                },
+                exitTransition = {
+                    val from = tabs.indexOf(initialState.destination.route)
+                    val to = tabs.indexOf(targetState.destination.route)
+                    if (from >= 0 && to >= 0) {
+                        slideOutHorizontally(tween(DeftMotion.MEDIUM)) { if (to > from) -it else it }
+                    } else {
+                        fadeOut(tween(DeftMotion.MEDIUM))
+                    }
+                },
+            ) {
+                libraryGraph(navController, onScanDetails = openDetails, onRead = onRead)
+                bookGraph(navController, onRead)
+                organizationGraph(navController, openDetails, hasScanDetails)
+                settingsGraph(navController, onScanDetails = openDetails)
+            }
+            overlay()
+        }
+        if (selected >= 0) {
+            DeftBottomBar(selected, selectTab, destinations = tabs.indices.toList())
+        }
     }
 }
 

@@ -58,8 +58,8 @@ class NoticeHostTest {
     ) {
         RuntimeEnvironment.setFontScale(fontScale)
         val state = DeftNoticeState()
-        val message = "Scan complete · added 42 · updated 6 · 2 files need attention."
-        state.show(message, DeftNoticeKind.Success, "scan details", {})
+        val message = "scan complete"
+        state.show(message, DeftNoticeKind.Success, "scan details", {}, detail = "42 added · 6 updated · 2 issues")
         state.show("One folder needs access again.", DeftNoticeKind.Error)
         compose.setContent {
             DeftTheme(dark) {
@@ -70,11 +70,22 @@ class NoticeHostTest {
         }
         compose.onNodeWithText(message).assertIsDisplayed()
         compose.onNodeWithText("One folder needs access again.").assertIsDisplayed()
+        val output = File("build/reports/screenshots/$name.png").apply { parentFile?.mkdirs() }
+        compose.onNodeWithTag("notice_reference").captureRoboImage(
+            output.path,
+            roborazziOptions = RoborazziOptions(taskType = RoborazziTaskType.Record),
+        )
         val text = compose.onNodeWithText(message, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val detail =
+            compose
+                .onNodeWithText("42 added · 6 updated · 2 issues", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
         val action = compose.onNodeWithText("scan details", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        assertTrue("Action has its own row below the complete message", action.top >= text.bottom)
-        assertTrue("Action follows the message without an empty header row", action.top - text.bottom <= 16f)
-        assertEquals("Action text aligns with the message", text.left, action.left, 1f)
+        assertTrue("Counts follow the status heading", detail.top >= text.bottom)
+        assertTrue("Action has its own row below the complete message", action.top >= detail.bottom)
+        assertTrue("Action stays close to the complete message", action.top - detail.bottom <= 48f)
+        assertTrue("Action text starts inside the card padding", action.left >= 16f)
         val actionTarget = compose.onNodeWithText("scan details").fetchSemanticsNode().boundsInRoot
         assertTrue("Compact notices retain a 48dp action target", actionTarget.height >= 48f)
         val dismiss = compose.onAllNodesWithContentDescription("dismiss notice").fetchSemanticsNodes()
@@ -83,11 +94,6 @@ class NoticeHostTest {
             assertTrue("Dismiss target is at least 48dp wide", it.boundsInRoot.width >= 48f)
             assertTrue("Dismiss target is at least 48dp high", it.boundsInRoot.height >= 48f)
         }
-        val output = File("build/reports/screenshots/$name.png").apply { parentFile?.mkdirs() }
-        compose.onNodeWithTag("notice_reference").captureRoboImage(
-            output.path,
-            roborazziOptions = RoborazziOptions(taskType = RoborazziTaskType.Record),
-        )
     }
 
     @Test fun actionOpensDetailsAndConsumesNotice() {

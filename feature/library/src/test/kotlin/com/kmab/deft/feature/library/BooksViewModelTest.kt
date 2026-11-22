@@ -197,6 +197,25 @@ class BooksViewModelTest {
         return id
     }
 
+    @Test fun legacyCategoryPreferenceDoesNotHideBooks() =
+        runBlocking {
+            val first = add("Alpha", "Writer")
+            add("Zulu", "Writer")
+            val organization =
+                com.kmab.deft.library.organization
+                    .OrganizationRepository(db)
+            val category = organization.saveCategory(name = "Reading list")
+            organization.addBooks(category, setOf(first))
+            settings.setCategoryFilter(category)
+            observe()
+            compose.waitUntil(
+                5_000,
+            ) { latest.books.size == 2 }
+            assertEquals(category, settings.settings.first().categoryFilter)
+            organization.deleteCategory(category)
+            compose.waitUntil(5_000) { latest.books.size == 2 }
+        }
+
     @Test fun realSettingsRequerySortingMissingAndGrid() =
         runBlocking {
             add("Zulu", "Alpha Writer")

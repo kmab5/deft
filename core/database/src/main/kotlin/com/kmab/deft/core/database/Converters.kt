@@ -2,10 +2,15 @@ package com.kmab.deft.core.database
 
 import androidx.room.TypeConverter
 import com.kmab.deft.core.model.BookFormat
+import com.kmab.deft.core.model.CategoryOrder
 import com.kmab.deft.core.model.ReadThroughOutcome
 import java.time.Instant
 
 class Converters {
+    @TypeConverter fun fromCategoryOrder(value: CategoryOrder): String = value.name
+
+    @TypeConverter fun toCategoryOrder(value: String): CategoryOrder = CategoryOrder.valueOf(value)
+
     @TypeConverter fun fromOutcome(value: ReadThroughOutcome): String = value.name
 
     @TypeConverter fun toOutcome(value: String): ReadThroughOutcome = ReadThroughOutcome.valueOf(value)

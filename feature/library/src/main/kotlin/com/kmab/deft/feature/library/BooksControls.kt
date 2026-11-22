@@ -69,7 +69,7 @@ internal fun BooksToolbar(
     val c = LocalDeftColors.current
     val ascending =
         if (state.sort == BookSort.TITLE ||
-            state.sort == BookSort.AUTHOR
+            state.sort == BookSort.AUTHOR || state.sort == BookSort.FILE_LOCATION
         ) {
             !state.reverseSort
         } else {
@@ -305,6 +305,7 @@ internal fun BooksSort(
                         when (sort) {
                             BookSort.TITLE -> LibraryIcons.Title
                             BookSort.AUTHOR -> DeftIcons.Authors
+                            BookSort.FILE_LOCATION -> com.kmab.deft.core.designsystem.icons.DeftActionIcons.Folder
                             BookSort.DATE_ADDED -> LibraryIcons.Added
                             BookSort.LAST_READ -> LibraryIcons.History
                             BookSort.RATING -> DeftIcons.Star

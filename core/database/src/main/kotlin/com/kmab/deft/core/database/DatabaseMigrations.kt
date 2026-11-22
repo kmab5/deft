@@ -4,6 +4,12 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 object DatabaseMigrations {
+    @Suppress("MagicNumber") // Literal schema versions identify this migration.
+    val FROM_6_TO_7 =
+        object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) = OrganizationMigration.create(db)
+        }
+
     val FROM_1_TO_2 =
         object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {

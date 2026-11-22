@@ -45,14 +45,26 @@ fun NavGraphBuilder.bookGraph(
                 navController.popDestination(entry)
             }
         }
-        BookDetailScreen(state, onBack, {
-            state.details
-                ?.book
-                ?.id
-                ?.let(onRead)
-        }, {
-            state.details?.book?.let { viewModel.setIgnored(!it.ignored) }
-        }, viewModel::forget, viewModel.actions)
+        BookDetailScreen(
+            state,
+            onBack,
+            {
+                state.details
+                    ?.book
+                    ?.id
+                    ?.let(onRead)
+            },
+            {
+                state.details?.book?.let { viewModel.setIgnored(!it.ignored) }
+            },
+            viewModel::forget,
+            viewModel.actions,
+            BookOrganizationLinks(
+                openAuthor = { navController.navigate("author/$it") },
+                openCategory = { navController.navigate("category/$it") },
+                openBook = { navController.navigate("book/$it") },
+            ),
+        )
         BookCompletion(state, viewModel)
     }
 }

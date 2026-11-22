@@ -71,6 +71,69 @@ class BookDaoTest {
         sort: BookSort = BookSort.TITLE,
     ) = db.bookDao().observeList(missing, emptySet(), sort).first()
 
+    @Test fun locationSortPrefersPresentPathsAndKeepsStableTitleTies() =
+        runBlocking {
+            val first = book("First")
+            val second = book("Second")
+            val tie = book("Third")
+            file(first, "Z/first.epub")
+            file(first, "A/old.epub", missing = true)
+            file(second, "B/second.epub")
+            file(tie, "B/second-copy.epub")
+            val items = db.bookDao().observeList(true, emptySet(), BookSort.FILE_LOCATION).first()
+            assertEquals(listOf(tie, second, first), items.map { it.id })
+            assertEquals("Z/first.epub", items.last().fileLocation)
+            assertEquals(
+                listOf(
+                    first,
+                    second,
+                    tie,
+                ),
+                db.bookDao().observeList(true, emptySet(), BookSort.FILE_LOCATION, true).first().map {
+                    it.id
+                },
+            )
+        }
+
+    @Test fun canonicalLocationFallsBackToMissingAndBreaksPathTiesByIdentity() =
+        runBlocking {
+            val first = book("First")
+            val second = book("Second")
+            val noFiles = book("None")
+            file(first, "first-uri")
+            file(first, "other-uri")
+            file(second, "second-uri", missing = true)
+            db.bookFileDao().getAll().forEach { entry ->
+                db.bookFileDao().update(
+                    entry.copy(
+                        displayPath =
+                            if (entry.uri ==
+                                "other-uri"
+                            ) {
+                                "a/same.epub"
+                            } else {
+                                "A/same.epub"
+                            },
+                    ),
+                )
+            }
+            val rows = db.bookDao().observeList(true, emptySet(), BookSort.FILE_LOCATION).first()
+            assertEquals(listOf(noFiles, first, second), rows.map { it.id })
+            assertEquals("", rows.first().fileLocation)
+            assertEquals("A/same.epub", rows[1].fileLocation)
+            assertEquals("A/same.epub", rows[2].fileLocation)
+        }
+
+    @Test fun authorProjectionUsesFirstEffectiveSortName() =
+        runBlocking {
+            val id = book("Title")
+            file(id, "title.epub")
+            db.authorDao().setBookAuthors(id, listOf("Amy Zulu", "Zoe Alpha"))
+            val row = list().single()
+            assertEquals("Amy Zulu, Zoe Alpha", row.authorsDisplay)
+            assertEquals("zulu, amy", row.authorSortName.lowercase())
+        }
+
     @Test fun lastReadSortKeepsUnreadLastInBothDirectionsWithStableTies() =
         runBlocking {
             val fixtures =

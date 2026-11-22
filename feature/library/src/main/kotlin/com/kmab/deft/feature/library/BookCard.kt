@@ -17,6 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -33,7 +34,6 @@ import com.kmab.deft.core.designsystem.Palette
 import com.kmab.deft.core.designsystem.icons.DeftIcons
 import com.kmab.deft.core.model.BookDisplaySize
 import java.io.File
-import java.nio.file.InvalidPathException
 
 @Composable
 fun BookCard(
@@ -43,19 +43,25 @@ fun BookCard(
     size: BookDisplaySize = BookDisplaySize.MEDIUM,
     onClick: (() -> Unit)? = null,
     tracking: com.kmab.deft.core.model.BookTrackingSummary? = null,
+    onLongClick: (() -> Unit)? = null,
+    selected: Boolean = false,
 ) {
     val c = LocalDeftColors.current
     Column(
         modifier
             .testTag("book_${book.id}")
-            .libraryBookSurface(8.dp, onClick)
+            .libraryBookSurface(8.dp, onClick, onLongClick, selected)
             .semantics(mergeDescendants = true) {
+                this.selected = selected
                 stateDescription =
                     (tracking?.state ?: com.kmab.deft.core.model.BookState.NOT_STARTED).appearance().label
             },
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        LibraryCover(book, imageLoader, showBadges = size != BookDisplaySize.SMALL)
+        Box {
+            LibraryCover(book, imageLoader, showBadges = size != BookDisplaySize.SMALL)
+            if (selected) SelectionMark(Modifier.align(Alignment.TopEnd))
+        }
         LibraryReadingStatus(book, tracking)
         if (size == BookDisplaySize.SMALL && (book.missing || book.drmProtected)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -140,12 +146,6 @@ internal fun LibraryCover(
 internal fun privateCover(
     path: String?,
     root: File,
-): File? {
-    if (path == null) return null
-    return try {
-        val candidate = File(path).toPath().normalize()
-        if (candidate.isAbsolute && candidate.startsWith(root.toPath().normalize())) candidate.toFile() else null
-    } catch (_: InvalidPathException) {
-        null
-    }
-}
+): File? =
+    com.kmab.deft.core.designsystem
+        .privateCoverFile(path, root)

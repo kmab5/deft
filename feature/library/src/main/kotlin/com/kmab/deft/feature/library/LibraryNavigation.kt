@@ -27,24 +27,28 @@ fun NavGraphBuilder.libraryGraph(
                 }
             }
         }
-        BooksScreen(
-            state,
-            { navController.navigate("settings") },
-            { navController.navigate("settings/library") },
-            viewModel::rescan,
-            viewModel::setGridView,
-            viewModel::setSort,
-            viewModel::setShowMissing,
-            viewModel::setFormat,
-            viewModel::setReverseSort,
-            viewModel::setGridSize,
-            viewModel::setListSize,
-            onScanDetails,
-            onOpenBook = { navController.navigate("book/$it") },
-            onContinueReading = onRead,
-            onStateFilter = viewModel::setStateFilter,
-            onFavoritesOnly = viewModel::setFavoritesOnly,
-            onMinimumRating = viewModel::setMinimumRating,
-        )
+        BooksCategoryAssignment { addToCategory, additions ->
+            BooksScreen(
+                state,
+                { navController.navigate("settings") },
+                { navController.navigate("settings/library") },
+                viewModel::rescan,
+                viewModel::setGridView,
+                viewModel::setSort,
+                viewModel::setShowMissing,
+                viewModel::setFormat,
+                viewModel::setReverseSort,
+                viewModel::setGridSize,
+                viewModel::setListSize,
+                onScanDetails,
+                onOpenBook = { navController.navigate("book/$it") },
+                onContinueReading = onRead,
+                onStateFilter = viewModel::setStateFilter,
+                onFavoritesOnly = viewModel::setFavoritesOnly,
+                onMinimumRating = viewModel::setMinimumRating,
+                onAddToCategory = addToCategory,
+                selectionResetKey = additions,
+            )
+        }
     }
 }

@@ -5,6 +5,8 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":feature:organization"))
+    implementation(project(":library:organization"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:model"))
     implementation(project(":tracking"))

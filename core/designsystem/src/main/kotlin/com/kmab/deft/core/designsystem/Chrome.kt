@@ -83,19 +83,26 @@ fun DeftTopBar(
     }
 }
 
+private val destinationLabels = listOf("books", "categories", "authors", "notes", "stats")
+
 @Composable
 fun DeftBottomBar(
     selected: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    destinations: List<Int> = destinationLabels.indices.toList(),
 ) {
+    require(
+        destinations.isNotEmpty() && destinations.distinct().size == destinations.size &&
+            destinations.all { it in destinationLabels.indices },
+    )
     val c = LocalDeftColors.current
-    val labels = listOf("books", "categories", "authors", "notes", "stats")
+    val labels = destinationLabels
     val icons = listOf(DeftIcons.Books, DeftIcons.Categories, DeftIcons.Authors, DeftIcons.Notes, DeftIcons.Stats)
     BoxWithConstraints(modifier.fillMaxWidth().background(c.surface)) {
-        val itemWidth = maxWidth / labels.size
+        val itemWidth = maxWidth / destinations.size
         val offset by animateDpAsState(
-            itemWidth * selected.coerceIn(labels.indices),
+            itemWidth * destinations.indexOf(selected).coerceAtLeast(0),
             spring(dampingRatio = DeftMotion.DAMPING_RATIO, stiffness = DeftMotion.stiffness),
         )
         HorizontalDivider(color = c.line, thickness = 1.dp)
@@ -107,7 +114,8 @@ fun DeftBottomBar(
                 .background(c.accent),
         )
         Row(Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
-            labels.forEachIndexed { index, label ->
+            destinations.forEach { index ->
+                val label = labels[index]
                 val active = selected == index
                 Column(
                     Modifier

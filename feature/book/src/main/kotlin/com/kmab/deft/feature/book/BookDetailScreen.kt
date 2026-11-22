@@ -41,6 +41,7 @@ fun BookDetailScreen(
     onIgnore: () -> Unit,
     onForget: () -> Unit,
     actions: BookTrackingActions = BookTrackingActions(),
+    organization: BookOrganizationLinks? = null,
 ) {
     val colors = LocalDeftColors.current
     val notices = LocalDeftNoticeState.current
@@ -103,6 +104,7 @@ fun BookDetailScreen(
                     state.tracking ?: com.kmab.deft.core.model
                         .BookTrackingSnapshot(state.details.book.id),
                     actions,
+                    organization,
                 ) {
                     val reason = readBlockReason(state.details)
                     if (reason == null) onRead() else notices?.show(reason)

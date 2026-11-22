@@ -49,6 +49,8 @@ class ScanWorker
                     persistDetails()
                 }
                 throw cancelled
+            } catch (error: SeriesOrganizationException) {
+                failed(requireNotNull(error.message))
             } catch (_: IOException) {
                 failed("Scan could not read the selected folders. Check access and rescan.")
             } catch (_: SecurityException) {

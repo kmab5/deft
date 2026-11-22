@@ -403,6 +403,61 @@ Idle readers show a very translucent theme-aware film and faint centered `idling
 
 Use a visible black idle film (38% opacity) in every reader theme, with a faint pulsing label in the reader’s ink color. Keep the consumed wake gesture and idle accounting unchanged.
 
+### M4 organization — 0.4.0
+
+Enable Books, Categories and Authors in the bottom bar; keep future Notes/Stats
+destinations hidden. Categories use outlined, subtly lifted cards with a custom
+local cover or up-to-four-cover collage, type labels, state progress, rating and
+review indication. Group/filter/list-grid choices persist. Detail separates the
+category identity and controls from member rows; focused sheets handle edits,
+types, ordering and merges. Decimal positions belong to Series; non-Series
+manual order supports drag handles and explicit up/down controls.
+
+Computed ratings display one decimal and remain distinct from a personal
+override. Abandoned remains an unresolved part of the state breakdown. Author
+pages group books by state and show complete coauthor credit; book-page links
+retain the metadata's credit order. Bulk Books selection uses an accent border,
+checkmark, count and one clear Add to category action.
+
+Keep 48dp controls, wrapping actions, keyboard-safe sheets and animated list
+placement. Mutation errors use the existing bottom notices, including within a
+modal sheet. Local renders are linked from `plans/design/m4-organization.html`;
+the device review remains `plans/m4-test-checklist.md`.
 ### Idle label visibility — 2026-11-22
 
 Use a 55% black idle film. Center a full-width black strip with 16dp vertical padding; its combined opacity pulses slowly from 55% to about 87% with a white label at 65–100% opacity. With animations off, retain the fully dark strip and fully visible label. Preserve consumed wake gestures and tracking behavior.
+
+### M4 device review — 0.4.1
+
+Separate create/manage actions from browse controls. Use icon-led filter, sort
+and display controls with persistent selections. Category cards and member rows
+show covers; members also have a grid. Keep ordering/reorder visible by the books
+heading. Group compact ratings and reset together; make suggestion review a
+separate section. Category editors group fields/types/cover and anchor save/cancel.
+Add-book rows show cover and metadata, with a fixed tick confirmation and count.
+
+Books selection uses a compact count with accessible full selected-count text,
+clear/select-all icons and an add action. Top menus share the same border, icons
+and choices. Scan notices distinguish status from counts and put their details
+action in a separate footer, above the actual bottom-navigation height. Swipe
+between the three working tabs with directional transitions, preserving vertical
+and child horizontal gestures. Device feedback overrides previous category filter
+placement in Books; categories are browsed in the Categories tab instead.
+
+### M4 layout refinement — 0.4.2
+
+Organization browsing uses consistent search insets and an aligned compact row
+for filters, sort/direction and optional display. Secondary filters belong in
+labelled sheets rather than uneven rows of long buttons above the results.
+Actions align to their visible filled/outlined surfaces. Rows adapt to available
+width and system text size; preserve 48dp touch targets and meaningful spacing
+when controls wrap. Search and browse controls must leave usable scrolling room
+in narrow landscape and with the keyboard open.
+
+Category identity/progress is separate from its member actions. The rating
+summary states the exact effective value and whether it is the book average or a
+personal override; it opens a focused draft editor with save/cancel and restore
+average. Add books is the primary action in the member section, alongside a
+coherent ordering/reorder/display toolbar. Category management is clearly named,
+with merge/delete confirmations retained. Preserve the accepted suggestion-review
+panel and scan-notice design.

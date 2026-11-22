@@ -8,6 +8,7 @@ dependencies {
     implementation(project(":core:datastore"))
     implementation(project(":tracking"))
     implementation(project(":feature:celebrate"))
+    implementation(project(":feature:organization"))
     implementation(project(":core:database"))
     implementation(project(":core:designsystem"))
     implementation(project(":library:scanner"))

@@ -15,4 +15,6 @@ data class BookListItem(
     val drmProtected: Boolean,
     val lastReadAt: Instant? = null,
     val totalProgression: Double = 0.0,
+    val fileLocation: String = "",
+    val authorSortName: String = "",
 )

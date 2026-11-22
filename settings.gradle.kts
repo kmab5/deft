@@ -26,3 +26,5 @@ include(":app", ":core:model", ":core:common", ":core:database", ":core:datastor
 include(":format:readium", ":feature:reader", ":feature:reader-settings", ":feature:book")
 
 include(":tracking", ":feature:celebrate")
+include(":library:organization")
+include(":feature:organization")

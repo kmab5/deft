@@ -1,5 +1,6 @@
 package com.kmab.deft.feature.library
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -7,7 +8,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,8 +28,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -56,6 +54,7 @@ import coil3.ImageLoader
 import com.kmab.deft.core.designsystem.DeftButton
 import com.kmab.deft.core.designsystem.DeftButtonStyle
 import com.kmab.deft.core.designsystem.DeftMotion
+import com.kmab.deft.core.designsystem.DeftScreenMenu
 import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
@@ -85,9 +84,10 @@ fun BooksScreen(
     onStateFilter: (com.kmab.deft.core.model.BookState, Boolean) -> Unit = { _, _ -> },
     onFavoritesOnly: (Boolean) -> Unit = {},
     onMinimumRating: (Double?) -> Unit = {},
+    onAddToCategory: (Set<Long>) -> Unit = {},
+    selectionResetKey: Int = 0,
 ) {
     val c = LocalDeftColors.current
-    var menu by remember { mutableStateOf(false) }
     var sheet by rememberSaveable { mutableStateOf<String?>(null) }
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -102,6 +102,23 @@ fun BooksScreen(
     val searchResult =
         remember(state.books, query, activeOptions) { runCatching { state.books.searchBooks(query, activeOptions) } }
     val visibleBooks = searchResult.getOrDefault(emptyList())
+    var selected by rememberSaveable { mutableStateOf(emptyList<Long>()) }
+    var handledReset by rememberSaveable { mutableStateOf(selectionResetKey) }
+    LaunchedEffect(selectionResetKey) {
+        if (selectionResetKey != handledReset) {
+            selected = emptyList()
+            handledReset = selectionResetKey
+        }
+    }
+    val visibleIds = remember(visibleBooks) { visibleBooks.map { it.id }.toSet() }
+    LaunchedEffect(visibleIds, state.isLoading, state.error, searchResult.isSuccess) {
+        if (!state.isLoading && state.error == null && searchResult.isSuccess) {
+            selected = selected.filter { it in visibleIds }
+        }
+    }
+    BackHandler(selected.isNotEmpty()) { selected = emptyList() }
+    val toggle: (Long) -> Unit = { id -> selected = if (id in selected) selected - id else selected + id }
+    val open: (Long) -> Unit = { id -> if (selected.isEmpty()) onOpenBook(id) else toggle(id) }
     val scroll = rememberLibraryScrollState(state.gridView)
     LaunchedEffect(query) {
         if (query != previousQuery) {
@@ -127,35 +144,7 @@ fun BooksScreen(
             }) {
                 Icon(DeftIcons.Search, "search books", tint = if (searching) c.accentText else c.muted)
             }
-            Box {
-                IconButton(onClick = { menu = true }) { Icon(LibraryIcons.More, "more options", tint = c.muted) }
-                DropdownMenu(
-                    menu,
-                    { menu = false },
-                    shape = DeftShapes.card,
-                    containerColor = c.surface,
-                    tonalElevation = 0.dp,
-                    shadowElevation = 0.dp,
-                    border = BorderStroke(1.dp, c.line),
-                ) {
-                    if (state.scanReport != null || state.hasScanDetails) {
-                        DropdownMenuItem(
-                            text = { Text("last scan", style = DeftTypography.label) },
-                            leadingIcon = { Icon(LibraryIcons.History, null) },
-                            onClick = {
-                                menu = false
-                                onScanDetails()
-                            },
-                        )
-                    }
-                    DropdownMenuItem(leadingIcon = {
-                        Icon(LibraryIcons.Settings, null)
-                    }, text = { Text("settings", style = DeftTypography.label) }, onClick = {
-                        menu = false
-                        onSettings()
-                    })
-                }
-            }
+            DeftScreenMenu(onSettings, onScanDetails.takeIf { state.scanReport != null || state.hasScanDetails })
         }
         AnimatedVisibility(searching) {
             Column {
@@ -166,13 +155,18 @@ fun BooksScreen(
                 LibrarySearchFilters(state.advancedSearch, searchOptions, { searchOptions = it }, searchResult)
             }
         }
-        AnimatedVisibility(state.continueReading != null && scroll.showHeader) {
+        AnimatedVisibility(state.continueReading != null && scroll.showHeader && selected.isEmpty()) {
             state.continueReading?.let { book -> ContinueReadingCard(book, loader) { onContinueReading(book.id) } }
         }
         BooksToolbar(state, onFilters = { sheet = "filters" }, onSort = { sheet = "sort" }, onDisplay = {
             sheet =
                 "display"
         })
+        AnimatedVisibility(selected.isNotEmpty()) {
+            BooksSelectionBar(selected.size, { selected = emptyList() }, { selected = visibleIds.toList() }) {
+                onAddToCategory(selected.toSet())
+            }
+        }
         AnimatedVisibility(
             visible = state.isScanning,
             enter = fadeIn(tween(DeftMotion.SHORT)) + expandVertically(tween(DeftMotion.SHORT)),
@@ -211,7 +205,9 @@ fun BooksScreen(
                     onAddFolder,
                     onRescan,
                     onSettings,
-                    onOpenBook,
+                    open,
+                    toggle,
+                    selected.toSet(),
                 ) {
                     if (query.isNotBlank()) {
                         query = ""
@@ -224,7 +220,7 @@ fun BooksScreen(
                     }
                 }
             }
-            LibraryScrollOverlay(scroll, state.continueReading, onContinueReading)
+            LibraryScrollOverlay(scroll, state.continueReading.takeIf { selected.isEmpty() }, onContinueReading)
         }
     }
     when (sheet) {
@@ -248,6 +244,8 @@ private fun BooksCollection(
     onRescan: () -> Unit,
     onSettings: () -> Unit,
     onOpenBook: (Long) -> Unit,
+    onSelectBook: (Long) -> Unit,
+    selected: Set<Long>,
     onClear: () -> Unit,
 ) {
     val c = LocalDeftColors.current
@@ -285,6 +283,8 @@ private fun BooksCollection(
                         size = state.gridSize,
                         tracking = state.tracking[book.id],
                         onClick = { onOpenBook(book.id) },
+                        onLongClick = { onSelectBook(book.id) },
+                        selected = book.id in selected,
                     )
                 }
             }
@@ -309,6 +309,8 @@ private fun BooksCollection(
                         size = state.listSize,
                         tracking = state.tracking[book.id],
                         onClick = { onOpenBook(book.id) },
+                        onLongClick = { onSelectBook(book.id) },
+                        selected = book.id in selected,
                     )
                 }
             }
@@ -380,11 +382,12 @@ internal fun BookSort.label(): String =
         BookSort.DATE_ADDED -> "date added"
         BookSort.LAST_READ -> "last read"
         BookSort.RATING -> "rating"
+        BookSort.FILE_LOCATION -> "file location"
     }
 
 internal fun BookSort.orderLabel(reverse: Boolean): String =
     when (this) {
-        BookSort.TITLE, BookSort.AUTHOR -> if (reverse) "z to a" else "a to z"
+        BookSort.TITLE, BookSort.AUTHOR, BookSort.FILE_LOCATION -> if (reverse) "z to a" else "a to z"
         BookSort.DATE_ADDED, BookSort.LAST_READ -> if (reverse) "oldest first" else "newest first"
         BookSort.RATING -> if (reverse) "lowest first" else "highest first"
     }

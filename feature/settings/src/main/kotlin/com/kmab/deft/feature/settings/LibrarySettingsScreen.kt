@@ -112,6 +112,27 @@ fun LibrarySettingsScreen(
                 },
             )
             LibraryFileTypes(settings, viewModel::format)
+            SettingsPanel {
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(
+                        settings.seriesAutoFill,
+                        role = Role.Switch,
+                        onValueChange = viewModel::seriesAutoFill,
+                    ),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text("series auto-fill", style = DeftTypography.title)
+                        Text(
+                            "Suggest series from book metadata when scanning. Turning this off keeps your categories.",
+                            style = DeftTypography.body,
+                            color = colors.muted,
+                        )
+                    }
+                    com.kmab.deft.core.designsystem
+                        .DeftSwitch(settings.seriesAutoFill, onCheckedChange = null)
+                }
+            }
             Row(
                 Modifier.fillMaxWidth().toggleable(
                     value = settings.advancedSearch,
