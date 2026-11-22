@@ -164,6 +164,11 @@ physical-device tests or a new merge gate.
 
 The author passed the 0.3.2 checks and requested a darker black idle film and reliable text-selection feedback before M4. These changes are included in the M4 test build too.
 
-- [ ] Idle pause visibly dims light, sepia and dark pages with a 38% black film; the faint label pulses, or stays steady with animations off. The consumed wake touch keeps the same page and does not count idle time.
-- [ ] Selecting a word in paged and continuous EPUB gives one subtle long-press pulse with system vibration enabled. Moving handles or recreating the toolbar does not repeat it. Clearing and selecting again pulses again.
-- [ ] Background/lock during selection stops observation; returning does not vibrate for a stale selection. Disable Android touch vibration: no app-generated selection pulse.
+- [/] Idle pause visibly dims light, sepia and dark pages with a 38% black film; the faint label pulses, or stays steady with animations off. The consumed wake touch keeps the same page and does not count idle time.
+-- "idling" label is still not visible, add a darker bg for it, snapchat style, fully horizontal bar, make this one significantly darker so the text is visible, and make it pulse with the text from the opacity of the film to its own darker opacity, make the film darker
+- [X] Selecting a word in paged and continuous EPUB gives one subtle long-press pulse with system vibration enabled. Moving handles or recreating the toolbar does not repeat it. Clearing and selecting again pulses again.
+- [X] Background/lock during selection stops observation; returning does not vibrate for a stale selection. Disable Android touch vibration: no app-generated selection pulse.
+
+### 2026-11-22 adjustment
+
+The idle film is now 55% black with a full-width, darker pulsing strip and white `idling` label. Reduced motion keeps the strip steady and visible. Committed directly on main without a build as requested; included in the next M4 release verification. Original review comments above are preserved.

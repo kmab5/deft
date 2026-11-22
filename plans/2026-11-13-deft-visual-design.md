@@ -402,3 +402,7 @@ Idle readers show a very translucent theme-aware film and faint centered `idling
 ### M3 follow-up — 0.3.3
 
 Use a visible black idle film (38% opacity) in every reader theme, with a faint pulsing label in the reader’s ink color. Keep the consumed wake gesture and idle accounting unchanged.
+
+### Idle label visibility — 2026-11-22
+
+Use a 55% black idle film. Center a full-width black strip with 16dp vertical padding; its combined opacity pulses slowly from 55% to about 87% with a white label at 65–100% opacity. With animations off, retain the fully dark strip and fully visible label. Preserve consumed wake gestures and tracking behavior.
