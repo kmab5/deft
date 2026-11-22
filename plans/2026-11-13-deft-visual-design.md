@@ -423,3 +423,6 @@ Keep 48dp controls, wrapping actions, keyboard-safe sheets and animated list
 placement. Mutation errors use the existing bottom notices, including within a
 modal sheet. Local renders are linked from `plans/design/m4-organization.html`;
 the device review remains `plans/m4-test-checklist.md`.
+### Idle label visibility — 2026-11-22
+
+Use a 55% black idle film. Center a full-width black strip with 16dp vertical padding; its combined opacity pulses slowly from 55% to about 87% with a white label at 65–100% opacity. With animations off, retain the fully dark strip and fully visible label. Preserve consumed wake gestures and tracking behavior.

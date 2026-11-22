@@ -18,6 +18,8 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
@@ -33,8 +35,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import com.kmab.deft.core.designsystem.DeftTypography
-import com.kmab.deft.core.designsystem.LocalDeftColors
 
 @Composable
 internal fun ReaderIdleOverlay(
@@ -42,7 +44,6 @@ internal fun ReaderIdleOverlay(
     onResume: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = LocalDeftColors.current
     val resume by rememberUpdatedState(onResume)
     AnimatedVisibility(
         visible,
@@ -54,7 +55,7 @@ internal fun ReaderIdleOverlay(
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.38f))
+                .background(Color.Black.copy(alpha = 0.55f))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
@@ -73,27 +74,31 @@ internal fun ReaderIdleOverlay(
                 }.semantics { contentDescription = "resume reading" },
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                "idling",
-                style = DeftTypography.mono,
-                color = colors.text,
-                modifier =
-                    Modifier.graphicsLayer {
-                        this.alpha =
-                            alpha.value
-                    },
-            )
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .background(Color.Black.copy(alpha = 0.7f * alpha.value))
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    "idling",
+                    style = DeftTypography.mono,
+                    color = Color.White,
+                    modifier = Modifier.graphicsLayer { this.alpha = 0.65f + 0.35f * alpha.value },
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun idleLabelAlpha(): State<Float> {
-    if (!ValueAnimator.areAnimatorsEnabled()) return rememberUpdatedState(0.4f)
+    if (!ValueAnimator.areAnimatorsEnabled()) return rememberUpdatedState(1f)
     val pulse = rememberInfiniteTransition(label = "idle pulse")
     return pulse.animateFloat(
-        0.25f,
-        0.5f,
+        0f,
+        1f,
         infiniteRepeatable(tween(1400), RepeatMode.Reverse),
         label = "idle label opacity",
     )
