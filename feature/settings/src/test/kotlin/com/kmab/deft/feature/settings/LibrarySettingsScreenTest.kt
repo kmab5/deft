@@ -61,7 +61,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -146,7 +145,7 @@ class LibrarySettingsScreenTest {
     @After fun close() {
         compose.runOnIdle { renderScreen.value = false }
         compose.waitForIdle()
-        vm.viewModelScope.cancel()
+        runBlocking { vm.viewModelScope.coroutineContext[Job]?.cancelAndJoin() }
         manager.cancelAllWork().result.get()
         WorkManagerTestInitHelper.closeWorkDatabase()
         runBlocking { scope.coroutineContext[Job]?.cancelAndJoin() }
@@ -157,7 +156,7 @@ class LibrarySettingsScreenTest {
     private fun requests() = manager.getWorkInfosForUniqueWork(ScanScheduler.WORK_NAME).get()
 
     @Test fun enablingSeriesAutoFillRequestsRescanAndDisablingKeepsExistingWorkUntouched() {
-        compose.setContent { DeftTheme { LibrarySettingsScreen({}, vm) } }
+        compose.setContent { if (renderScreen.value) DeftTheme { LibrarySettingsScreen({}, vm) } }
         compose.onNodeWithText("series auto-fill").performScrollTo().performClick()
         compose.waitUntil { runBlocking { !settings.settings.first().seriesAutoFill } }
         assertEquals(0, requests().size)
