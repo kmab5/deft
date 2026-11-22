@@ -2,9 +2,13 @@ name: build
 on: [push, workflow_dispatch]
 permissions:
   contents: read
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v5
@@ -21,14 +25,69 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Configure signing
         env:
-          DEFT_KEYSTORE_BASE64: ${{ secrets.DEFT_KEYSTORE_BASE64 }}
-          DEFT_KEYSTORE_PASSWORD: ${{ secrets.DEFT_KEYSTORE_PASSWORD }}
-          DEFT_KEY_ALIAS: ${{ secrets.DEFT_KEY_ALIAS }}
-          DEFT_KEY_PASSWORD: ${{ secrets.DEFT_KEY_PASSWORD }}
-        run: python3 scripts/ci-signing.py
+          DEFT_KEYSTORE_BASE64: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.DEFT_KEYSTORE_BASE64 || '' }}
+          DEFT_KEYSTORE_PASSWORD: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.DEFT_KEYSTORE_PASSWORD || '' }}
+          DEFT_KEY_ALIAS: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.DEFT_KEY_ALIAS || '' }}
+          DEFT_KEY_PASSWORD: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.DEFT_KEY_PASSWORD || '' }}
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            python3 scripts/ci-signing.py --require-release
+          else
+            python3 scripts/ci-signing.py
+          fi
       - name: Verify and assemble
         run: ./gradlew check assembleDebug assembleRelease
       - name: Verify release tooling
         run: python3 -m unittest discover -s scripts/tests -v
       - name: Verify release packaging
         run: python3 scripts/verify-release.py --allow-ci
+      - name: Stage permanent-key release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 scripts/release_publication.py --tag "$RELEASE_TAG"
+      - name: Upload verified release bundle
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ github.ref_name }}
+          path: build/release-publication/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Retain test failure reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ github.run_id }}
+          path: |
+            **/build/reports/tests/
+            **/build/test-results/
+          retention-days: 7
+  publish:
+    needs: check
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ github.ref_name }}
+          path: release
+      - name: Publish signed APK to GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        working-directory: release
+        run: |
+          sha256sum --check deft-*.apk.sha256
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --verify-tag --draft --title "Deft ${RELEASE_TAG#v}" --notes-file release-notes.md
+          fi
+          gh release upload "$RELEASE_TAG" deft-*.apk deft-*.apk.sha256 mapping.txt.gz release.json --clobber
+          prerelease=false
+          if [[ "$RELEASE_TAG" == v0.* ]]; then prerelease=true; fi
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease="$prerelease" --notes-file release-notes.md
+          gh release view "$RELEASE_TAG" --json url,assets

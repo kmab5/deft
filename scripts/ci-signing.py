@@ -1,4 +1,5 @@
 """Configure trusted CI signing, or an explicit ephemeral CI identity. Never prints secrets."""
+import argparse
 import base64
 import os
 from pathlib import Path
@@ -7,8 +8,13 @@ import sys
 import tempfile
 
 root = Path(__file__).resolve().parent.parent
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--require-release", action="store_true")
+args = parser.parse_args()
 names = ["DEFT_KEYSTORE_BASE64", "DEFT_KEYSTORE_PASSWORD", "DEFT_KEY_ALIAS", "DEFT_KEY_PASSWORD"]
 values = [os.environ.get(name) for name in names]
+if args.require_release and not all(values):
+    raise SystemExit("Persistent release signing secrets are required. No replacement identity generated.")
 if any(values) and not all(values):
     raise SystemExit("Signing secrets are incomplete. No replacement identity generated.")
 if all(values):

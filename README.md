@@ -9,7 +9,7 @@ Deft is an offline Android ebook reader with a reading tracker built in. Open a 
 
 Status: M1–M4 are merged (`v0.4.3-1`). M4 adds categories, series and authors, with sorting, filters, member ordering and aggregate summaries. The author accepted 0.4.2 and authorized the final switch-contrast adjustment in 0.4.3 without local build verification. Next is M5: highlights, notes and search. The feature list above describes the full roadmap; global stats/goals and additional readers remain in later milestones. See [`plans/`](plans/) and the [M4 test checklist](plans/m4-test-checklist.md).
 
-Distribution: [GitHub Releases](https://github.com/kmab5/deft/releases). F-Droid is planned.
+Distribution: [GitHub Releases](https://github.com/kmab5/deft/releases). GitHub Actions builds, verifies and publishes the signed release APK on every version tag; branch builds do not publish APKs. F-Droid is planned.
 
 ## Building
 
