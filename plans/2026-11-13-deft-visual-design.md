@@ -426,3 +426,20 @@ the device review remains `plans/m4-test-checklist.md`.
 ### Idle label visibility — 2026-11-22
 
 Use a 55% black idle film. Center a full-width black strip with 16dp vertical padding; its combined opacity pulses slowly from 55% to about 87% with a white label at 65–100% opacity. With animations off, retain the fully dark strip and fully visible label. Preserve consumed wake gestures and tracking behavior.
+
+### M4 device review — 0.4.1
+
+Separate create/manage actions from browse controls. Use icon-led filter, sort
+and display controls with persistent selections. Category cards and member rows
+show covers; members also have a grid. Keep ordering/reorder visible by the books
+heading. Group compact ratings and reset together; make suggestion review a
+separate section. Category editors group fields/types/cover and anchor save/cancel.
+Add-book rows show cover and metadata, with a fixed tick confirmation and count.
+
+Books selection uses a compact count with accessible full selected-count text,
+clear/select-all icons and an add action. Top menus share the same border, icons
+and choices. Scan notices distinguish status from counts and put their details
+action in a separate footer, above the actual bottom-navigation height. Swipe
+between the three working tabs with directional transitions, preserving vertical
+and child horizontal gestures. Device feedback overrides previous category filter
+placement in Books; categories are browsed in the Categories tab instead.

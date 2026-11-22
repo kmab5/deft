@@ -46,7 +46,6 @@ fun NavGraphBuilder.libraryGraph(
                 onStateFilter = viewModel::setStateFilter,
                 onFavoritesOnly = viewModel::setFavoritesOnly,
                 onMinimumRating = viewModel::setMinimumRating,
-                onCategoryFilter = viewModel::setCategoryFilter,
                 onAddToCategory = addToCategory,
                 selectionResetKey = additions,
             )

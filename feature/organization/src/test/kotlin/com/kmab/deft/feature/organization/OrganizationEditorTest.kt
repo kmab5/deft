@@ -1,16 +1,21 @@
 package com.kmab.deft.feature.organization
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.ComposeTimeoutException
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.printToString
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -26,6 +31,7 @@ import com.kmab.deft.core.database.entity.CategoryEntity
 import com.kmab.deft.core.database.entity.CategoryMemberEntity
 import com.kmab.deft.core.database.entity.CategoryTypeEntity
 import com.kmab.deft.core.database.model.BookListItem
+import com.kmab.deft.core.datastore.LibrarySettings
 import com.kmab.deft.core.datastore.LibrarySettingsRepository
 import com.kmab.deft.core.designsystem.DeftTheme
 import com.kmab.deft.core.designsystem.DeftTopBar
@@ -113,7 +119,7 @@ class OrganizationEditorTest {
         compose.onNode(hasSetTextAction() and hasText("name")).performTextInput("Earthsea")
         compose.onNode(hasSetTextAction() and hasText("description")).performTextInput("Island stories")
         compose.onNodeWithText("Series", ignoreCase = true).performScrollTo().performClick()
-        compose.onNodeWithText("save category").performScrollTo().performClick()
+        compose.onNodeWithText("save category").performClick()
         awaitMutation(saved)
         val category = runBlocking { repository.get().categories.single() }
         assertEquals("Earthsea", category.category.name)
@@ -229,6 +235,142 @@ class OrganizationEditorTest {
         captureDetail("author-detail-ink")
         compose.onNodeWithText(book.book.title).performClick()
         assertEquals(book.book.id, opened)
+    }
+
+    @Test fun addBooksConfirmationStaysVisibleAfterScrollingAndFiltering() {
+        val books =
+            (1L..40L).map { id ->
+                detailBook("Book $id", "Author $id").let { it.copy(book = it.book.copy(id = id)) }
+            }
+        val category =
+            CategorySummary(
+                CategoryEntity(7, "Reading list", createdAt = Instant.EPOCH),
+                emptyList(),
+                emptyList(),
+                OrganizationStats(),
+            )
+        compose.setContent { DeftTheme { CategoryAddBooks(category, books, model, {}) } }
+        compose.onNodeWithText("Book 1").performClick()
+        compose.onNodeWithTag("category_add_books_list").performScrollToIndex(30)
+        compose.onNodeWithContentDescription("add 1 selected books").assertIsDisplayed()
+        compose.onNode(hasSetTextAction() and hasText("find books")).performTextInput("nothing matches")
+        compose.onNodeWithContentDescription("add 1 selected books").assertIsDisplayed()
+    }
+
+    @Test fun categoryMemberGridAndSeriesReorderAreVisibleActions() {
+        val series = CategoryTypeEntity(1, "Series", "series", true)
+        val record = CategoryEntity(7, "Series", createdAt = Instant.EPOCH)
+        val books =
+            (1L..2L).map { id ->
+                detailBook("Book $id", "Author").let { it.copy(book = it.book.copy(id = id)) }
+            }
+        val members =
+            books.map {
+                CategoryBook(it, CategoryMemberEntity(7, it.book.id, it.book.id.toDouble(), false, Instant.EPOCH))
+            }
+        val category = CategorySummary(record, listOf(series), members, OrganizationStats(total = 2))
+        val snapshot = OrganizationSnapshot(categories = listOf(category), types = listOf(series), books = books)
+        compose.setContent {
+            DeftTheme {
+                OrganizationRenderSurface {
+                    CategoryDetail(
+                        category,
+                        snapshot,
+                        model,
+                        {},
+                    ) {}
+                }
+            }
+        }
+        compose.onNodeWithText("reorder books").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("show book grid").performClick()
+        compose.onNodeWithContentDescription("show book list").assertIsDisplayed()
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun renderInkCategoryEditorWithAnchoredActions() {
+        RuntimeEnvironment.setFontScale(1.5f)
+        val types = runBlocking { repository.get().types }
+        compose.setContent { DeftTheme(darkTheme = true) { CategoryEditor(null, types, model, {}) } }
+        compose.onNode(hasSetTextAction() and hasText("name")).performTextInput("Weekend reading")
+        captureSheet("category-editor-ink-large")
+        compose.onNodeWithText("save category").assertIsDisplayed()
+        compose.onNodeWithText("cancel").assertIsDisplayed()
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun renderPaperAddBooksWithSelectedConfirmation() {
+        RuntimeEnvironment.setFontScale(1.5f)
+        val books =
+            (1L..12L).map { id ->
+                detailBook("Book $id", "Ursula K. Le Guin").let {
+                    it.copy(book = it.book.copy(id = id, fileLocation = "Fiction/Earthsea/Book $id.epub"))
+                }
+            }
+        val category =
+            CategorySummary(
+                CategoryEntity(7, "Reading list", createdAt = Instant.EPOCH),
+                emptyList(),
+                emptyList(),
+                OrganizationStats(),
+            )
+        compose.setContent { DeftTheme(darkTheme = false) { CategoryAddBooks(category, books, model, {}) } }
+        compose.onNodeWithText("Book 1").performClick()
+        captureSheet("category-add-books-paper-large")
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun renderPaperCategoryBrowserWithGridAndSeparateControls() {
+        val books =
+            (1L..2L).map { id ->
+                detailBook("A Wizard of Earthsea", "Ursula K. Le Guin").let { it.copy(book = it.book.copy(id = id)) }
+            }
+        val categories =
+            books.map { book ->
+                CategorySummary(
+                    CategoryEntity(
+                        book.book.id,
+                        if (book.book.id ==
+                            1L
+                        ) {
+                            "Earthsea"
+                        } else {
+                            "Weekend reading"
+                        },
+                        createdAt = Instant.EPOCH,
+                    ),
+                    emptyList(),
+                    listOf(
+                        CategoryBook(book, CategoryMemberEntity(book.book.id, book.book.id, 1.0, false, Instant.EPOCH)),
+                    ),
+                    OrganizationStats(total = 1),
+                )
+            }
+        val state =
+            OrganizationUiState(
+                OrganizationSnapshot(categories = categories, books = books),
+                LibrarySettings(categoryGridView = true),
+            )
+        val browser = mutableStateOf(state)
+        compose.setContent {
+            DeftTheme(darkTheme = false) { OrganizationRenderSurface { CategoriesScreen(browser.value, model) {} } }
+        }
+        captureDetail("categories-browser-paper")
+        compose.runOnIdle { browser.value = state.copy(preferences = state.preferences.copy(categoryGridView = false)) }
+        captureDetail("categories-list-paper")
+    }
+
+    @OptIn(ExperimentalRoborazziApi::class)
+    private fun captureSheet(name: String) {
+        val image = File("build/reports/screenshots/$name.png").apply { parentFile?.mkdirs() }
+        val roots = compose.onAllNodes(isRoot())
+        roots[roots.fetchSemanticsNodes().lastIndex].captureRoboImage(
+            image.path,
+            roborazziOptions = RoborazziOptions(taskType = RoborazziTaskType.Record),
+        )
     }
 
     private fun detailBook(

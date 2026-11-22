@@ -70,11 +70,11 @@ class BooksScreenTest {
         }
         compose.onNodeWithTag("book_1").performTouchInput { longClick() }
         compose.onNodeWithTag("book_2").performClick()
-        compose.onNodeWithText("2 selected").assertExists()
-        compose.onNodeWithText("add to category").performClick()
+        compose.onNodeWithContentDescription("2 selected").assertExists()
+        compose.onNodeWithContentDescription("add to category").performClick()
         assertEquals(setOf(1L, 2L), selected)
         assertEquals(0, opened)
-        compose.onNodeWithText("2 selected").assertDoesNotExist()
+        compose.onNodeWithContentDescription("2 selected").assertDoesNotExist()
         compose.onNodeWithTag("book_1").performClick()
         assertEquals(1, opened)
     }
@@ -92,14 +92,14 @@ class BooksScreenTest {
         compose.onNodeWithTag("book_1").performTouchInput { longClick() }
         compose.runOnIdle { state.value = state.value.copy(books = emptyList(), isLoading = true) }
         restoration.emulateSavedInstanceStateRestore()
-        compose.onNodeWithText("1 selected").assertExists()
+        compose.onNodeWithContentDescription("1 selected").assertExists()
         compose.runOnIdle { state.value = state.value.copy(books = books, isLoading = false) }
-        compose.onNodeWithText("select all").performClick()
-        compose.onNodeWithText("2 selected").assertExists()
+        compose.onNodeWithContentDescription("select all").performClick()
+        compose.onNodeWithContentDescription("2 selected").assertExists()
         compose.runOnIdle { state.value = state.value.copy(books = books.drop(1)) }
-        compose.onNodeWithText("1 selected").assertExists()
+        compose.onNodeWithContentDescription("1 selected").assertExists()
         compose.onNodeWithContentDescription("clear selection").performClick()
-        compose.onNodeWithText("1 selected").assertDoesNotExist()
+        compose.onNodeWithContentDescription("1 selected").assertDoesNotExist()
     }
 
     @Test fun filtersExposeReadingStatesAndAssessment() {

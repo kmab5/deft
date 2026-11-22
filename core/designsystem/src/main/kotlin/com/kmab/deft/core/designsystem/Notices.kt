@@ -57,6 +57,7 @@ internal data class DeftNotice(
     val kind: DeftNoticeKind,
     val actionLabel: String?,
     val onAction: (() -> Unit)?,
+    val detail: String? = null,
 )
 
 /** App-owned queue. Hidden notices get their full reading time when they become visible. */
@@ -71,12 +72,16 @@ class DeftNoticeState {
         kind: DeftNoticeKind = DeftNoticeKind.Info,
         actionLabel: String? = null,
         onAction: (() -> Unit)? = null,
+        detail: String? = null,
     ): Long {
         // Errors with identical corrective text need only one place in the stack.
         if (onAction == null) {
-            queue.firstOrNull { it.message == message && it.kind == kind && it.onAction == null }?.let { return it.id }
+            queue
+                .firstOrNull {
+                    it.message == message && it.detail == detail && it.kind == kind && it.onAction == null
+                }?.let { return it.id }
         }
-        val notice = DeftNotice(++nextId, message, kind, actionLabel, onAction)
+        val notice = DeftNotice(++nextId, message, kind, actionLabel, onAction, detail)
         queue += notice
         return notice.id
     }
@@ -170,43 +175,6 @@ private fun NoticeCard(
         border = BorderStroke(1.dp, colors.line2),
         shadowElevation = 6.dp,
     ) {
-        Column(Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    when (notice.kind) {
-                        DeftNoticeKind.Error -> DeftActionIcons.Warning
-                        DeftNoticeKind.Success -> DeftActionIcons.Check
-                        DeftNoticeKind.Info -> DeftActionIcons.Info
-                    },
-                    null,
-                    Modifier.size(20.dp),
-                    tint =
-                        when (notice.kind) {
-                            DeftNoticeKind.Error -> colors.error
-                            DeftNoticeKind.Success -> colors.finishedText
-                            DeftNoticeKind.Info -> colors.accentText
-                        },
-                )
-                Column(Modifier.weight(1f).padding(start = 12.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)) {
-                    Text(notice.message, style = DeftTypography.body, color = colors.text)
-                    if (notice.actionLabel != null && notice.onAction != null) {
-                        TextButton(
-                            onClick = {
-                                state.dismiss(notice.id)
-                                notice.onAction.invoke()
-                            },
-                            modifier = Modifier.heightIn(min = 48.dp),
-                            contentPadding = PaddingValues(vertical = 8.dp),
-                            shape = DeftShapes.small,
-                        ) {
-                            Text(notice.actionLabel, style = DeftTypography.label, color = colors.accentText)
-                        }
-                    }
-                }
-                IconButton(onClick = { state.dismiss(notice.id) }, modifier = Modifier.size(48.dp)) {
-                    Icon(DeftActionIcons.Close, "dismiss notice", tint = colors.muted)
-                }
-            }
-        }
+        NoticeContent(notice) { state.dismiss(notice.id) }
     }
 }

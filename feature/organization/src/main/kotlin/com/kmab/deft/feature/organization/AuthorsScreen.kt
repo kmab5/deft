@@ -35,6 +35,7 @@ import com.kmab.deft.library.organization.OrganizedBook
 @Composable
 internal fun AuthorsScreen(
     state: OrganizationUiState,
+    model: OrganizationViewModel? = null,
     open: (Long) -> Unit,
 ) {
     val authors =
@@ -43,7 +44,8 @@ internal fun AuthorsScreen(
             !state.loadFailed,
         )
     var query by rememberSaveable { mutableStateOf("") }
-    val matches = authors.filter { it.author.name.contains(query.trim(), true) }
+    val prefs = state.preferences
+    val matches = browseAuthors(authors, prefs, query)
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item {
             OutlinedTextField(
@@ -53,6 +55,27 @@ internal fun AuthorsScreen(
                 singleLine = true,
                 label = { Text("find authors") },
             )
+        }
+        item {
+            BrowseSort(
+                prefs.authorSort,
+                prefs.authorReverse,
+                authorSortOptions,
+                { model?.preference { setAuthorSort(it) } },
+                { model?.preference { toggleAuthorReverse() } },
+            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                BrowseState(prefs.authorState) { model?.preference { setAuthorState(it) } }
+                BrowseChoice(
+                    if (prefs.authorRating == "all") "all ratings" else prefs.authorRating,
+                    listOf("all", "rated", "unrated"),
+                    prefs.authorRating,
+                    { model?.preference { setAuthorRating(it) } },
+                )
+                if (prefs.authorState != null || prefs.authorRating != "all") {
+                    DeftButton("reset", { model?.preference { resetAuthorFilters() } }, style = DeftButtonStyle.Text)
+                }
+            }
         }
         if (matches.isEmpty()) item { OrganizationEmpty("No matching authors.") }
         items(matches, key = { it.author.id }) { author ->
@@ -76,7 +99,9 @@ internal fun AuthorDetail(
 ) {
     var action by rememberSaveable(author.author.id) { mutableStateOf<String?>(null) }
     val closeSheet = { action = null }
-    val byState = author.books.groupBy { it.state }
+    var sort by rememberSaveable(author.author.id) { mutableStateOf("title") }
+    var reverse by rememberSaveable(author.author.id) { mutableStateOf(false) }
+    val byState = sortOrganizationBooks(author.books, sort, reverse).groupBy { it.state }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             OrganizationPanel {
@@ -92,6 +117,7 @@ internal fun AuthorDetail(
                 }
             }
         }
+        item { BrowseSort(sort, reverse, organizationBookSortOptions, { sort = it }, { reverse = !reverse }) }
         BookState.entries.forEach { state ->
             val books = byState[state].orEmpty()
             if (books.isNotEmpty()) {
@@ -113,19 +139,8 @@ private fun AuthorBooks(
 ) {
     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         items(books, key = { it.book.id }) { entry ->
-            val book = entry.book
-            Column(
-                Modifier.width(104.dp).clickable(role = Role.Button) { openBook(book.id) },
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                OrganizationBookCover(book, Modifier.size(104.dp, 144.dp))
-                Text(book.displayTitle(), style = DeftTypography.title, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            OrganizationBookTile(entry, Modifier.width(156.dp), { openBook(entry.book.id) }) {
                 Text(timeLabel(entry.activeSeconds), style = DeftTypography.mono)
-                if (book.missing) {
-                    Text("file missing", style = DeftTypography.mono)
-                } else if (book.drmProtected) {
-                    Text("protected", style = DeftTypography.mono)
-                }
             }
         }
     }

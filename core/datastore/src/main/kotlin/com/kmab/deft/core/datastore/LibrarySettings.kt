@@ -25,4 +25,12 @@ data class LibrarySettings(
     val categoryTypeFilter: Long? = null,
     val groupCategoriesByType: Boolean = false,
     val categoryGridView: Boolean = false,
+    val categorySort: String = "name",
+    val categoryReverse: Boolean = false,
+    val categoryReview: String = "all",
+    val categoryState: BookState? = null,
+    val authorSort: String = "name",
+    val authorReverse: Boolean = false,
+    val authorRating: String = "all",
+    val authorState: BookState? = null,
 )

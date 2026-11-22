@@ -69,7 +69,7 @@ internal fun BooksToolbar(
     val c = LocalDeftColors.current
     val ascending =
         if (state.sort == BookSort.TITLE ||
-            state.sort == BookSort.AUTHOR
+            state.sort == BookSort.AUTHOR || state.sort == BookSort.FILE_LOCATION
         ) {
             !state.reverseSort
         } else {
@@ -78,7 +78,7 @@ internal fun BooksToolbar(
     val active =
         (if (state.formatFilter.size != BookFormat.entries.size) 1 else 0) + (if (state.showMissing) 1 else 0) +
             (if (state.stateFilter.size != BookState.entries.size) 1 else 0) + (if (state.favoritesOnly) 1 else 0) +
-            (if (state.minimumRating != null) 1 else 0) + (if (state.categoryFilter != null) 1 else 0)
+            (if (state.minimumRating != null) 1 else 0)
     Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Row(
             Modifier
@@ -181,7 +181,6 @@ internal fun BooksFilters(
     onStateFilter: (BookState, Boolean) -> Unit,
     onFavoritesOnly: (Boolean) -> Unit,
     onMinimumRating: (Double?) -> Unit,
-    onCategoryFilter: (Long?) -> Unit = {},
 ) {
     val c = LocalDeftColors.current
     LibraryPopup("filter books", onDismiss) {
@@ -201,7 +200,6 @@ internal fun BooksFilters(
                                 BookState.entries.forEach { onStateFilter(it, true) }
                                 onFavoritesOnly(false)
                                 onMinimumRating(null)
-                                onCategoryFilter(null)
                             }.padding(vertical = 14.dp, horizontal = 8.dp),
                 )
             }
@@ -211,22 +209,6 @@ internal fun BooksFilters(
                     readingState in state.stateFilter,
                     { onStateFilter(readingState, it) },
                     Modifier.fillMaxWidth(),
-                )
-            }
-            HorizontalDivider(color = c.line)
-            Text("category", style = DeftTypography.label, color = c.muted)
-            RadioOption(
-                "all categories",
-                state.categoryFilter == null,
-                { onCategoryFilter(null) },
-                DeftIcons.Categories,
-            )
-            state.categories.forEach { category ->
-                RadioOption(
-                    "${category.category.name} · ${category.stats.total} books · #${category.category.id}",
-                    state.categoryFilter == category.category.id,
-                    { onCategoryFilter(category.category.id) },
-                    null,
                 )
             }
             HorizontalDivider(color = c.line)
@@ -323,6 +305,7 @@ internal fun BooksSort(
                         when (sort) {
                             BookSort.TITLE -> LibraryIcons.Title
                             BookSort.AUTHOR -> DeftIcons.Authors
+                            BookSort.FILE_LOCATION -> com.kmab.deft.core.designsystem.icons.DeftActionIcons.Folder
                             BookSort.DATE_ADDED -> LibraryIcons.Added
                             BookSort.LAST_READ -> LibraryIcons.History
                             BookSort.RATING -> DeftIcons.Star

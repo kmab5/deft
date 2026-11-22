@@ -63,6 +63,8 @@ abstract class BookDao {
  SELECT b.id, COALESCE(b.titleOverride, b.title) AS title, b.sortTitle,
  COALESCE((SELECT group_concat(name, ', ') FROM (SELECT a.name FROM book_authors ba JOIN authors a ON a.id = ba.authorId WHERE ba.bookId = b.id AND ba.overridden = (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = b.id) ORDER BY ba.position, a.id)), '') AS authorsDisplay,
  b.format, COALESCE(b.coverOverridePath, b.coverPath) AS coverPath, b.addedAt, b.lastReadAt, b.totalProgression,
+ COALESCE((SELECT a.sortName FROM book_authors ba JOIN authors a ON a.id = ba.authorId WHERE ba.bookId = b.id AND ba.overridden = (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = b.id) ORDER BY ba.position, a.id LIMIT 1), '') AS authorSortName,
+ COALESCE((SELECT f.displayPath FROM book_files f WHERE f.bookId = b.id ORDER BY f.missing, f.displayPath COLLATE NOCASE, f.id LIMIT 1), '') AS fileLocation,
  NOT EXISTS (SELECT 1 FROM book_files f WHERE f.bookId = b.id AND f.missing = 0) AS missing, b.drmProtected
  FROM books b  WHERE b.ignored = 1 ORDER BY b.sortTitle COLLATE NOCASE, b.id
     """,
@@ -74,6 +76,8 @@ abstract class BookDao {
  SELECT b.id, COALESCE(b.titleOverride, b.title) AS title, b.sortTitle,
  COALESCE((SELECT group_concat(name, ', ') FROM (SELECT a.name FROM book_authors ba JOIN authors a ON a.id = ba.authorId WHERE ba.bookId = b.id AND ba.overridden = (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = b.id) ORDER BY ba.position, a.id)), '') AS authorsDisplay,
  b.format, COALESCE(b.coverOverridePath, b.coverPath) AS coverPath, b.addedAt, b.lastReadAt, b.totalProgression,
+ COALESCE((SELECT a.sortName FROM book_authors ba JOIN authors a ON a.id = ba.authorId WHERE ba.bookId = b.id AND ba.overridden = (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = b.id) ORDER BY ba.position, a.id LIMIT 1), '') AS authorSortName,
+ COALESCE((SELECT f.displayPath FROM book_files f WHERE f.bookId = b.id ORDER BY f.missing, f.displayPath COLLATE NOCASE, f.id LIMIT 1), '') AS fileLocation,
  NOT EXISTS (SELECT 1 FROM book_files f WHERE f.bookId = b.id AND f.missing = 0) AS missing, b.drmProtected
  FROM books b  WHERE b.ignored = 0 AND b.drmProtected = 0 AND b.format = 'EPUB'
       AND b.currentLocator IS NOT NULL AND b.lastOpenedAt IS NOT NULL
@@ -119,6 +123,8 @@ abstract class BookDao {
  SELECT b.id, COALESCE(b.titleOverride, b.title) AS title, b.sortTitle,
  COALESCE((SELECT group_concat(name, ', ') FROM (SELECT a.name FROM book_authors ba JOIN authors a ON a.id = ba.authorId WHERE ba.bookId = b.id AND ba.overridden = (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = b.id) ORDER BY ba.position, a.id)), '') AS authorsDisplay,
  b.format, COALESCE(b.coverOverridePath, b.coverPath) AS coverPath, b.addedAt, b.lastReadAt, b.totalProgression,
+ COALESCE((SELECT a.sortName FROM book_authors ba JOIN authors a ON a.id = ba.authorId WHERE ba.bookId = b.id AND ba.overridden = (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = b.id) ORDER BY ba.position, a.id LIMIT 1), '') AS authorSortName,
+ COALESCE((SELECT f.displayPath FROM book_files f WHERE f.bookId = b.id ORDER BY f.missing, f.displayPath COLLATE NOCASE, f.id LIMIT 1), '') AS fileLocation,
  NOT EXISTS (SELECT 1 FROM book_files f WHERE f.bookId = b.id AND f.missing = 0) AS missing, b.drmProtected
  FROM books b WHERE b.ignored = 0 AND (:allFormats OR b.format IN (:formats))
  AND (:includeMissing OR EXISTS (SELECT 1 FROM book_files f WHERE f.bookId = b.id AND f.missing = 0))
@@ -129,6 +135,8 @@ abstract class BookDao {
  CASE WHEN :sort = 'DATE_ADDED' AND :reverseSort THEN b.addedAt END ASC,
  CASE WHEN :sort = 'AUTHOR' AND NOT :reverseSort THEN (SELECT a.sortName FROM book_authors ba JOIN authors a ON a.id = ba.authorId WHERE ba.bookId = b.id AND ba.overridden = (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = b.id) ORDER BY ba.position, a.id LIMIT 1) END COLLATE NOCASE ASC,
  CASE WHEN :sort = 'AUTHOR' AND :reverseSort THEN (SELECT a.sortName FROM book_authors ba JOIN authors a ON a.id = ba.authorId WHERE ba.bookId = b.id AND ba.overridden = (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = b.id) ORDER BY ba.position, a.id LIMIT 1) END COLLATE NOCASE DESC,
+ CASE WHEN :sort = 'FILE_LOCATION' AND NOT :reverseSort THEN fileLocation END COLLATE NOCASE ASC,
+ CASE WHEN :sort = 'FILE_LOCATION' AND :reverseSort THEN fileLocation END COLLATE NOCASE DESC,
  CASE WHEN :sort = 'TITLE' AND :reverseSort THEN b.sortTitle END COLLATE NOCASE DESC,
  b.sortTitle COLLATE NOCASE ASC, b.id ASC
  """,

@@ -338,7 +338,7 @@ Books
 │ Books Categories Authors Notes Stats │
 └──────────────────────────────┘
 ```
-- **Books:** grid/list, sort (title, author, recently read, date added, rating, progress), filter (state, format, favorite, category, rating, missing, protected, matched). Multi-select → add to category, set state, match editions.
+- **Books:** grid/list, sort (title, author, recently read, date added, rating, progress, file location), filter (state, format, favorite, rating, missing, protected, matched). Multi-select → add to category, set state, match editions.
 - **Book page:** cover, title/author (tap author → author page), state control, rating/favorite, progress, "Read"/"Continue", categories (with positions), next in series, read-throughs, stats, notes tab, edition match, file info (paths, format, size, missing/protected).
 - **Categories:** list/grid grouped or filtered by type; each with progress bar and rating. Category page: ordered members, progress, stats, rating override, edit types, merge.
 - **Authors:** list with progress and counts; author page.
@@ -516,3 +516,7 @@ Record every decision made or changed after approval: date, decision, reason.
 | 2026-11-21 | Category/type names are limited to 240 characters, descriptions to 10,000, and series positions to finite values within ±1 billion. Custom category covers copy at most 16 MiB of local image input and store a sampled JPEG up to 960px; imported files never become remote URLs. Submitted cover import, database commit and cleanup finish consistently across activity cancellation. | Bounds keep user edits and local storage predictable while preserving source-file read-only behavior and cover/database consistency. |
 
 | 2026-11-22 | Idle film is 55% black, with a full-width centered black label band pulsing from the film opacity to about 87%; the white label pulses between 65% and full opacity. Reduced motion uses the steady dark band. | Device review still found the label invisible. Author requests this visual adjustment directly on main without a build; M4 includes and verifies it. |
+
+| 2026-11-22 | 0.4.1 separates organization actions from browsing controls, adds persistent category/author sorting and filters, cover-rich member list/grid and picker, visible ordering, and a fixed picker confirmation. Category filtering is removed from Books; legacy saved values are ignored there. | Author device checklist and seven screenshots request clearer hierarchy, compact controls and category browsing through its dedicated tab. |
+| 2026-11-22 | File-location sorting uses a canonical BookFile displayPath, preferring present files, then case-insensitive path and file ID. Series drag reorders the exact visible member set into existing unique numeric slots; duplicate slots are renumbered 1..N, explained before saving. Ignored memberships remain untouched. | Supports requested file-location sorting and drag ordering while preserving decimal positions, identity and scanner decisions. |
+| 2026-11-22 | All working top-level tabs share last-scan/settings menu styling and support nonwrapping horizontal swipe navigation. Scan notices use separate status, counts and details action and sit above bottom navigation. | Device review found inconsistent menus, awkward scan notices and missing swipe navigation. |

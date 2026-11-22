@@ -54,11 +54,15 @@ internal class OrganizationViewModel
             }
         }
 
-        fun preference(action: suspend LibrarySettingsRepository.() -> Unit) = write { settings.action() }
+        fun preference(action: suspend LibrarySettingsRepository.() -> Unit) =
+            write(exclusive = false) { settings.action() }
 
-        private fun write(action: suspend () -> Unit) {
-            if (busy.value) return
-            busy.value = true
+        private fun write(
+            exclusive: Boolean = true,
+            action: suspend () -> Unit,
+        ) {
+            if (exclusive && busy.value) return
+            if (exclusive) busy.value = true
             viewModelScope.launch {
                 try {
                     action()
@@ -71,7 +75,7 @@ internal class OrganizationViewModel
                 } catch (_: SQLiteException) {
                     error.value = "Couldn't save the change. Try again."
                 } finally {
-                    busy.value = false
+                    if (exclusive) busy.value = false
                 }
             }
         }

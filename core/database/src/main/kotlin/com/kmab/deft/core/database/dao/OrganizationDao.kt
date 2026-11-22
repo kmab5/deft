@@ -107,6 +107,8 @@ interface OrganizationDao {
         """
         SELECT b.id, COALESCE(b.titleOverride, b.title) AS title, b.sortTitle, '' AS authorsDisplay,
         b.format, COALESCE(b.coverOverridePath, b.coverPath) AS coverPath, b.addedAt, b.lastReadAt, b.totalProgression,
+ COALESCE((SELECT a.sortName FROM book_authors ba JOIN authors a ON a.id = ba.authorId WHERE ba.bookId = b.id AND ba.overridden = (SELECT COALESCE(MAX(overridden), 0) FROM book_authors WHERE bookId = b.id) ORDER BY ba.position, a.id LIMIT 1), '') AS authorSortName,
+ COALESCE((SELECT f.displayPath FROM book_files f WHERE f.bookId = b.id ORDER BY f.missing, f.displayPath COLLATE NOCASE, f.id LIMIT 1), '') AS fileLocation,
         NOT EXISTS (SELECT 1 FROM book_files f WHERE f.bookId = b.id AND f.missing = 0) AS missing,
         b.drmProtected, b.rating, b.extractedSeriesName, b.extractedSeriesIndex
         FROM books b WHERE b.ignored = 0 ORDER BY b.id

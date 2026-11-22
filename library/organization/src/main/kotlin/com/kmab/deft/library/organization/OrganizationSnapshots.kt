@@ -139,6 +139,11 @@ internal class OrganizationSnapshots(
                     }
                 CategoryOrder.AUTHOR -> compareBy { authorSort[it.book.book.id].orEmpty().lowercase(Locale.ROOT) }
                 CategoryOrder.DATE_ADDED -> compareByDescending { it.membership.addedAt }
+                CategoryOrder.FILE_LOCATION ->
+                    compareBy {
+                        it.book.book.fileLocation
+                            .lowercase(Locale.ROOT)
+                    }
                 CategoryOrder.RATING -> compareByDescending { it.book.rating ?: -1.0 }
             }
         return primary

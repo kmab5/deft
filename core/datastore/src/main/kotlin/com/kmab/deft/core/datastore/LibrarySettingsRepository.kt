@@ -32,6 +32,14 @@ class LibrarySettingsRepository
                     categoryTypeFilter = p[CATEGORY_TYPE_FILTER]?.takeIf { it >= 0 },
                     groupCategoriesByType = p[GROUP_CATEGORIES] ?: false,
                     categoryGridView = p[CATEGORY_GRID] ?: false,
+                    categorySort = p[CATEGORY_SORT]?.takeIf { it in CATEGORY_SORTS } ?: "name",
+                    categoryReverse = p[CATEGORY_REVERSE] ?: false,
+                    categoryReview = p[CATEGORY_REVIEW]?.takeIf { it in REVIEWS } ?: "all",
+                    categoryState = BookState.entries.find { it.name == p[CATEGORY_STATE] },
+                    authorSort = p[AUTHOR_SORT]?.takeIf { it in AUTHOR_SORTS } ?: "name",
+                    authorReverse = p[AUTHOR_REVERSE] ?: false,
+                    authorRating = p[AUTHOR_RATING]?.takeIf { it in RATINGS } ?: "all",
+                    authorState = BookState.entries.find { it.name == p[AUTHOR_STATE] },
                     enabledFormats =
                         p[FORMATS]?.mapNotNull { name -> BookFormat.entries.find { it.name == name } }?.toSet()
                             ?: BookFormat.entries.toSet(),
@@ -126,6 +134,88 @@ class LibrarySettingsRepository
             store.edit { it[CATEGORY_GRID] = value }
         }
 
+        suspend fun setCategoryBrowse(
+            sort: String = "name",
+            reverse: Boolean = false,
+            review: String = "all",
+            state: BookState? = null,
+        ) {
+            require(sort in CATEGORY_SORTS && review in REVIEWS)
+            store.edit {
+                it[CATEGORY_SORT] = sort
+                it[CATEGORY_REVERSE] = reverse
+                it[CATEGORY_REVIEW] = review
+                if (state == null) it.remove(CATEGORY_STATE) else it[CATEGORY_STATE] = state.name
+            }
+        }
+
+        suspend fun setAuthorBrowse(
+            sort: String = "name",
+            reverse: Boolean = false,
+            rating: String = "all",
+            state: BookState? = null,
+        ) {
+            require(sort in AUTHOR_SORTS && rating in RATINGS)
+            store.edit {
+                it[AUTHOR_SORT] = sort
+                it[AUTHOR_REVERSE] = reverse
+                it[AUTHOR_RATING] = rating
+                if (state == null) it.remove(AUTHOR_STATE) else it[AUTHOR_STATE] = state.name
+            }
+        }
+
+        suspend fun setCategorySort(value: String) {
+            require(value in CATEGORY_SORTS)
+            store.edit { it[CATEGORY_SORT] = value }
+        }
+
+        suspend fun toggleCategoryReverse() {
+            store.edit { it[CATEGORY_REVERSE] = !(it[CATEGORY_REVERSE] ?: false) }
+        }
+
+        suspend fun setCategoryReview(value: String) {
+            require(value in REVIEWS)
+            store.edit { it[CATEGORY_REVIEW] = value }
+        }
+
+        suspend fun setCategoryState(value: BookState?) {
+            store.edit { if (value == null) it.remove(CATEGORY_STATE) else it[CATEGORY_STATE] = value.name }
+        }
+
+        suspend fun resetCategoryFilters() {
+            store.edit {
+                it.remove(CATEGORY_TYPE_FILTER)
+                it.remove(CATEGORY_REVIEW)
+                it.remove(CATEGORY_STATE)
+                it.remove(GROUP_CATEGORIES)
+            }
+        }
+
+        suspend fun setAuthorSort(value: String) {
+            require(value in AUTHOR_SORTS)
+            store.edit { it[AUTHOR_SORT] = value }
+        }
+
+        suspend fun toggleAuthorReverse() {
+            store.edit { it[AUTHOR_REVERSE] = !(it[AUTHOR_REVERSE] ?: false) }
+        }
+
+        suspend fun setAuthorRating(value: String) {
+            require(value in RATINGS)
+            store.edit { it[AUTHOR_RATING] = value }
+        }
+
+        suspend fun setAuthorState(value: BookState?) {
+            store.edit { if (value == null) it.remove(AUTHOR_STATE) else it[AUTHOR_STATE] = value.name }
+        }
+
+        suspend fun resetAuthorFilters() {
+            store.edit {
+                it.remove(AUTHOR_RATING)
+                it.remove(AUTHOR_STATE)
+            }
+        }
+
         suspend fun setShowMissing(value: Boolean) {
             store.edit { it[MISSING] = value }
         }
@@ -155,6 +245,18 @@ class LibrarySettingsRepository
         }
 
         private companion object {
+            val CATEGORY_SORTS = setOf("name", "created", "book count", "rating")
+            val AUTHOR_SORTS = setOf("name", "book count", "time", "rating")
+            val REVIEWS = setOf("all", "review", "reviewed")
+            val RATINGS = setOf("all", "rated", "unrated")
+            val CATEGORY_SORT = stringPreferencesKey("category_sort")
+            val CATEGORY_REVERSE = booleanPreferencesKey("category_reverse")
+            val CATEGORY_REVIEW = stringPreferencesKey("category_review")
+            val CATEGORY_STATE = stringPreferencesKey("category_state")
+            val AUTHOR_SORT = stringPreferencesKey("author_sort")
+            val AUTHOR_REVERSE = booleanPreferencesKey("author_reverse")
+            val AUTHOR_RATING = stringPreferencesKey("author_rating")
+            val AUTHOR_STATE = stringPreferencesKey("author_state")
             val SERIES_AUTO_FILL = booleanPreferencesKey("series_auto_fill")
             val CATEGORY_FILTER = longPreferencesKey("book_category_filter")
             val CATEGORY_TYPE_FILTER = longPreferencesKey("category_type_filter")

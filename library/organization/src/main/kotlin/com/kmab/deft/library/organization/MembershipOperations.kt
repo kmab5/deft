@@ -76,6 +76,28 @@ internal class MembershipOperations(
         )
     }
 
+    suspend fun reorderSeries(
+        categoryId: Long,
+        visibleBookIds: List<Long>,
+    ) {
+        requireNotNull(dao.category(categoryId)) { "This category no longer exists." }
+        require(dao.typeLinks().any { it.categoryId == categoryId && it.typeId == OrganizationNames.SERIES_ID }) {
+            "Numbered reordering is available for Series categories."
+        }
+        val visible = dao.visibleBookIds().toHashSet()
+        val members = dao.members(categoryId).filter { it.bookId in visible }.associateBy { it.bookId }
+        require(visibleBookIds.size == members.size && visibleBookIds.toSet() == members.keys) {
+            "The category changed. Try reordering its current books again."
+        }
+        val slots = members.values.map { it.position }.sorted()
+        val unique = slots.distinct().size == slots.size
+        dao.putMembers(
+            visibleBookIds.mapIndexed { index, id ->
+                members.getValue(id).copy(position = if (unique) slots[index] else index + 1.0, suggested = false)
+            },
+        )
+    }
+
     suspend fun confirm(
         categoryId: Long,
         bookIds: Set<Long>,

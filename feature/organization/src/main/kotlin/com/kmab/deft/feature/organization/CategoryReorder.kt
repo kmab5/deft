@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -45,9 +46,27 @@ internal fun CategoryReorderSheet(
     val list = rememberLazyListState()
     OrganizationSheet("reorder books", close, model, scrollable = false) {
         Text("Hold a handle and drag, or use the up and down buttons.", style = DeftTypography.body)
+        if (category.isSeries) {
+            Text(
+                "Keeps existing number slots. Repeated numbers become 1, 2, 3… " +
+                    "Decimal positions remain editable afterward.",
+                style = DeftTypography.mono,
+            )
+        }
         DeftButton(
             "save order",
-            { model.edit(close) { reorder(category.category.id, order) } },
+            {
+                model.edit(close) {
+                    if (category.isSeries) {
+                        reorderSeries(
+                            category.category.id,
+                            order,
+                        )
+                    } else {
+                        reorder(category.category.id, order)
+                    }
+                }
+            },
             enabled = order != initial,
         )
         LazyColumn(Modifier.fillMaxWidth().weight(1f, fill = false), state = list) {
@@ -87,7 +106,8 @@ private fun ReorderRow(
     val colors = LocalDeftColors.current
     Row(
         modifier
-            .heightIn(min = 48.dp)
+            .heightIn(min = 64.dp)
+            .padding(vertical = 8.dp)
             .onSizeChanged { rowHeight = it.height.coerceAtLeast(1).toFloat() }
             .background(if (dragging) colors.surface2 else colors.surface),
         verticalAlignment = Alignment.CenterVertically,

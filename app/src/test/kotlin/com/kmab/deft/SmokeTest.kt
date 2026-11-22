@@ -9,7 +9,10 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.printToString
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,5 +42,11 @@ class SmokeTest {
         compose.onNodeWithText("find authors").assertIsDisplayed()
         compose.onNodeWithText("books").performClick()
         compose.onNodeWithTag("books_screen").assertIsDisplayed()
+        compose.onNodeWithTag("main_pages").performTouchInput { swipeLeft() }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("new category").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("main_pages").performTouchInput { swipeLeft() }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("find authors").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("main_pages").performTouchInput { swipeRight() }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("new category").fetchSemanticsNodes().isNotEmpty() }
     }
 }

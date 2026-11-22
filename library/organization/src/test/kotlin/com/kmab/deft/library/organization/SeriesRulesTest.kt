@@ -13,6 +13,77 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class SeriesRulesTest : OrganizationFixture() {
+    @Test fun dragReorderPreservesDecimalSlotsConfirmsAndSurvivesAutoFill() =
+        runBlocking {
+            val first = book("First", "Saga", -1.0)
+            val second = book("Second", "Saga", 2.5)
+            val third = book("Third", "Saga", 8.0)
+            repo.autoFill()
+            val id =
+                repo
+                    .get()
+                    .categories
+                    .single()
+                    .category.id
+            repo.reorderSeries(id, listOf(third, first, second))
+            repo.autoFill()
+            val members =
+                repo
+                    .get()
+                    .categories
+                    .single()
+                    .books
+            assertEquals(listOf(third, first, second), members.map { it.book.book.id })
+            assertEquals(listOf(-1.0, 2.5, 8.0), members.map { it.membership.position })
+            assertTrue(members.none { it.membership.suggested })
+            invalid { repo.reorderSeries(id, listOf(first, first, third)) }
+            invalid { repo.reorderSeries(id, listOf(first)) }
+            assertEquals(
+                members,
+                repo
+                    .get()
+                    .categories
+                    .single()
+                    .books,
+            )
+        }
+
+    @Test fun duplicateSeriesSlotsAreRenumberedWithoutTouchingIgnoredMembers() =
+        runBlocking {
+            val first = book("First", "Saga", 1.0)
+            val second = book("Second", "Saga", 1.0)
+            val hidden = book("Hidden", "Saga", 9.0)
+            repo.autoFill()
+            val id =
+                repo
+                    .get()
+                    .categories
+                    .single()
+                    .category.id
+            db.bookDao().setIgnored(hidden, true)
+            repo.reorderSeries(id, listOf(second, first))
+            assertEquals(
+                listOf(1.0, 2.0),
+                repo
+                    .get()
+                    .categories
+                    .single()
+                    .books
+                    .map { it.membership.position },
+            )
+            assertEquals(
+                9.0,
+                db
+                    .organizationDao()
+                    .members(id)
+                    .single { it.bookId == hidden }
+                    .position,
+                0.0,
+            )
+            val manual = repo.saveCategory(name = "Manual")
+            invalid { repo.reorderSeries(manual, emptyList()) }
+        }
+
     @Test fun absentIndexAppendsAfterNegativePrequelPosition() =
         runBlocking {
             book("Prequel", "Series", -2.0)

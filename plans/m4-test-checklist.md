@@ -1,8 +1,9 @@
 # M4 — categories, series and authors: device checklist
 
-Build: **0.4.0-1**, version code **40001**, signed release `deft-0.4.0.apk`.
-Install over your existing Deft app; do not uninstall. All steps below are for
-device review and start unchecked. Add comments and screenshots beneath each
+Current review build: **0.4.1-1**, version code **40101**, signed release `deft-0.4.1.apk`.
+
+## Original 0.4.0 review (preserved)
+Install over your existing Deft app; do not uninstall. The original device results and comments remain below. New 0.4.1 retests are at the end. Add comments and screenshots beneath each
 section; put media in `plans/feedback/`.
 
 ## Upgrade and existing behavior
@@ -141,3 +142,57 @@ Add findings here (screen, steps, expected behavior, actual behavior).
 - allow sorting by author for books wherever relevant
 - swiping sideways should switch between books - categories - authors
 - dont list categories in the books filtering, its too much to contain there, if users want, they can list category bounded books in the categories tab
+
+## 0.4.1 — review fixes to retest
+
+Install `deft-0.4.1.apk` over the existing app. These new checks are unchecked;
+local automated validation does not substitute for device acceptance.
+
+- [ ] Idle pause uses a darker film and a clearly visible full-width pulsing black
+  label strip with white text. Check light/sepia/dark/black; animations off stays
+  steady. First wake gesture is consumed without a page turn or idle time added.
+- [ ] Scan completion has a clear heading, concise counts and a separate details
+  action. Icon/close align; long errors wrap. Notices sit above bottom tabs,
+  slide/stack/dismiss, expire when untouched, and open the detailed scan report.
+- [ ] Books, Categories and Authors overflow menus have matching outlined styling
+  and icons for last scan/settings. Last scan is unavailable before a scan.
+- [ ] Swipe left/right between Books, Categories and Authors. Ends do not wrap,
+  vertical scrolling works, and horizontal rows/sliders keep their own gestures.
+  Tab buttons, Back, details, sheets and restored scroll/selection still work.
+- [ ] Books filters no longer contain the long category list. A category selected
+  in 0.4.0 does not invisibly restrict Books after updating; use Categories instead.
+- [ ] Books selection bar fits a large selection count at normal and 150% text.
+  Clear, select all and add remain aligned and usable; selection survives rotation.
+- [ ] File-location and author sorting work in Books, non-Series category members,
+  the add-books picker and author details. Reverse direction works where offered.
+  Multiple book files use a stable location, preferring a present file.
+- [ ] Category top controls clearly distinguish create/manage actions from search,
+  filters, sorting and display. Change list/grid and type grouping independently.
+- [ ] Sort categories by name, creation date, book count and rating; filter review
+  status, type and reading state. Combine with search, reset and restart the app.
+- [ ] Sort/filter Authors by name/count/time/rating and reading state/rated status.
+  Search, reset and restart retain appropriate preferences and stable ordering.
+- [ ] Category list uses visible cover thumbnails; grid shows proper cards. Custom
+  cover and collage fallback remain correct, including grouped categories.
+- [ ] Category member list shows book covers and useful metadata; switch to member
+  grid. Long titles and missing title/author labels fit, and books still open.
+- [ ] Non-Series sorting is visible beside the book section. Manual ordering makes
+  reorder easy to find; reorder rows have comfortable padding and accessible arrows.
+- [ ] Series reorder supports drag/arrows plus existing decimal editing. Saving a
+  reorder retains unique numeric slots (including fractions); duplicate positions
+  are renumbered as explained in the sheet. Rescan preserves the edited order.
+- [ ] Category rating and use-average/reset controls are compact and clearly grouped.
+  Add books/edit/more actions use the available width; description remains readable.
+- [ ] Suggested members have a distinct review section. Confirm one/all and edit
+  positions; the review indicator clears appropriately and survives restart.
+- [ ] New/edit category sheet separates details, type selection and cover controls.
+  Save/cancel remain reachable above the keyboard; cancel leaves data untouched.
+- [ ] Add-books picker shows covers, title, author, state/format/location. Search,
+  sort and filter a large list; changing filters retains deliberate selection.
+- [ ] Scroll far down the picker: floating tick and selected count remain reachable.
+  Confirm adds exactly the selected books once; last row is not covered by the button.
+- [ ] Category merge target selection supports search and sorting. Duplicate names
+  remain identifiable; confirmation/cancel and union behavior remain correct.
+- [ ] Inspect changed screens in both themes, landscape and 150% text; TalkBack
+  announces sorting, filtering, selection, reorder and confirmation actions.
+- [ ] M4 0.4.1 accepted; ready to merge this tested version into main.

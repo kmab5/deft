@@ -27,6 +27,43 @@ import java.time.Instant
 class LibrarySettingsRepositoryTest {
     @get:Rule val temp = TemporaryFolder()
 
+    @Test fun independentBrowseUpdatesDoNotOverwriteEachOtherAndResetKeepsSort() =
+        runBlocking {
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            val file = temp.newFolder().resolve("browse.preferences_pb")
+            val repository = LibrarySettingsRepository(PreferenceDataStoreFactory.create(scope = scope) { file })
+            try {
+                kotlinx.coroutines.coroutineScope {
+                    launch { repository.setCategorySort("created") }
+                    launch { repository.setCategoryReview("review") }
+                    launch { repository.setCategoryState(com.kmab.deft.core.model.BookState.READING) }
+                    launch { repository.setAuthorSort("time") }
+                    launch { repository.setAuthorRating("rated") }
+                    launch { repository.setAuthorState(com.kmab.deft.core.model.BookState.FINISHED) }
+                }
+                repository.toggleCategoryReverse()
+                val saved = repository.settings.first()
+                assertEquals("created", saved.categorySort)
+                assertEquals("review", saved.categoryReview)
+                assertEquals(com.kmab.deft.core.model.BookState.READING, saved.categoryState)
+                assertEquals("time", saved.authorSort)
+                assertEquals("rated", saved.authorRating)
+                assertEquals(com.kmab.deft.core.model.BookState.FINISHED, saved.authorState)
+                repository.resetCategoryFilters()
+                repository.resetAuthorFilters()
+                val reset = repository.settings.first()
+                assertEquals("created", reset.categorySort)
+                assertEquals(true, reset.categoryReverse)
+                assertEquals("all", reset.categoryReview)
+                assertEquals(null, reset.categoryState)
+                assertEquals("time", reset.authorSort)
+                assertEquals("all", reset.authorRating)
+                assertEquals(null, reset.authorState)
+            } finally {
+                scope.coroutineContext.job.cancelAndJoin()
+            }
+        }
+
     @Test fun defaultsAndEverySettingPersist() =
         runBlocking {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -55,6 +92,8 @@ class LibrarySettingsRepositoryTest {
             repository.setCategoryTypeFilter(7L)
             repository.setGroupCategoriesByType(true)
             repository.setCategoryGridView(true)
+            repository.setCategoryBrowse("created", true, "review", com.kmab.deft.core.model.BookState.READING)
+            repository.setAuthorBrowse("time", true, "rated", com.kmab.deft.core.model.BookState.FINISHED)
             scope.coroutineContext.job.cancelAndJoin()
             val secondScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             try {
@@ -63,29 +102,40 @@ class LibrarySettingsRepositoryTest {
                         PreferenceDataStoreFactory.create(scope = secondScope, produceFile = { file }),
                     )
                 assertEquals(
-                    LibrarySettings(
-                        BookFormat.entries.toSet() - BookFormat.PDF,
-                        true,
-                        BookSort.DATE_ADDED,
-                        false,
-                        Instant.EPOCH,
-                        reverseSort = true,
-                        gridSize = BookDisplaySize.SMALL,
-                        listSize = BookDisplaySize.LARGE,
-                        formatFilter = BookFormat.entries.toSet() - BookFormat.TXT,
-                        advancedSearch = true,
-                        seriesAutoFill = false,
-                        categoryFilter = 42L,
-                        categoryTypeFilter = 7L,
-                        groupCategoriesByType = true,
-                        categoryGridView = true,
-                    ),
+                    configuredSettings(),
                     reopened.settings.first(),
                 )
             } finally {
                 secondScope.cancel()
             }
         }
+
+    private fun configuredSettings() =
+        LibrarySettings(
+            BookFormat.entries.toSet() - BookFormat.PDF,
+            true,
+            BookSort.DATE_ADDED,
+            false,
+            Instant.EPOCH,
+            reverseSort = true,
+            gridSize = BookDisplaySize.SMALL,
+            listSize = BookDisplaySize.LARGE,
+            formatFilter = BookFormat.entries.toSet() - BookFormat.TXT,
+            advancedSearch = true,
+            seriesAutoFill = false,
+            categoryFilter = 42L,
+            categoryTypeFilter = 7L,
+            groupCategoriesByType = true,
+            categoryGridView = true,
+            categorySort = "created",
+            categoryReverse = true,
+            categoryReview = "review",
+            categoryState = com.kmab.deft.core.model.BookState.READING,
+            authorSort = "time",
+            authorReverse = true,
+            authorRating = "rated",
+            authorState = com.kmab.deft.core.model.BookState.FINISHED,
+        )
 
     @Test fun emptyViewFilterAndSortSurviveReopeningWithoutChangingScannerFormats() =
         runBlocking {

@@ -8,7 +8,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,8 +28,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,6 +54,7 @@ import coil3.ImageLoader
 import com.kmab.deft.core.designsystem.DeftButton
 import com.kmab.deft.core.designsystem.DeftButtonStyle
 import com.kmab.deft.core.designsystem.DeftMotion
+import com.kmab.deft.core.designsystem.DeftScreenMenu
 import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
@@ -86,12 +84,10 @@ fun BooksScreen(
     onStateFilter: (com.kmab.deft.core.model.BookState, Boolean) -> Unit = { _, _ -> },
     onFavoritesOnly: (Boolean) -> Unit = {},
     onMinimumRating: (Double?) -> Unit = {},
-    onCategoryFilter: (Long?) -> Unit = {},
     onAddToCategory: (Set<Long>) -> Unit = {},
     selectionResetKey: Int = 0,
 ) {
     val c = LocalDeftColors.current
-    var menu by remember { mutableStateOf(false) }
     var sheet by rememberSaveable { mutableStateOf<String?>(null) }
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -148,35 +144,7 @@ fun BooksScreen(
             }) {
                 Icon(DeftIcons.Search, "search books", tint = if (searching) c.accentText else c.muted)
             }
-            Box {
-                IconButton(onClick = { menu = true }) { Icon(LibraryIcons.More, "more options", tint = c.muted) }
-                DropdownMenu(
-                    menu,
-                    { menu = false },
-                    shape = DeftShapes.card,
-                    containerColor = c.surface,
-                    tonalElevation = 0.dp,
-                    shadowElevation = 0.dp,
-                    border = BorderStroke(1.dp, c.line),
-                ) {
-                    if (state.scanReport != null || state.hasScanDetails) {
-                        DropdownMenuItem(
-                            text = { Text("last scan", style = DeftTypography.label) },
-                            leadingIcon = { Icon(LibraryIcons.History, null) },
-                            onClick = {
-                                menu = false
-                                onScanDetails()
-                            },
-                        )
-                    }
-                    DropdownMenuItem(leadingIcon = {
-                        Icon(LibraryIcons.Settings, null)
-                    }, text = { Text("settings", style = DeftTypography.label) }, onClick = {
-                        menu = false
-                        onSettings()
-                    })
-                }
-            }
+            DeftScreenMenu(onSettings, onScanDetails.takeIf { state.scanReport != null || state.hasScanDetails })
         }
         AnimatedVisibility(searching) {
             Column {
@@ -249,7 +217,6 @@ fun BooksScreen(
                             .forEach { onStateFilter(it, true) }
                         onFavoritesOnly(false)
                         onMinimumRating(null)
-                        onCategoryFilter(null)
                     }
                 }
             }
@@ -260,7 +227,7 @@ fun BooksScreen(
         "filters" ->
             BooksFilters(state, {
                 sheet = null
-            }, onShowMissingChange, onFormatChange, onStateFilter, onFavoritesOnly, onMinimumRating, onCategoryFilter)
+            }, onShowMissingChange, onFormatChange, onStateFilter, onFavoritesOnly, onMinimumRating)
         "sort" -> BooksSort(state, { sheet = null }, onSortChange, onReverseSortChange)
         "display" -> BooksDisplay(state, { sheet = null }, onGridViewChange, onGridSizeChange, onListSizeChange)
     }
@@ -415,11 +382,12 @@ internal fun BookSort.label(): String =
         BookSort.DATE_ADDED -> "date added"
         BookSort.LAST_READ -> "last read"
         BookSort.RATING -> "rating"
+        BookSort.FILE_LOCATION -> "file location"
     }
 
 internal fun BookSort.orderLabel(reverse: Boolean): String =
     when (this) {
-        BookSort.TITLE, BookSort.AUTHOR -> if (reverse) "z to a" else "a to z"
+        BookSort.TITLE, BookSort.AUTHOR, BookSort.FILE_LOCATION -> if (reverse) "z to a" else "a to z"
         BookSort.DATE_ADDED, BookSort.LAST_READ -> if (reverse) "oldest first" else "newest first"
         BookSort.RATING -> if (reverse) "lowest first" else "highest first"
     }
@@ -449,5 +417,5 @@ private fun BooksUiState.hasReadingFilters(): Boolean =
     hasFolders && (
         formatFilter.size != BookFormat.entries.size ||
             stateFilter.size != com.kmab.deft.core.model.BookState.entries.size || favoritesOnly ||
-            minimumRating != null || categoryFilter != null
+            minimumRating != null
     )

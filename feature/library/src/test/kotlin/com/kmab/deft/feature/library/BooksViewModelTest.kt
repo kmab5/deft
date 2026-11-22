@@ -137,8 +137,6 @@ class BooksViewModelTest {
                 ScanStatusObserver(manager),
                 com.kmab.deft.tracking
                     .ReadThroughRepository(db),
-                com.kmab.deft.library.organization
-                    .OrganizationRepository(db),
             )
         models.put("books", vm)
         compose.setContent {
@@ -199,7 +197,7 @@ class BooksViewModelTest {
         return id
     }
 
-    @Test fun categoryFilterPersistsAndDeletedCategoryFallsBackToAllBooks() =
+    @Test fun legacyCategoryPreferenceDoesNotHideBooks() =
         runBlocking {
             val first = add("Alpha", "Writer")
             add("Zulu", "Writer")
@@ -208,14 +206,14 @@ class BooksViewModelTest {
                     .OrganizationRepository(db)
             val category = organization.saveCategory(name = "Reading list")
             organization.addBooks(category, setOf(first))
-            val model = observe()
-            model.setCategoryFilter(category)
+            settings.setCategoryFilter(category)
+            observe()
             compose.waitUntil(
                 5_000,
-            ) { latest.books.map { it.id } == listOf(first) && latest.categoryFilter == category }
+            ) { latest.books.size == 2 }
             assertEquals(category, settings.settings.first().categoryFilter)
             organization.deleteCategory(category)
-            compose.waitUntil(5_000) { latest.books.size == 2 && latest.categoryFilter == null }
+            compose.waitUntil(5_000) { latest.books.size == 2 }
         }
 
     @Test fun realSettingsRequerySortingMissingAndGrid() =
@@ -283,8 +281,6 @@ class BooksViewModelTest {
                     ScanStatusObserver(manager),
                     com.kmab.deft.tracking
                         .ReadThroughRepository(db),
-                    com.kmab.deft.library.organization
-                        .OrganizationRepository(db),
                 )
             models.put("recreated", recreated)
             val restored = recreated.uiState.first { !it.isLoading }

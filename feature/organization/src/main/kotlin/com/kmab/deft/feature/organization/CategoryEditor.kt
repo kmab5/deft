@@ -5,8 +5,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,7 +48,18 @@ internal fun CategoryEditor(
                 removeCover = false
             }
         }
-    OrganizationSheet(if (category == null) "new category" else "edit category", onClose, model) {
+    val draft = CategoryDraft(name, description, checked.toSet(), cover, removeCover)
+    OrganizationSheet(if (category == null) "new category" else "edit category", onClose, model, footer = {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            DeftButton("cancel", onClose, style = DeftButtonStyle.Secondary, enabled = !busy)
+            DeftButton(
+                "save category",
+                { model.edit(onSaved) { persistCategory(draft, category, initialBooks, model.covers) } },
+                modifier = Modifier.weight(1f),
+                enabled = !busy && draft.isValid,
+            )
+        }
+    }) {
         OutlinedTextField(
             name,
             { name = it },
@@ -63,7 +76,9 @@ internal fun CategoryEditor(
             minLines = 2,
             enabled = !busy,
         )
-        Text("types", style = DeftTypography.title)
+        HorizontalDivider()
+        Text("category types", style = DeftTypography.label)
+        Text("Choose any that apply. Types help organize your categories.", style = DeftTypography.mono)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             types.forEach { type ->
                 FilterChip(type.id in checked, {
@@ -71,6 +86,22 @@ internal fun CategoryEditor(
                 }, label = { Text(type.name) }, enabled = !busy)
             }
         }
+        HorizontalDivider()
+        Text("cover", style = DeftTypography.label)
+        Text(
+            if (cover !=
+                null
+            ) {
+                "New image selected"
+            } else if (removeCover ||
+                category?.coverPath == null
+            ) {
+                "Collage from member books"
+            } else {
+                "Custom image"
+            },
+            style = DeftTypography.mono,
+        )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             DeftButton(
                 if (cover == null) "choose cover" else "change selected cover",
@@ -90,11 +121,5 @@ internal fun CategoryEditor(
                 )
             }
         }
-        val draft = CategoryDraft(name, description, checked.toSet(), cover, removeCover)
-        DeftButton(
-            "save category",
-            { model.edit(onSaved) { persistCategory(draft, category, initialBooks, model.covers) } },
-            enabled = !busy && draft.isValid,
-        )
     }
 }

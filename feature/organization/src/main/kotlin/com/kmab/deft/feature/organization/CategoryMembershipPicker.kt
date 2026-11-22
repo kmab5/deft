@@ -117,6 +117,7 @@ internal fun OrganizationSheet(
     onDismiss: () -> Unit,
     model: OrganizationViewModel,
     scrollable: Boolean = true,
+    footer: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val busy by model.busy.collectAsStateWithLifecycle()
@@ -143,9 +144,7 @@ internal fun OrganizationSheet(
     }) {
         Box(Modifier.fillMaxWidth()) {
             Column(
-                Modifier.fillMaxWidth().then(
-                    if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier,
-                ),
+                Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Row(
@@ -159,7 +158,17 @@ internal fun OrganizationSheet(
                         Text("saving…", style = DeftTypography.mono)
                     }
                 }
-                content()
+                Column(
+                    Modifier.weight(1f, fill = false).fillMaxWidth().then(
+                        if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    content = content,
+                )
+                if (footer != null) {
+                    HorizontalDivider(color = LocalDeftColors.current.line)
+                    footer()
+                }
             }
             DeftNoticeHost(notices, Modifier.align(Alignment.BottomCenter))
         }

@@ -19,23 +19,29 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.kmab.deft.core.designsystem.DeftNoticeKind
+import com.kmab.deft.core.designsystem.DeftScreenMenu
 import com.kmab.deft.core.designsystem.DeftTopBar
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.LocalDeftNoticeState
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
 import com.kmab.deft.core.designsystem.rememberDestinationBack
 
-fun NavGraphBuilder.organizationGraph(navController: NavController) {
+fun NavGraphBuilder.organizationGraph(
+    navController: NavController,
+    onScanDetails: () -> Unit = {
+    },
+    hasScanDetails: Boolean = false,
+) {
     val openSettings = { navController.navigate("settings") }
     val openBook: (Long) -> Unit = { navController.navigate("book/$it") }
     composable("categories") {
-        OrganizationPage("categories", null, openSettings) { state, model ->
+        OrganizationPage("categories", null, openSettings, onScanDetails.takeIf { hasScanDetails }) { state, model ->
             CategoriesScreen(state, model) { navController.navigate("category/$it") }
         }
     }
     composable("authors") {
-        OrganizationPage("authors", null, openSettings) { state, _ ->
-            AuthorsScreen(state) { navController.navigate("author/$it") }
+        OrganizationPage("authors", null, openSettings, onScanDetails.takeIf { hasScanDetails }) { state, model ->
+            AuthorsScreen(state, model) { navController.navigate("author/$it") }
         }
     }
     composable("category/{categoryId}", listOf(navArgument("categoryId") { type = NavType.LongType })) { entry ->
@@ -79,6 +85,7 @@ private fun OrganizationPage(
     title: String,
     back: (() -> Unit)?,
     settings: (() -> Unit)?,
+    scanDetails: (() -> Unit)? = null,
     content: @Composable (OrganizationUiState, OrganizationViewModel) -> Unit,
 ) {
     val model: OrganizationViewModel = hiltViewModel()
@@ -105,7 +112,7 @@ private fun OrganizationPage(
                 } else {
                     { IconButton(back) { Icon(DeftActionIcons.Back, "back") } }
                 },
-            actions = { if (settings != null) OrganizationMenu(listOf("settings" to settings)) },
+            actions = { if (settings != null) DeftScreenMenu(settings, scanDetails) },
         )
     }) { insets ->
         CompositionLocalProvider(LocalOrganizationImageLoader provides imageLoader) {

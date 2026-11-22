@@ -1,10 +1,13 @@
 package com.kmab.deft.feature.organization
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedTextField
@@ -35,36 +38,61 @@ internal fun CategoryMemberRow(
     open: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var action by rememberSaveable { mutableStateOf<String?>(null) }
-    val id = category.category.id
     val book = member.book.book
     OrganizationPanel(modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            androidx.compose.foundation.layout.Box(Modifier.weight(1f)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OrganizationBookCover(book, Modifier.size(44.dp, 64.dp).clickable(onClick = open))
+            Box(Modifier.weight(1f)) {
                 val prefix = if (category.isSeries) "#${positionLabel(member.membership.position)} · " else ""
                 val status =
-                    when {
-                        book.missing -> " · file missing"
-                        book.drmProtected -> " · protected"
-                        else -> ""
+                    if (book.missing) {
+                        " · file missing"
+                    } else if (book.drmProtected) {
+                        " · protected"
+                    } else {
+                        ""
                     }
                 val review = if (member.membership.suggested) " · suggested" else ""
                 OrganizationRow(book.displayTitle(), prefix + book.displayAuthors() + status + review, onClick = open)
             }
-            OrganizationMenu(
-                buildList {
-                    if (category.isSeries) add("edit position" to { action = "position" })
-                    if (member.membership.suggested) {
-                        add(
-                            "confirm suggestion" to {
-                                model.edit { confirmMembers(id, setOf(book.id)) }
-                            },
-                        )
-                    }
-                    add("remove from category" to { action = "remove" })
+            CategoryMemberActions(category, member, model, showPosition = false)
+        }
+    }
+}
+
+@Composable
+internal fun CategoryMemberActions(
+    category: CategorySummary,
+    member: CategoryBook,
+    model: OrganizationViewModel,
+    showPosition: Boolean = true,
+) {
+    var action by rememberSaveable { mutableStateOf<String?>(null) }
+    val id = category.category.id
+    val book = member.book.book
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (showPosition) {
+            Text(
+                if (category.isSeries) {
+                    "#${positionLabel(
+                        member.membership.position,
+                    )}"
+                } else {
+                    member.book.state.readingLabel()
                 },
+                Modifier.weight(1f),
+                style = DeftTypography.mono,
             )
         }
+        OrganizationMenu(
+            buildList {
+                if (category.isSeries) add("edit position" to { action = "position" })
+                if (member.membership.suggested) {
+                    add("confirm suggestion" to { model.edit { confirmMembers(id, setOf(book.id)) } })
+                }
+                add("remove from category" to { action = "remove" })
+            },
+        )
     }
     when (action) {
         "position" -> CategoryPositionSheet(member, model) { action = null }
@@ -134,84 +162,6 @@ internal fun CategoryOrderSheet(
                 }, label = { Text(order.name.lowercase().replace('_', ' ')) })
             }
         }
-    }
-}
-
-@Composable
-internal fun CategoryAddBooks(
-    category: CategorySummary,
-    books: List<OrganizedBook>,
-    model: OrganizationViewModel,
-    close: () -> Unit,
-) {
-    var query by rememberSaveable { mutableStateOf("") }
-    var selected by rememberSaveable { mutableStateOf(arrayListOf<Long>()) }
-    val present = category.books.map { it.book.book.id }.toSet()
-    val search = query.trim()
-    val matches =
-        books.filter { entry ->
-            val book = entry.book
-            book.id !in present &&
-                (book.displayTitle().contains(search, true) || book.displayAuthors().contains(search, true))
-        }
-    OrganizationSheet("add books", close, model) {
-        OutlinedTextField(
-            query,
-            { query = it },
-            Modifier.fillMaxWidth(),
-            label = { Text("find books") },
-            singleLine = true,
-        )
-        DeftButton("add ${selected.size} books", {
-            model.edit(close) { addBooks(category.category.id, selected.toSet() - present) }
-        }, enabled = selected.isNotEmpty())
-        if (matches.isEmpty()) Text("No matching books.", style = DeftTypography.body)
-        matches.forEach { item ->
-            val book = item.book
-            FilterChip(book.id in selected, {
-                selected = ArrayList(if (book.id in selected) selected - book.id else selected + book.id)
-            }, label = {
-                Column {
-                    Text(book.displayTitle())
-                    Text(book.displayAuthors(), style = DeftTypography.mono)
-                }
-            }, modifier = Modifier.fillMaxWidth())
-        }
-    }
-}
-
-@Composable
-internal fun CategoryMergeSheet(
-    source: CategorySummary,
-    categories: List<CategorySummary>,
-    model: OrganizationViewModel,
-    close: () -> Unit,
-    merged: () -> Unit,
-) {
-    var targetId by rememberSaveable { mutableStateOf<Long?>(null) }
-    val target = categories.firstOrNull { it.category.id == targetId && it.category.id != source.category.id }
-    OrganizationSheet("merge into", close, model) {
-        val options = categories.filter { it.category.id != source.category.id }
-        if (options.isEmpty()) Text("Create another category to merge into.", style = DeftTypography.body)
-        options.forEach { candidate ->
-            OrganizationRow(candidate.category.name, candidate.choiceDetails()) { targetId = candidate.category.id }
-        }
-    }
-    if (target != null) {
-        DeftDialog(
-            "merge categories?",
-            "Move the members and types from ${source.category.name} " +
-                "into ${target.category.name}. The target's details and existing book positions will be kept.",
-            "merge",
-            {
-                targetId = null
-                model.edit(merged) {
-                    mergeCategories(source.category.id, target.category.id)
-                    model.covers.remove(source.category.coverPath)
-                }
-            },
-            { targetId = null },
-        )
     }
 }
 

@@ -102,6 +102,13 @@ class OrganizationRepository
             members.reorder(categoryId, visibleBookIds)
         }
 
+        suspend fun reorderSeries(
+            categoryId: Long,
+            visibleBookIds: List<Long>,
+        ) = transaction {
+            members.reorderSeries(categoryId, visibleBookIds)
+        }
+
         suspend fun confirmMembers(
             categoryId: Long,
             bookIds: Set<Long>,
