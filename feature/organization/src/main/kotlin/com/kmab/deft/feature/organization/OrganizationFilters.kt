@@ -19,7 +19,6 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.kmab.deft.core.database.entity.CategoryTypeEntity
 import com.kmab.deft.core.datastore.LibrarySettings
 import com.kmab.deft.core.designsystem.DeftShapes
+import com.kmab.deft.core.designsystem.DeftSwitch
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
@@ -135,7 +135,7 @@ internal fun CategoryFilters(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text("group by type", Modifier.weight(1f), style = DeftTypography.label)
-            Switch(grouped, null)
+            DeftSwitch(grouped, onCheckedChange = null)
         }
     }
 }

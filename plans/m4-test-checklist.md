@@ -1,6 +1,8 @@
 # M4 — categories, series and authors: device checklist
 
-Current review build: **0.4.2-1**, version code **40201**, signed release `deft-0.4.2.apk`.
+Accepted device build: **0.4.2-1**, version code **40201**, signed release `deft-0.4.2.apk`.
+
+Merge version: **0.4.3-1**, version code **40301**. The category filter's group-by-type switch now uses the shared settings switch colors for a readable off-state thumb. The author authorized this final color adjustment and merge/tag/push without local build verification. No new local 0.4.3 APK was built; device results below apply to 0.4.2.
 
 ## Original 0.4.0 review (preserved)
 Install over your existing Deft app; do not uninstall. The original device results and comments remain below. New 0.4.1 retests are at the end. Add comments and screenshots beneath each
@@ -212,32 +214,33 @@ local automated validation does not substitute for device acceptance.
 Install `deft-0.4.2.apk` over the existing app. Original feedback/results above
 are preserved. These checks remain unchecked until tested on your device.
 
-- [ ] Categories: New/Types actions align to their visible buttons. Search,
+- [X] Categories: New/Types actions align to their visible buttons. Search,
   filters, sort/direction and display form clear, consistently spaced groups.
   Test long selected sort/filter labels and both list/grid layouts.
-- [ ] Category filters: type choices wrap with readable gaps; review/reading
+- [X] Category filters: type choices wrap with readable gaps; review/reading
   state and group-by-type controls have clear labels and alignment. Reset and
   close are easy to reach. Existing live choices persist after restarting.
-- [ ] Authors: search and browse controls follow the same layout. Open filters,
+- [X] Authors: search and browse controls follow the same layout. Open filters,
   combine state/rating with search, change sort/direction, reset and restart.
-- [ ] Add books: search/browse controls leave useful room for the book list.
+- [X] Add books: search/browse controls leave useful room for the book list.
   Change state/format/file filters, scroll, and select across filter changes.
   The fixed confirmation remains visible and adds exactly the selected books.
-- [ ] Merge categories: search and sort/direction are aligned; long/duplicate
+- [X] Merge categories: search and sort/direction are aligned; long/duplicate
   names remain identifiable. Pick a target, cancel, then verify a confirmed merge.
-- [ ] Category detail: identity/progress, rating and member controls have a clear
+- [X] Category detail: identity/progress, rating and member controls have a clear
   hierarchy. Add books is grouped with the book list; ordering/reorder and display
   are easy to find. Category management clearly exposes edit/merge/delete, with
   destructive confirmations retained.
-- [ ] Rating summary displays the exact average (for example 3.4), or clearly
+- [X] Rating summary displays the exact average (for example 3.4), or clearly
   identifies your override. Open its editor, change the draft and cancel: the
   stored rating stays unchanged. Save 4.5, reopen, then restore the book average.
   Test an unrated category too; no invented average should appear.
-- [ ] Reorder a Series by drag/arrows and edit a decimal position. In a non-Series
+- [X] Reorder a Series by drag/arrows and edit a decimal position. In a non-Series
   category, switch sort/manual order and reorder. Existing order semantics persist.
-- [ ] Check Categories, Authors, Add books, Merge, category detail and rating editor
+- [X] Check Categories, Authors, Add books, Merge, category detail and rating editor
   in portrait, landscape and 150% text. Open the keyboard in search: controls and
   results remain reachable; long labels do not overlap. TalkBack names the actions.
-- [ ] Suggestion review, scan notices, tab swipes, reader and existing data still
+- [X] Suggestion review, scan notices, tab swipes, reader and existing data still
   behave as accepted in 0.4.1.
-- [ ] M4 0.4.2 accepted; ready to merge this tested version into main.
+- [X] M4 0.4.2 accepted; ready to merge this tested version into main.
+-- m4 has been accepted but beofre merging, justs a slight edit, the off mode of the toggle in the filter for the group by type toggle button, the circle inside is too dark and has low contrast with the bg, the issue we had with the settings page, fix this minor color change, commit on m4, then merge, tag 0.4.3 and push, no need for local build verification
