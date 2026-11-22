@@ -91,7 +91,7 @@ class OrganizationRenderTest {
             }
         }
         compose.onNodeWithText("4 books · 2 finished").assertExists()
-        capture("authors-ink-landscape-large")
+        capture("042-authors-ink-landscape-large")
         compose.onNodeWithText(entry.author.name).performClick()
         assertEquals(9L, opened)
     }

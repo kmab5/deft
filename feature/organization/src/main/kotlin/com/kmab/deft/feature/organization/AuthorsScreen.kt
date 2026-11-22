@@ -1,12 +1,9 @@
 package com.kmab.deft.feature.organization
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -19,8 +16,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kmab.deft.core.designsystem.DeftButton
@@ -44,18 +39,11 @@ internal fun AuthorsScreen(
             !state.loadFailed,
         )
     var query by rememberSaveable { mutableStateOf("") }
+    var filters by rememberSaveable { mutableStateOf(false) }
     val prefs = state.preferences
     val matches = browseAuthors(authors, prefs, query)
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item {
-            OutlinedTextField(
-                query,
-                { query = it },
-                Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = { Text("find authors") },
-            )
-        }
+        item { BrowseSearch(query, { query = it }, "find authors") }
         item {
             BrowseSort(
                 prefs.authorSort,
@@ -63,19 +51,9 @@ internal fun AuthorsScreen(
                 authorSortOptions,
                 { model?.preference { setAuthorSort(it) } },
                 { model?.preference { toggleAuthorReverse() } },
+                listOf(prefs.authorState != null, prefs.authorRating != "all").count { it },
+                { filters = true },
             )
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                BrowseState(prefs.authorState) { model?.preference { setAuthorState(it) } }
-                BrowseChoice(
-                    if (prefs.authorRating == "all") "all ratings" else prefs.authorRating,
-                    listOf("all", "rated", "unrated"),
-                    prefs.authorRating,
-                    { model?.preference { setAuthorRating(it) } },
-                )
-                if (prefs.authorState != null || prefs.authorRating != "all") {
-                    DeftButton("reset", { model?.preference { resetAuthorFilters() } }, style = DeftButtonStyle.Text)
-                }
-            }
         }
         if (matches.isEmpty()) item { OrganizationEmpty("No matching authors.") }
         items(matches, key = { it.author.id }) { author ->
@@ -87,6 +65,7 @@ internal fun AuthorsScreen(
             }
         }
     }
+    if (filters && model != null) AuthorFilters(prefs, model) { filters = false }
 }
 
 @Composable

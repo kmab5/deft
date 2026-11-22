@@ -3,18 +3,17 @@ package com.kmab.deft.feature.organization
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,6 +52,8 @@ internal fun CategoryAddBooks(
     var state by rememberSaveable { mutableStateOf<BookState?>(null) }
     var format by rememberSaveable { mutableStateOf<BookFormat?>(null) }
     var availability by rememberSaveable { mutableStateOf("all files") }
+    var filters by rememberSaveable { mutableStateOf(false) }
+    val list = rememberLazyListState()
     val busy by model.busy.collectAsStateWithLifecycle()
     val present = category.books.map { it.book.book.id }.toSet()
     val availableIds = books.map { it.book.id }.toSet() - present
@@ -65,52 +66,50 @@ internal fun CategoryAddBooks(
             sort,
             reverse,
         )
-    OrganizationSheet("add books", close, model, scrollable = false) {
-        OutlinedTextField(
-            query,
-            { query = it },
-            Modifier.fillMaxWidth(),
-            label = { Text("find books") },
-            singleLine = true,
-        )
-        BrowseSort(sort, reverse, organizationBookSortOptions, { sort = it }, { reverse = !reverse })
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BrowseState(state) { state = it }
-            BrowseChoice(
+    if (filters) {
+        FilterSheet("book filters", model, { filters = false }, {
+            state = null
+            format = null
+            availability = "all files"
+        }) {
+            ReadingStateFilter(state) { state = it }
+            FilterValue(
+                "format",
                 format?.name ?: "all formats",
                 listOf("all formats") + BookFormat.entries.map { it.name },
-                format?.name ?: "all formats",
-                { value -> format = BookFormat.entries.find { it.name == value } },
-            )
-            BrowseChoice(availability, listOf("all files", "available", "missing"), availability, { availability = it })
+            ) { value ->
+                format = BookFormat.entries.find { it.name == value }
+            }
+            FilterValue("availability", availability, listOf("all files", "available", "missing")) { availability = it }
         }
+        return
+    }
+    OrganizationSheet("add books", close, model, scrollable = false) {
         Box(Modifier.fillMaxWidth().weight(1f, fill = false)) {
             LazyColumn(
                 Modifier.testTag("category_add_books_list"),
+                state = list,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 88.dp),
+                contentPadding = PaddingValues(bottom = if (selection.isEmpty()) 0.dp else 88.dp),
             ) {
+                item { BrowseSearch(query, { query = it }, "find books") }
+                item {
+                    val count = listOf(state != null, format != null, availability != "all files").count { it }
+                    BrowseSort(
+                        sort,
+                        reverse,
+                        organizationBookSortOptions,
+                        { sort = it },
+                        { reverse = !reverse },
+                        count,
+                        { filters = true },
+                    )
+                }
                 if (matches.isEmpty()) item { OrganizationEmpty("No matching books.") }
                 items(matches, key = { it.book.id }) { entry ->
                     val checked = entry.book.id in selection
-                    Surface(
-                        modifier =
-                            Modifier.fillMaxWidth().toggleable(value = checked, enabled = !busy, role = Role.Checkbox) {
-                                selected =
-                                    ArrayList(if (checked) selected - entry.book.id else selected + entry.book.id)
-                            },
-                        shape = DeftShapes.card,
-                        color = if (checked) LocalDeftColors.current.surface2 else LocalDeftColors.current.surface,
-                        border =
-                            BorderStroke(
-                                1.dp,
-                                if (checked) LocalDeftColors.current.accent else LocalDeftColors.current.line,
-                            ),
-                    ) {
-                        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            OrganizationBookLine(entry, Modifier.weight(1f), location = true)
-                            Checkbox(checked, null, enabled = !busy)
-                        }
+                    PickerBook(entry, checked, !busy) {
+                        selected = ArrayList(if (checked) selected - entry.book.id else selected + entry.book.id)
                     }
                 }
             }
@@ -136,6 +135,27 @@ internal fun CategoryAddBooks(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PickerBook(
+    entry: OrganizedBook,
+    checked: Boolean,
+    enabled: Boolean,
+    toggle: () -> Unit,
+) {
+    val colors = LocalDeftColors.current
+    Surface(
+        modifier = Modifier.fillMaxWidth().toggleable(checked, enabled = enabled, role = Role.Checkbox) { toggle() },
+        shape = DeftShapes.card,
+        color = if (checked) colors.surface2 else colors.surface,
+        border = BorderStroke(1.dp, if (checked) colors.accent else colors.line),
+    ) {
+        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            OrganizationBookLine(entry, Modifier.weight(1f), location = true)
+            Checkbox(checked, null, enabled = enabled)
         }
     }
 }

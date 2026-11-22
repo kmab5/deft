@@ -443,3 +443,21 @@ action in a separate footer, above the actual bottom-navigation height. Swipe
 between the three working tabs with directional transitions, preserving vertical
 and child horizontal gestures. Device feedback overrides previous category filter
 placement in Books; categories are browsed in the Categories tab instead.
+
+### M4 layout refinement — 0.4.2
+
+Organization browsing uses consistent search insets and an aligned compact row
+for filters, sort/direction and optional display. Secondary filters belong in
+labelled sheets rather than uneven rows of long buttons above the results.
+Actions align to their visible filled/outlined surfaces. Rows adapt to available
+width and system text size; preserve 48dp touch targets and meaningful spacing
+when controls wrap. Search and browse controls must leave usable scrolling room
+in narrow landscape and with the keyboard open.
+
+Category identity/progress is separate from its member actions. The rating
+summary states the exact effective value and whether it is the book average or a
+personal override; it opens a focused draft editor with save/cancel and restore
+average. Add books is the primary action in the member section, alongside a
+coherent ordering/reorder/display toolbar. Category management is clearly named,
+with merge/delete confirmations retained. Preserve the accepted suggestion-review
+panel and scan-notice design.

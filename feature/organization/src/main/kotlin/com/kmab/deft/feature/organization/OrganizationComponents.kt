@@ -57,11 +57,22 @@ internal fun OrganizationPanel(
 }
 
 @Composable
-internal fun OrganizationMenu(actions: List<Pair<String, () -> Unit>>) {
+internal fun OrganizationMenu(
+    actions: List<Pair<String, () -> Unit>>,
+    trigger: @Composable (() -> Unit) -> Unit = { expand ->
+        IconButton(expand) { Icon(DeftActionIcons.More, "more options") }
+    },
+) {
     var open by remember { mutableStateOf(false) }
     Box {
-        IconButton({ open = true }) { Icon(DeftActionIcons.More, "more options") }
-        DropdownMenu(open, { open = false }) {
+        trigger { open = true }
+        DropdownMenu(
+            open,
+            { open = false },
+            shape = DeftShapes.card,
+            containerColor = LocalDeftColors.current.surface,
+            border = BorderStroke(1.dp, LocalDeftColors.current.line),
+        ) {
             actions.forEach { (label, select) ->
                 DropdownMenuItem(text = { Text(label) }, onClick = {
                     open = false
@@ -100,6 +111,7 @@ internal fun OrganizationRow(
 internal fun OrganizationProgress(
     stats: OrganizationStats,
     legend: Boolean = true,
+    compactLegend: Boolean = false,
 ) {
     val segments =
         listOf(
@@ -114,9 +126,10 @@ internal fun OrganizationProgress(
         segments.filter { it.second > 0 }.map { ProgressSegment(it.first, it.second.toFloat()) },
         legend = if (legend) "${stats.finished} finished · ${stats.total} books" else null,
     )
-    if (legend && stats.total > 0) {
+    val breakdown = if (compactLegend) segments.drop(1).filter { it.second > 0 } else segments
+    if (legend && stats.total > 0 && breakdown.isNotEmpty()) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            segments.forEach { (state, count) ->
+            breakdown.forEach { (state, count) ->
                 Text(
                     "$count ${state.label}",
                     style = DeftTypography.mono,

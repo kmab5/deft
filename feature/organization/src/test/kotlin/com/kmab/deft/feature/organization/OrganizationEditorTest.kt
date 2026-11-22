@@ -1,12 +1,15 @@
 package com.kmab.deft.feature.organization
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
+import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -16,6 +19,8 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.printToString
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -27,6 +32,7 @@ import com.github.takahirom.roborazzi.RoborazziTaskType
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.kmab.deft.core.database.AppDatabase
 import com.kmab.deft.core.database.entity.AuthorEntity
+import com.kmab.deft.core.database.entity.BookEntity
 import com.kmab.deft.core.database.entity.CategoryEntity
 import com.kmab.deft.core.database.entity.CategoryMemberEntity
 import com.kmab.deft.core.database.entity.CategoryTypeEntity
@@ -105,6 +111,7 @@ class OrganizationEditorTest {
     }
 
     @After fun cleanup() {
+        RuntimeEnvironment.setFontScale(1f)
         model.viewModelScope.cancel()
         storeScope.cancel()
         database.close()
@@ -127,7 +134,98 @@ class OrganizationEditorTest {
         assertEquals(true, category.isSeries)
     }
 
-    @Test fun selectingMergeTargetRequiresConfirmationBeforeSourceDisappears() {
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(qualifiers = "w360dp-h800dp-mdpi")
+    fun categoryRatingDraftCancelsSavesHalfStarAndRestoresMemberAverage() {
+        RuntimeEnvironment.setFontScale(1.5f)
+        val initial = ratedCategory()
+        compose.setContent {
+            val snapshot =
+                model.state
+                    .collectAsState()
+                    .value.snapshot ?: initial
+            DeftTheme(darkTheme = true) {
+                OrganizationRenderSurface {
+                    Column {
+                        DeftTopBar("category")
+                        CategoryDetail(snapshot.categories.single(), snapshot, model, {}) {}
+                    }
+                }
+            }
+        }
+
+        fun editRating(value: Float) {
+            compose.onNodeWithText("average · 3.4").performClick()
+            compose.onNodeWithContentDescription("rating").performSemanticsAction(SemanticsActions.SetProgress) {
+                it(value)
+            }
+        }
+        captureDetail("042-category-detail-large")
+        editRating(2.5f)
+        captureSheet("042-category-rating-draft-large")
+        compose.onNodeWithText("cancel").performClick()
+        assertEquals(
+            null,
+            runBlocking {
+                repository
+                    .get()
+                    .categories
+                    .single()
+                    .category.ratingOverride
+            },
+        )
+        editRating(4.5f)
+        compose.onNodeWithText("save rating").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("your rating · 4.5").fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(
+            4.5,
+            runBlocking {
+                repository
+                    .get()
+                    .categories
+                    .single()
+                    .category.ratingOverride
+            },
+        )
+        compose.onNodeWithText("your rating · 4.5").performClick()
+        captureSheet("042-category-rating-override-large")
+        compose.onNodeWithText("use book average").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("average · 3.4").fetchSemanticsNodes().isNotEmpty() }
+        val restored = runBlocking { repository.get().categories.single() }
+        assertEquals(null, restored.category.ratingOverride)
+        assertEquals(3.4, restored.rating!!, 0.00001)
+    }
+
+    private fun ratedCategory() =
+        runBlocking {
+            val categoryId = repository.saveCategory(name = "Earthsea", description = "The islands of the Archipelago.")
+            val titles =
+                listOf("A Wizard of Earthsea", "The Tombs of Atuan", "The Farthest Shore", "Tehanu", "The Other Wind")
+            val ids =
+                titles.mapIndexed { index, title ->
+                    database
+                        .bookDao()
+                        .insert(
+                            BookEntity(
+                                contentHash = title,
+                                format = BookFormat.EPUB,
+                                title = title,
+                                sortTitle = title,
+                                rating = if (index == 0) 3.0 else 3.5,
+                                addedAt = Instant.EPOCH,
+                            ),
+                        ).also { database.authorDao().setBookAuthors(it, listOf("Ursula K. Le Guin")) }
+                }
+            repository.addBooks(categoryId, ids.toSet())
+            repository.get()
+        }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(qualifiers = "w852dp-h393dp-land-mdpi")
+    fun selectingMergeTargetRequiresConfirmationBeforeSourceDisappears() {
+        RuntimeEnvironment.setFontScale(1.5f)
         val merged = AtomicBoolean()
         val (sourceId, targetId) =
             runBlocking {
@@ -138,11 +236,16 @@ class OrganizationEditorTest {
         compose.setContent {
             DeftTheme { CategoryMergeSheet(source, categories, model, {}, { merged.set(true) }) }
         }
+        captureSheet("042-category-merge-landscape")
+        compose.onNodeWithTag("category_merge_list").performScrollToNode(hasText("Earthsea"))
         compose.onNodeWithText("Earthsea").performClick()
-        compose.onNodeWithText("merge categories?").assertExists()
+        compose.onNodeWithText("merge categories?").assertIsDisplayed()
         assertFalse(merged.get())
         assertEquals(2, runBlocking { repository.get().categories.size })
-        compose.onNodeWithText("merge").performClick()
+        val confirm = compose.onNodeWithText("merge").assertIsDisplayed()
+        captureSheet("042-category-merge-confirm-landscape")
+        confirm.performClick()
+        compose.waitForIdle()
         awaitMutation(merged)
         assertEquals(
             targetId,
@@ -198,7 +301,7 @@ class OrganizationEditorTest {
                 hasText("<no-title>") and hasText("#2.5 · <no-author> · file missing · suggested"),
             )
         membership.assertExists()
-        captureDetail("category-detail-paper")
+        captureDetail("042-category-detail-paper")
         membership.performClick()
         assertEquals(book.book.id, opened)
     }
@@ -253,6 +356,12 @@ class OrganizationEditorTest {
         compose.onNodeWithText("Book 1").performClick()
         compose.onNodeWithTag("category_add_books_list").performScrollToIndex(30)
         compose.onNodeWithContentDescription("add 1 selected books").assertIsDisplayed()
+        compose.onNodeWithTag("category_add_books_list").performScrollToIndex(0)
+        compose.onNodeWithContentDescription("filters").performClick()
+        compose.onNodeWithText("availability").performClick()
+        compose.onNodeWithText("available").performClick()
+        compose.onNodeWithText("done").performClick()
+        compose.onNodeWithText("No matching books.").assertExists()
         compose.onNode(hasSetTextAction() and hasText("find books")).performTextInput("nothing matches")
         compose.onNodeWithContentDescription("add 1 selected books").assertIsDisplayed()
     }
@@ -282,7 +391,7 @@ class OrganizationEditorTest {
                 }
             }
         }
-        compose.onNodeWithText("reorder books").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("reorder").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("show book grid").performClick()
         compose.onNodeWithContentDescription("show book list").assertIsDisplayed()
     }
@@ -301,6 +410,7 @@ class OrganizationEditorTest {
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(qualifiers = "w360dp-h800dp-mdpi")
     fun renderPaperAddBooksWithSelectedConfirmation() {
         RuntimeEnvironment.setFontScale(1.5f)
         val books =
@@ -318,7 +428,16 @@ class OrganizationEditorTest {
             )
         compose.setContent { DeftTheme(darkTheme = false) { CategoryAddBooks(category, books, model, {}) } }
         compose.onNodeWithText("Book 1").performClick()
-        captureSheet("category-add-books-paper-large")
+        compose.onNodeWithText("title").performClick()
+        compose.onNodeWithText("file location").performClick()
+        compose.onNodeWithContentDescription("filters").performClick()
+        compose.onNodeWithText("availability").performClick()
+        compose.onNodeWithText("missing").performClick()
+        captureSheet("042-book-filters-large")
+        compose.onNodeWithText("done").performClick()
+        compose.onNodeWithContentDescription("add 1 selected books").assertIsDisplayed()
+        compose.onNodeWithContentDescription("filters · 1").assertIsDisplayed()
+        captureSheet("042-category-add-books-paper-large")
     }
 
     @Test
@@ -358,9 +477,79 @@ class OrganizationEditorTest {
         compose.setContent {
             DeftTheme(darkTheme = false) { OrganizationRenderSurface { CategoriesScreen(browser.value, model) {} } }
         }
-        captureDetail("categories-browser-paper")
+        captureDetail("042-categories-browser-paper")
         compose.runOnIdle { browser.value = state.copy(preferences = state.preferences.copy(categoryGridView = false)) }
-        captureDetail("categories-list-paper")
+        captureDetail("042-categories-list-paper")
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(qualifiers = "w320dp-h700dp-mdpi")
+    fun narrowCategoryFiltersKeepGroupingResetAndResultsReachable() {
+        RuntimeEnvironment.setFontScale(1.5f)
+        runBlocking {
+            val road = repository.saveType(name = "Royal Road")
+            repository.saveType(name = "Book club")
+            repository.saveCategory(name = "Weekend reading", typeIds = setOf(road))
+        }
+        model.preference {
+            setCategorySort("created")
+            setGroupCategoriesByType(true)
+        }
+        compose.setContent {
+            val state = model.state.collectAsState().value
+            DeftTheme(darkTheme = true) { OrganizationRenderSurface { CategoriesScreen(state, model) {} } }
+        }
+        compose.waitUntil(10_000) { model.state.value.preferences.groupCategoriesByType }
+        compose.onNodeWithText("date created").assertIsDisplayed()
+        compose.onNodeWithContentDescription("filters · 1").assertIsDisplayed()
+        captureDetail("042-categories-narrow-large")
+        compose.onNodeWithText("date created").performClick()
+        compose.onNode(hasText("date created") and isSelected()).assertIsDisplayed()
+        compose.onNodeWithText("book count").performClick()
+        compose.waitUntil(10_000) { model.state.value.preferences.categorySort == "book count" }
+        compose.onNodeWithContentDescription("filters · 1").performClick()
+        captureSheet("042-category-filters-narrow-large")
+        compose.onNodeWithText("group by type").performScrollTo().performClick()
+        compose.onNodeWithText("done").performClick()
+        compose.waitUntil(10_000) { !model.state.value.preferences.groupCategoriesByType }
+        compose.onNodeWithContentDescription("filters").performClick()
+        compose.onNodeWithText("group by type").performScrollTo().performClick()
+        compose.onNodeWithText("done").performClick()
+        compose.waitUntil(10_000) { model.state.value.preferences.groupCategoriesByType }
+        compose.onNodeWithContentDescription("filters · 1").assertIsDisplayed().performClick()
+        compose.onNodeWithText("reset filters").performClick()
+        compose.onNodeWithText("done").performClick()
+        compose.waitUntil(10_000) { !model.state.value.preferences.groupCategoriesByType }
+        compose.onNodeWithContentDescription("filters").assertIsDisplayed()
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(qualifiers = "w320dp-h700dp-mdpi")
+    fun authorRatingFilterNarrowsResultsWithoutClearingSearch() {
+        RuntimeEnvironment.setFontScale(1.5f)
+        ratedCategory()
+        compose.setContent {
+            val state = model.state.collectAsState().value
+            DeftTheme { OrganizationRenderSurface { AuthorsScreen(state, model) {} } }
+        }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Ursula K. Le Guin").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNode(hasSetTextAction()).performTextInput("Le Guin")
+        compose.onNodeWithContentDescription("filters").performClick()
+        compose.onNodeWithText("rating").performClick()
+        compose.onNodeWithText("unrated").performClick()
+        captureSheet("042-author-filters-narrow-large")
+        compose.onNodeWithText("done").performClick()
+        compose.waitUntil(
+            10_000,
+        ) { compose.onAllNodesWithText("No matching authors.").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithContentDescription("clear search").assertIsDisplayed()
+        compose.onNodeWithContentDescription("filters · 1").performClick()
+        compose.onNodeWithText("reset filters").performClick()
+        compose.onNodeWithText("done").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Ursula K. Le Guin").fetchSemanticsNodes().isNotEmpty() }
+        captureDetail("042-authors-narrow-large")
     }
 
     @OptIn(ExperimentalRoborazziApi::class)

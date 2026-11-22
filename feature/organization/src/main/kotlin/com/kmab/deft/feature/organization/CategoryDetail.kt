@@ -7,9 +7,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -27,12 +25,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.kmab.deft.core.designsystem.DeftButton
-import com.kmab.deft.core.designsystem.DeftButtonStyle
 import com.kmab.deft.core.designsystem.DeftDialog
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
-import com.kmab.deft.core.designsystem.RatingBar
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
 import com.kmab.deft.core.model.CategoryOrder
 import com.kmab.deft.library.organization.CategorySummary
@@ -54,7 +49,7 @@ internal fun CategoryDetail(
     val columns = if (availableWidth < MEMBER_GRID_MIN_WIDTH) 1 else 2
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            CategoryOverview(category, model) { action = it }
+            CategoryOverview(category) { action = it }
         }
         if (category.needsReview) item { CategoryReview(category, model) }
         item {
@@ -64,6 +59,7 @@ internal fun CategoryDetail(
     }
     when (action) {
         "edit" -> CategoryEditor(category, snapshot.types, model, closeSheet)
+        "rating" -> CategoryRatingSheet(category, model, closeSheet)
         "add" -> CategoryAddBooks(category, snapshot.books, model, closeSheet)
         "order" -> CategoryOrderSheet(category, model, closeSheet)
         "reorder" -> CategoryReorderSheet(category, model, closeSheet)
@@ -97,37 +93,27 @@ private fun CategoryBooksHeader(
     onGrid: (Boolean) -> Unit,
     action: (String) -> Unit,
 ) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text("books · ${category.books.size}", Modifier.weight(1f), style = DeftTypography.title)
-        IconButton({
-            onGrid(!grid)
-        }) {
-            Icon(
-                if (grid) DeftActionIcons.List else DeftActionIcons.Grid,
-                if (grid) "show book list" else "show book grid",
-            )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp), Alignment.CenterVertically) {
+            Text("books · ${category.books.size}", Modifier.weight(1f), style = DeftTypography.title)
+            DisplayAction(grid, "book") { onGrid(!grid) }
         }
-    }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (!category.isSeries) {
-            DeftButton(
-                category.category.order.name
-                    .lowercase()
-                    .replace('_', ' '),
-                {
-                    action("order")
-                },
-                style = DeftButtonStyle.Secondary,
-                icon = DeftActionIcons.Settings,
-            )
-        }
-        if (category.books.size > 1 && (category.isSeries || category.category.order == CategoryOrder.MANUAL)) {
-            DeftButton(
-                "reorder books",
-                { action("reorder") },
-                style = DeftButtonStyle.Secondary,
-                icon = DeftActionIcons.List,
-            )
+        FlowRow(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OrganizationButton("add books", { action("add") }, icon = DeftActionIcons.Added, primary = true)
+            if (!category.isSeries) {
+                val sort =
+                    category.category.order.name
+                        .lowercase()
+                        .replace('_', ' ')
+                OrganizationButton(sort, { action("order") }, icon = DeftActionIcons.Contents)
+            }
+            if (category.books.size > 1 && (category.isSeries || category.category.order == CategoryOrder.MANUAL)) {
+                OrganizationButton("reorder", { action("reorder") }, icon = DeftActionIcons.List)
+            }
         }
     }
 }
@@ -165,37 +151,33 @@ private fun LazyListScope.categoryMemberItems(
 @Composable
 private fun CategoryOverview(
     category: CategorySummary,
-    model: OrganizationViewModel,
     action: (String) -> Unit,
 ) {
     val details = category.category
     OrganizationPanel {
-        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
-            CategoryCover(category, Modifier.size(84.dp, 108.dp))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            CategoryCover(category, Modifier.size(64.dp, 80.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(details.name, style = DeftTypography.headline)
                 Text(
-                    category.types
-                        .joinToString(" · ") {
-                            it.name
-                        }.ifEmpty { "untyped" },
+                    category.types.joinToString(" · ") { it.name }.ifEmpty { "untyped" },
                     style = DeftTypography.mono,
                     color = LocalDeftColors.current.muted,
                 )
-                details.description?.let { Text(it, style = DeftTypography.body) }
             }
         }
-        OrganizationProgress(category.stats)
+        details.description?.takeIf { it.isNotBlank() }?.let { Text(it, style = DeftTypography.body) }
+        OrganizationProgress(category.stats, compactLegend = true)
         HorizontalDivider(color = LocalDeftColors.current.line)
-        CategoryRating(category, model)
-        Row(
-            Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            DeftButton("add books", { action("add") }, Modifier.weight(1f), icon = DeftActionIcons.Added)
-            IconButton({ action("edit") }) { Icon(DeftActionIcons.Rename, "edit category") }
-            OrganizationMenu(listOf("merge category" to { action("merge") }, "delete category" to { action("delete") }))
+        Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp), Alignment.CenterVertically) {
+            CategoryRatingSummary(category, { action("rating") }, Modifier.weight(1f))
+            OrganizationMenu(
+                listOf(
+                    "edit category" to { action("edit") },
+                    "merge category" to { action("merge") },
+                    "delete category" to { action("delete") },
+                ),
+            ) { expand -> OrganizationButton("manage", expand, icon = DeftActionIcons.More) }
         }
     }
 }
@@ -226,41 +208,6 @@ private fun CategoryReview(
             }
         }
     }
-}
-
-@Composable
-private fun CategoryRating(
-    category: CategorySummary,
-    model: OrganizationViewModel,
-) {
-    val id = category.category.id
-    val override = category.category.ratingOverride
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(if (override == null) "average rating" else "your rating", style = DeftTypography.label)
-            Text(
-                if (override ==
-                    null
-                ) {
-                    ratingLabel(category.rating)
-                } else {
-                    "${ratingLabel(override)} · average ${ratingLabel(category.stats.averageRating)}"
-                },
-                style = DeftTypography.mono,
-                color = LocalDeftColors.current.muted,
-            )
-        }
-        if (override !=
-            null
-        ) {
-            DeftButton("use average", {
-                model.edit { setRating(id, null) }
-            }, style = DeftButtonStyle.Text, icon = DeftActionIcons.Return)
-        }
-    }
-    RatingBar((category.rating ?: 0.0).toFloat(), { value ->
-        model.edit { setRating(id, value.toDouble().takeIf { it > 0.0 }) }
-    }, modifier = Modifier.widthIn(max = 248.dp), showValue = false)
 }
 
 private const val MEMBER_GRID_MIN_WIDTH = 360
