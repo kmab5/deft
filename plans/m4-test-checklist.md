@@ -7,116 +7,137 @@ section; put media in `plans/feedback/`.
 
 ## Upgrade and existing behavior
 
-- [ ] Update from 0.3.3 or your current M3 release without uninstalling. Library,
+- [X] Update from 0.3.3 or your current M3 release without uninstalling. Library,
   folders, reader settings, bookmarks, ratings and reading history survive.
-- [ ] Open an EPUB, move through it, select text, leave and reopen. Position and
+- [X] Open an EPUB, move through it, select text, leave and reopen. Position and
   session tracking still work. Test paged and continuous reading.
-- [ ] Idle overlay is visibly black; waking consumes the gesture without moving
+- [/] Idle overlay is visibly black; waking consumes the gesture without moving
   the page. Text selection gives feedback when system haptics are enabled.
-- [ ] Bottom navigation has Books, Categories and Authors. Switching tabs and
+-- feedback has been left in the m3 checklist
+- [X] Bottom navigation has Books, Categories and Authors. Switching tabs and
   returning preserves useful state; detail/settings screens have working Back.
-- [ ] A scan notice still opens its detailed report and dismisses normally.
+- [X] A scan notice still opens its detailed report and dismisses normally.
+-- the scan complete notification still needs work, rework it from scratch and keep in mind the design issues i have been mentioning again and again throughout the development of this app
 
 ## Categories and types
 
-- [ ] Create a category with a name and description, without a type. Create a
+- [X] Create a category with a name and description, without a type. Create a
   second category with the same name; both remain separate and identifiable.
-- [ ] Create custom types (for example TBR and Book club), assign several types
+- [X] Create custom types (for example TBR and Book club), assign several types
   to one category, rename a type and delete it. Categories and books remain.
-- [ ] Built-in Series cannot be renamed or deleted.
-- [ ] Blank names are rejected clearly. Canceling an editor leaves the original
+- [X] Built-in Series cannot be renamed or deleted.
+- [X] Blank names are rejected clearly. Canceling an editor leaves the original
   category unchanged; editing name/description/types persists after restart.
-- [ ] Category list/grid, selected type filter and grouping survive restart.
+- [X] Category list/grid, selected type filter and grouping survive restart.
   Test All, a custom type and Untyped; multi-type categories appear appropriately.
-- [ ] Empty categories have a useful empty state, no invented average rating and
+-- more on this lower
+- [X] Empty categories have a useful empty state, no invented average rating and
   an action to add books. Long names/descriptions wrap without hiding actions.
-- [ ] Default cover is a collage of member covers. Add a custom local image,
+- [X] Default cover is a collage of member covers. Add a custom local image,
   restart, then remove it to restore the collage. Canceling image selection and
   selecting an unreadable image leave a usable screen and clear feedback.
 
 ## Membership and ordering
 
-- [ ] Long-press a book in both grid and list to select it. Tap more books, select
+- [X] Long-press a book in both grid and list to select it. Tap more books, select
   all visible books, clear selection, and use Back. Selected books never launch.
-- [ ] Search/filter first, then select all: only visible matching books are added.
+-- design issues described on the bottoms
+- [X] Search/filter first, then select all: only visible matching books are added.
   Rotation retains selection; forgotten or newly hidden books are not selected.
-- [ ] Add selected books to an existing category and to a newly created one.
+- [X] Add selected books to an existing category and to a newly created one.
   Duplicate additions do not create duplicate members. Success exits selection.
-- [ ] Add/remove members from category details and book details. Other categories,
+- [X] Add/remove members from category details and book details. Other categories,
   book files, ratings and history are unaffected.
-- [ ] Non-Series manual order supports drag movement and accessible move up/down.
+- [\] Non-Series manual order supports drag movement and accessible move up/down.
   Scroll a longer list, move a book, leave and reopen: the order persists.
-- [ ] Title, author, date-added and rating sorts work. Date-added means when the
+-- sorting for non-series categories shouldnt be under the three dots menu, it should be visible
+-- also the manual reordering is hidden quite deep, make it more accessible (this should happen naturally when you make the sorting visible). in the manual reordering menu, give a bit more vertical padding for list elements
+- [X] Title, author, date-added and rating sorts work. Date-added means when the
   book joined the category. Switch back to manual order and verify behavior.
-- [ ] Books category filter survives restart and combines with search/state/rating
+- [X] Books category filter survives restart and combines with search/state/rating
   filters. Delete the selected category: Books returns to all categories.
 
 ## Series auto-fill and review
 
-- [ ] With auto-fill enabled, scan EPUBs containing `calibre:series` and indices
+- [X] With auto-fill enabled, scan EPUBs containing `calibre:series` and indices
   1, 2 and 2.5. One ordered Series category appears with suggestions to review.
-- [ ] Metadata differing only in series-name case/extra whitespace joins the same
+-- keep the numerical editing for orders but allow an easier way/mode of reordering items by dragging and dropping items
+- [X] Metadata differing only in series-name case/extra whitespace joins the same
   automatic series. A manually created same-name series stays separate.
-- [ ] Confirm individual/all suggestions; the review indicator disappears when
+- [X] Confirm individual/all suggestions; the review indicator disappears when
   none remain. Edit a suggested position; rescanning preserves the edited value.
-- [ ] Decimal positions (including 0 or a prequel value) persist. Invalid text or
+-- design needs work, more details on what kind expressed below
+- [X] Decimal positions (including 0 or a prequel value) persist. Invalid text or
   nonfinite values are rejected without corrupting ordering.
-- [ ] Remove an automatically suggested member and rescan: it stays removed.
+- [X] Remove an automatically suggested member and rescan: it stays removed.
   Add it manually and confirm it stays present on later scans.
-- [ ] Disable Library → series auto-fill and scan new series books: existing
+- [X] Disable Library → series auto-fill and scan new series books: existing
   categories stay, new suggestions stop. Re-enable: unchanged files are included.
-- [ ] Rename an automatic series, then scan another book using its old metadata
+- [X] Rename an automatic series, then scan another book using its old metadata
   name. The new suggestion reaches the renamed series.
-- [ ] Merge an automatic series into a manual target. Scan another matching book:
+- [X] Merge an automatic series into a manual target. Scan another matching book:
   it reaches the target through the alias, without recreating the source.
-- [ ] On a series book page, Next in series picks the lowest strictly later
+- [X] On a series book page, Next in series picks the lowest strictly later
   position that is not Finished. Finished entries are skipped, Abandoned is not.
   Check a book in multiple series and the final member with no later candidate.
 
 ## Progress, rating and merges
 
-- [ ] Finished/total progress and state breakdown update when member states change.
+- [X] Finished/total progress and state breakdown update when member states change.
   Abandoned remains unresolved; Paused/Reading/Not read are not counted finished.
-- [ ] Missing files remain in category/author totals and remain manageable. Ignored
+- [X] Missing files remain in category/author totals and remain manageable. Ignored
   books disappear from visible memberships/totals and return on un-ignore.
-- [ ] Rate several member books, leaving some unrated. Category mean uses rated
+- [X] Rate several member books, leaving some unrated. Category mean uses rated
   books only and displays one decimal. Set a half-star override, then reset it:
   the computed mean returns. Changing a book rating updates computed ratings.
-- [ ] Merge two categories with overlapping members. The union has no duplicates,
+- [X] Merge two categories with overlapping members. The union has no duplicates,
   target membership positions win, types combine and source disappears.
-- [ ] Cancel a merge/delete confirmation: nothing changes. Delete a category:
+-- when merging, allow sorting of categories
+- [X] Cancel a merge/delete confirmation: nothing changes. Delete a category:
   books and history remain. The confirmation explains automatic recreation.
 
 ## Authors
 
-- [ ] Authors appear from effective book metadata; search finds expected authors.
+- [X] Authors appear from effective book metadata; search finds expected authors.
   Open an author from both Authors and a book page.
-- [ ] Author detail shows books grouped by state, count, finished progress, rating
+- [X] Author detail shows books grouped by state, count, finished progress, rating
   and total active time. Coauthors each receive full credit for a shared book.
-- [ ] Rename an author; existing book labels update. Rescan/add a book with the old
+- [X] Rename an author; existing book labels update. Rescan/add a book with the old
   spelling: the retained alias resolves to the renamed author.
-- [ ] Merge two authors with both overlapping and distinct books. Books combine
+- [X] Merge two authors with both overlapping and distinct books. Books combine
   without duplicates; metadata overrides and histories survive; aliases redirect.
-- [ ] Cancel rename/merge, try a blank name and try a conflicting existing name.
+- [X] Cancel rename/merge, try a blank name and try a conflicting existing name.
   Errors are clear and appear as notices, with original data intact.
-- [ ] Ignore every book for one author: it leaves the visible list. Un-ignore one:
+- [X] Ignore every book for one author: it leaves the visible list. Un-ignore one:
   the author returns with the same identity and retained metadata.
 
 ## How does it look and feel?
 
-- [ ] Categories list/grid and grouped/filter controls feel clear and compact in
+- [/] Categories list/grid and grouped/filter controls feel clear and compact in
   light and dark themes, portrait/landscape and 150% system text.
-- [ ] Category detail has clear hierarchy for cover, identity, progress, rating
+-- the design needs work for the top part of category tab (the part with new category, types, grid and grid by type, and underneath it (these two should be dsitinct), the filters) 
+- [X] Category detail has clear hierarchy for cover, identity, progress, rating
   and member actions; editors/confirmation sheets fit above the keyboard.
-- [ ] Author list/detail and rename/merge controls feel consistent with Books.
-- [ ] Book detail author/category links and Next in series are easy to discover.
-- [ ] Multi-select count, selected outlines/checkmarks and Add to category make
+- [X] Author list/detail and rename/merge controls feel consistent with Books.
+- [X] Book detail author/category links and Next in series are easy to discover.
+- [X] Multi-select count, selected outlines/checkmarks and Add to category make
   the action clear. Scrolling, sheet transitions and reorder motion are smooth.
-- [ ] TalkBack names controls, announces selection/state and offers reorder
+- [X] TalkBack names controls, announces selection/state and offers reorder
   alternatives. Touch targets remain usable at large font sizes.
 
 ## Comments, screenshots and final acceptance
 
 Add findings here (screen, steps, expected behavior, actual behavior).
 
-- [ ] M4 checklist passed; ready to merge this tested version into main.
+- [\] M4 checklist passed; ready to merge this tested version into main.
+- why is the dropdown menu from the three dots on the top right different across screens? in books, its last scan and settings with icons and a faint outline, in both categories and authors its just settings without its icon and without the different design
+- allow sorting and filtering in both categories (add date created and whether in review or not here) and authors
+- show cover images in categories listing (in smaller forms ofc to fit the smaller listing) and allow grid view of categories elements as well (just like the books tab)
+- the design for the bar that appears when selecting books in books tab needs work (more padding, alignment issues), and when the number of books is very big, it overflows into the next line so make sure not to use too much empty space (for example the gap/padding for the cross icon is huge)
+- the design when adding a new category needs work, alignment, positioning of buttons and empty space, no clear distinction between buttons, filters, toggles, hierarchy
+- again with the design for the rating stars in the categories. fix the design, especially with the "use average" button. and MAKE PROPER USE OF EMPTY SPACE in the category description card with the add books and edit and drop down options
+- the design when selecting books to add to a category directly from the category page needs work, not enough info being shown (show cover and other relevant info) and allow sorting and filtering here and when selecting books, add a floating tick button to confirm addition so users dont have to scroll all the way back up to confirm it
+- allow sorting by file location for books wherever relevant
+- allow sorting by author for books wherever relevant
+- swiping sideways should switch between books - categories - authors
+- dont list categories in the books filtering, its too much to contain there, if users want, they can list category bounded books in the categories tab
