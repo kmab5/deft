@@ -43,6 +43,11 @@ internal class OrganizationViewModel
         val busy = MutableStateFlow(false)
         val error = MutableStateFlow<String?>(null)
         val sheetActive = MutableStateFlow(false)
+        val categorySelectionCompletion = MutableStateFlow(0L)
+
+        fun completeCategorySelection() {
+            categorySelectionCompletion.value += 1
+        }
 
         fun edit(
             onDone: () -> Unit = {},

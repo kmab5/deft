@@ -1,11 +1,15 @@
 package com.kmab.deft.feature.organization
 
-import androidx.compose.foundation.clickable
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,14 +20,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -48,32 +59,97 @@ internal fun CategoriesScreen(
     var create by rememberSaveable { mutableStateOf(false) }
     var manageTypes by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
-    val prefs = state.preferences
-    val visibleFilter = prefs.categoryTypeFilter?.takeIf { id -> id == 0L || snapshot.types.any { it.id == id } }
-    val categories = browseCategories(snapshot.categories, prefs.copy(categoryTypeFilter = visibleFilter), query)
-    BoxWithConstraints(Modifier.padding(horizontal = 16.dp)) {
-        val columns = categoryColumns(prefs.categoryGridView, maxWidth, LocalDensity.current.fontScale)
-        val groups = groupCategories(categories, snapshot.types, prefs.groupCategoriesByType && visibleFilter == null)
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            item {
-                CategoryListControls(
-                    prefs,
-                    snapshot.types,
-                    visibleFilter,
-                    model,
-                    { create = true },
-                    { manageTypes = true },
-                    query,
-                    { query = it },
-                )
-            }
-            if (categories.isEmpty()) item { OrganizationEmpty("No categories here yet.") }
-            categoryRows(groups, columns, prefs.categoryGridView, open)
+    var selected by rememberSaveable { mutableStateOf(emptyList<Long>()) }
+    var action by rememberSaveable { mutableStateOf<CategoryBulkAction?>(null) }
+    var actionIds by rememberSaveable { mutableStateOf(emptyList<Long>()) }
+    val busy by model.busy.collectAsState()
+    val completion by model.categorySelectionCompletion.collectAsState()
+    var handledCompletion by rememberSaveable { mutableStateOf(completion) }
+    LaunchedEffect(completion) {
+        if (handledCompletion != completion) {
+            selected = emptyList()
+            action = null
+            handledCompletion = completion
         }
+    }
+    val prefs = state.preferences
+    val visibleFilter = visibleCategoryFilter(prefs, snapshot.types)
+    val categories = browseCategories(snapshot.categories, prefs.copy(categoryTypeFilter = visibleFilter), query)
+    val visibleIds = categories.map { it.category.id }.toSet()
+    LaunchedEffect(visibleIds, busy) {
+        if (!busy) selected = selected.filter { it in visibleIds }
+    }
+    BackHandler(selected.isNotEmpty() && action == null) { if (!busy) selected = emptyList() }
+    val toggle: (Long) -> Unit = { id ->
+        selected = toggledCategoryIds(selected, id, busy)
+    }
+    Column {
+        AnimatedVisibility(selected.isNotEmpty()) {
+            CategorySelectionBar(selected.size, busy, { selected = emptyList() }, { selected = visibleIds.toList() }) {
+                actionIds = selected.toList()
+                action = it
+            }
+        }
+        BoxWithConstraints(Modifier.padding(horizontal = 16.dp)) {
+            val columns = categoryColumns(prefs.categoryGridView, maxWidth, LocalDensity.current.fontScale)
+            val groups =
+                groupCategories(
+                    categories,
+                    snapshot.types,
+                    prefs.groupCategoriesByType && visibleFilter == null,
+                )
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                item {
+                    CategoryListControls(
+                        prefs,
+                        snapshot.types,
+                        visibleFilter,
+                        model,
+                        { create = true },
+                        { manageTypes = true },
+                        query,
+                        { query = it },
+                    )
+                }
+                if (categories.isEmpty()) item { OrganizationEmpty("No categories here yet.") }
+                categoryRows(groups, columns) { category ->
+                    val id = category.category.id
+                    CategoryCard(
+                        category,
+                        prefs.categoryGridView,
+                        Modifier.weight(1f),
+                        id in selected,
+                        enabled = !busy,
+                        onLongClick = { toggle(id) },
+                    ) {
+                        if (selected.isEmpty()) open(id) else toggle(id)
+                    }
+                }
+            }
+        }
+    }
+    action?.let {
+        CategoryBulkActions(it, actionIds.toSet(), snapshot, model, { action = null }, model::completeCategorySelection)
     }
     if (create) CategoryEditor(null, snapshot.types, model, { create = false })
     if (manageTypes) CategoryTypes(snapshot.types, model) { manageTypes = false }
 }
+
+private fun visibleCategoryFilter(
+    preferences: LibrarySettings,
+    types: List<CategoryTypeEntity>,
+): Long? = preferences.categoryTypeFilter?.takeIf { id -> id == 0L || types.any { it.id == id } }
+
+private fun toggledCategoryIds(
+    selected: List<Long>,
+    id: Long,
+    busy: Boolean,
+): List<Long> =
+    when {
+        busy -> selected
+        id in selected -> selected - id
+        else -> selected + id
+    }
 
 private fun categoryColumns(
     grid: Boolean,
@@ -150,8 +226,7 @@ private fun CategoryListControls(
 private fun LazyListScope.categoryRows(
     groups: List<Pair<String?, List<CategorySummary>>>,
     columns: Int,
-    grid: Boolean,
-    open: (Long) -> Unit,
+    card: @Composable RowScope.(CategorySummary) -> Unit,
 ) {
     groups.filter { it.second.isNotEmpty() }.forEach { (label, members) ->
         if (label != null) {
@@ -160,7 +235,7 @@ private fun LazyListScope.categoryRows(
         items(members.chunked(columns)) { row ->
             Row(Modifier.fillMaxWidth().animateItem(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { category ->
-                    CategoryCard(category, grid, Modifier.weight(1f)) { open(category.category.id) }
+                    card(category)
                 }
                 repeat(columns - row.size) { Column(Modifier.weight(1f)) {} }
             }
@@ -175,19 +250,43 @@ internal fun CategoryCard(
     category: CategorySummary,
     grid: Boolean,
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
+    enabled: Boolean = true,
+    onLongClick: (() -> Unit)? = null,
     open: () -> Unit,
 ) {
-    OrganizationPanel(modifier.clickable(onClick = open)) {
-        if (grid) {
-            CategoryCover(category, Modifier.fillMaxWidth().aspectRatio(CATEGORY_COVER_RATIO))
-            CategoryCardInfo(category)
-        } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CategoryCover(category, Modifier.size(74.dp))
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CategoryCardInfo(category)
+    Box(modifier) {
+        OrganizationPanel(
+            Modifier
+                .testTag("category_${category.category.id}")
+                .semantics { this.selected = selected }
+                .combinedClickable(
+                    enabled = enabled,
+                    onClick = open,
+                    onLongClick = onLongClick,
+                    onLongClickLabel = "select category",
+                ),
+            selected = selected,
+        ) {
+            if (grid) {
+                CategoryCover(category, Modifier.fillMaxWidth().aspectRatio(CATEGORY_COVER_RATIO))
+                CategoryCardInfo(category)
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    CategoryCover(category, Modifier.size(74.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CategoryCardInfo(category)
+                    }
                 }
             }
+        }
+        if (selected) {
+            Icon(
+                DeftActionIcons.Check,
+                null,
+                Modifier.align(Alignment.TopEnd).padding(8.dp).size(20.dp),
+                tint = LocalDeftColors.current.accentText,
+            )
         }
     }
 }

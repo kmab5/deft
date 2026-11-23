@@ -1,5 +1,6 @@
 package com.kmab.deft.feature.organization
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,14 +43,16 @@ import java.util.Locale
 @Composable
 internal fun OrganizationPanel(
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = LocalDeftColors.current
+    val outline by animateColorAsState(if (selected) colors.accentText else colors.line, label = "selection outline")
     Surface(
         modifier.fillMaxWidth(),
         shape = DeftShapes.card,
         color = colors.surface,
-        border = BorderStroke(1.dp, colors.line),
+        border = BorderStroke(1.dp, outline),
         shadowElevation = 1.dp,
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
@@ -88,10 +91,11 @@ internal fun OrganizationRow(
     title: String,
     subtitle: String,
     enabled: Boolean = true,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)

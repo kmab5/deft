@@ -500,6 +500,8 @@ class OrganizationEditorTest {
             val state = model.state.collectAsState().value
             DeftTheme(darkTheme = true) { OrganizationRenderSurface { CategoriesScreen(state, model) {} } }
         }
+        // Start the composition's flow subscription before waiting on the retained model.
+        compose.waitForIdle()
         compose.waitUntil(10_000) { model.state.value.preferences.groupCategoriesByType }
         compose.onNodeWithText("date created").assertIsDisplayed()
         compose.onNodeWithContentDescription("filters · 1").assertIsDisplayed()
