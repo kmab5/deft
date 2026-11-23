@@ -18,6 +18,7 @@ class OrganizationRepository
     ) {
         private val dao = db.organizationDao()
         private val categories = CategoryOperations(dao)
+        private val bulkCategories = CategoryBulkOperations(dao)
         private val members = MembershipOperations(dao)
         private val authors = AuthorOperations(dao)
 
@@ -54,6 +55,14 @@ class OrganizationRepository
         ): Long = transaction { categories.save(id, name, description, typeIds, order, coverPath) }
 
         suspend fun deleteCategory(id: Long) = transaction { categories.delete(id) }
+
+        suspend fun deleteCategories(ids: Set<Long>) = transaction { bulkCategories.delete(ids) }
+
+        suspend fun updateCategoryTypes(
+            ids: Set<Long>,
+            typeIds: Set<Long>,
+            add: Boolean,
+        ) = transaction { bulkCategories.updateTypes(ids, typeIds, add) }
 
         @Suppress("LongParameterList") // Category attributes and selected books commit as one user action.
         suspend fun createCategoryWithBooks(
@@ -125,6 +134,11 @@ class OrganizationRepository
         ) = transaction {
             CategoryMerger(dao).merge(sourceId, targetId)
         }
+
+        suspend fun mergeCategories(
+            sourceIds: Set<Long>,
+            targetId: Long,
+        ) = transaction { bulkCategories.merge(sourceIds, targetId) }
 
         suspend fun renameAuthor(
             id: Long,
