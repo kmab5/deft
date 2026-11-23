@@ -1,8 +1,12 @@
 # Deft documentation index
 
-M1–M4 are complete. The current release is **0.4.3**, build
+M1–M4 are complete. The accepted release is **0.4.3**, build
 [`v0.4.3-2`](https://github.com/kmab5/deft/releases/tag/v0.4.3-2), built and published
 by GitHub Actions using the persistent Deft release key. M5 is next.
+
+The [0.4.4 category multi-select addition](2026-11-23-m4-category-selection.md)
+is on `fix/m4-category-selection`, awaiting device acceptance using the appended
+[M4 retest checklist](m4-test-checklist.md#044--category-multi-select-retests).
 
 ## Current guidance
 

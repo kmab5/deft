@@ -1,6 +1,6 @@
 # Deft — Design
 
-*Approved 2026-11-13; living specification. M1–M4 are complete, the current release is `v0.4.3-2`, and M5 is next. Current milestone order is recorded in §17 and the roadmap.*
+*Approved 2026-11-13; living specification. M1–M4 are complete, the accepted release is `v0.4.3-2`, and M5 is next. Current milestone order is recorded in §17 and the roadmap.*
 
 > deft — read like you mean it.
 

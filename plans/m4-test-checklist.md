@@ -246,3 +246,40 @@ are preserved. These checks remain unchecked until tested on your device.
   behave as accepted in 0.4.1.
 - [X] M4 0.4.2 accepted; ready to merge this tested version into main.
 -- m4 has been accepted but beofre merging, justs a slight edit, the off mode of the toggle in the filter for the group by type toggle button, the circle inside is too dark and has low contrast with the bg, the issue we had with the settings page, fix this minor color change, commit on m4, then merge, tag 0.4.3 and push, no need for local build verification
+
+## 0.4.4 — category multi-select retests
+
+Install `deft-0.4.4.apk` over the current app. Use disposable test categories for
+merge/delete checks. This addition is awaiting device acceptance; earlier M4
+results above remain unchanged.
+
+- [ ] A normal tap opens a category; long press selects it without opening it.
+  Tap more cards to toggle them. Selected list/grid cards show an outline and check.
+- [ ] The pinned bar shows the selected count, clear, select all and actions.
+  Back clears selection. A subsequent tap opens the category normally.
+- [ ] Give a category two types and group by type: both appearances share one
+  selection, and select-all counts the category only once.
+- [ ] Search or filter while selected: hidden categories leave the selection.
+  Sorting, reversing, switching list/grid/grouping and rotating retain visible IDs.
+- [ ] Select two categories and add types. Only those categories change; unrelated
+  types, names, descriptions, covers, ratings, members and order remain intact.
+- [ ] Remove chosen types from several categories. Other types remain. Removing
+  Series clears automatic matching/aliases as the sheet explains; adding Series
+  to a manually created category does not turn on automatic series matching.
+- [ ] Merge into an unselected destination; cancel first and verify nothing changed.
+  Confirm: source members/types combine, destination details and existing book
+  positions win, source categories disappear and selection clears.
+- [ ] Merge into one of the selected categories. It survives. Try overlapping books,
+  series aliases, duplicate category names and custom covers; verify the target's
+  cover, rating, description and positions remain unchanged.
+- [ ] Delete multiple categories: cancel first, then confirm. Only categories and
+  their memberships disappear. Books, files, notes and reading history stay.
+  When enabled, a later scan can recreate categories from source series metadata.
+- [ ] Close a type/merge sheet or confirmation with Back: selection remains.
+  Reopen and complete the action. Repeated fast taps do not run it twice.
+- [ ] At 150% text, portrait and landscape, in Paper and Ink: actions, chips,
+  destination search/results and confirmation buttons remain reachable. Test
+  TalkBack's long-press action, selected state and labelled toolbar controls.
+- [ ] Existing Books multi-select, category editing/member order, Authors and
+  reader behavior still work. Restart the app and verify bulk edits persisted.
+- [ ] 0.4.4 accepted; ready to merge this tested version into main.

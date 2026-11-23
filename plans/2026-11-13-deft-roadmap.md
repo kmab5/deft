@@ -6,7 +6,7 @@
 
 **Rule for every milestone:** it ends with an installable app that is better than the previous milestone's, all tests green, CI green, and the design doc updated if a decision changed (add a row to the design doc's Decision log, §20).
 
-**Completed: M1–M4. Current release: `v0.4.3-2`. M4 was accepted and merged as `v0.4.3-1`; build 2 added verified, permanent-key APK publication through GitHub Actions. Both the main and tag runs passed, and the downloaded release APK was verified. Next: M5 — highlights, notes and search.**
+**Completed: M1–M4. Accepted release: `v0.4.3-2`. M4 was accepted and merged as `v0.4.3-1`; build 2 added verified, permanent-key APK publication through GitHub Actions. Both the main and tag runs passed, and the downloaded release APK was verified. Next: M5 — highlights, notes and search.**
 
 **Review history:** M1 merged as `v0.1.2-1`, M2 as `v0.2.5-1`, and M3 after its accepted review and final polish. EPUB/library search, image viewing, launch-last-book and navigation refinements shipped ahead of the original M5 boundary. M4 acceptance and final changes are recorded in its checklist. Dated plans and validation reports remain historical evidence; see the [documentation index](README.md) for current guidance and review records.
 
@@ -39,6 +39,7 @@
 **Produces:** `SessionRepository`, `ReadThroughRepository`, `BookState` derivation query used by stats and library filters.
 
 ## M4 — Categories, types, series, authors
+**Post-acceptance addition:** [0.4.4 category multi-select](2026-11-23-m4-category-selection.md) adds long-press selection and atomic add/remove types, chosen-destination merge and category-only deletion. Awaiting device acceptance on `fix/m4-category-selection`; M5 remains next.
 **Spec:** §6.4, §7, §14 (Categories, Authors pages).
 **Delivers:** categories (no nesting in v1, non-unique names, types, built-in Series type, manual order, decimal series positions, merge), series auto-fill into auto-created Series categories only (+ merge aliases) with `suggested` flag + review indicator, "Next in series", category/author/series progress with abandoned = unresolved, computed/overridden rating, author pages, author merge/rename, multi-select "Add to category" on Books.
 **Acceptance:** scanning a series of EPUBs with `calibre:series` creates one ordered Series category; overriding a category rating and resetting it works; merging two authors combines their books.
