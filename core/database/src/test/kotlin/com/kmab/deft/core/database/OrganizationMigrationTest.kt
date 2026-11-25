@@ -26,7 +26,7 @@ class OrganizationMigrationTest {
                     AppDatabase::class.java,
                 ).build()
         try {
-            assertEquals(7, db.openHelper.writableDatabase.version)
+            assertEquals(8, db.openHelper.writableDatabase.version)
         } finally {
             db.close()
         }
@@ -41,8 +41,10 @@ class OrganizationMigrationTest {
             val db =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, name)
-                    .addMigrations(DatabaseMigrations.FROM_6_TO_7)
-                    .build()
+                    .addMigrations(
+                        DatabaseMigrations.FROM_6_TO_7,
+                        DatabaseMigrations.FROM_7_TO_8,
+                    ).build()
             try {
                 val book = db.bookDao().getById(1)!!
                 assertEquals("kept-locator", book.currentLocator)

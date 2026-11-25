@@ -36,6 +36,7 @@ class TrackingMigrationTest {
                         DatabaseMigrations.FROM_4_TO_5,
                         DatabaseMigrations.FROM_5_TO_6,
                         DatabaseMigrations.FROM_6_TO_7,
+                        DatabaseMigrations.FROM_7_TO_8,
                     ).build()
             try {
                 val book = db.bookDao().getById(1)!!
@@ -84,8 +85,11 @@ class TrackingMigrationTest {
             val db =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, name)
-                    .addMigrations(DatabaseMigrations.FROM_5_TO_6, DatabaseMigrations.FROM_6_TO_7)
-                    .build()
+                    .addMigrations(
+                        DatabaseMigrations.FROM_5_TO_6,
+                        DatabaseMigrations.FROM_6_TO_7,
+                        DatabaseMigrations.FROM_7_TO_8,
+                    ).build()
             try {
                 val sessions = db.trackingDao().getSessions(1)
                 assertEquals(listOf("accepted", "short"), sessions.map { it.id })
