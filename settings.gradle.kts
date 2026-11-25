@@ -29,4 +29,4 @@ include(":tracking", ":feature:celebrate")
 include(":library:organization")
 include(":feature:organization")
 include(":library:notes")
-
+include(":feature:notes")
