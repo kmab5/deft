@@ -485,3 +485,11 @@ a searchable destination sheet with type/book-count/ID subtitles to distinguish
 duplicate names, followed by confirmation. Delete confirms the selected count and
 explains that books/history stay and auto-fill may recreate source Series. Disable
 repeat operations while saving; show failures through the existing bottom notices.
+
+### M4 addition — 0.4.5 Books category picker
+
+In Books selection → add to category, keep search above the independently scrolling
+category list and an icon-labelled create category action below it. Both stay
+visible with long lists and large text. Keep the same action when no categories
+match. It opens the existing category editor with fixed Save/Cancel actions;
+saving assigns the selected books, while Cancel returns to the picker.

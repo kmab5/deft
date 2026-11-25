@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -23,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,6 +35,7 @@ import com.kmab.deft.core.designsystem.DeftNoticeKind
 import com.kmab.deft.core.designsystem.DeftSheet
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
+import com.kmab.deft.core.designsystem.icons.DeftActionIcons
 import com.kmab.deft.core.designsystem.rememberDeftNoticeState
 import com.kmab.deft.library.organization.CategorySummary
 
@@ -42,6 +46,16 @@ fun CategoryMembershipPicker(
     onAdded: () -> Unit,
 ) {
     val model: OrganizationViewModel = hiltViewModel()
+    CategoryMembershipPicker(bookIds, onDismiss, onAdded, model)
+}
+
+@Composable
+internal fun CategoryMembershipPicker(
+    bookIds: Set<Long>,
+    onDismiss: () -> Unit,
+    onAdded: () -> Unit,
+    model: OrganizationViewModel,
+) {
     val state by model.state.collectAsStateWithLifecycle()
     val busy by model.busy.collectAsStateWithLifecycle()
     var create by rememberSaveable { mutableStateOf(false) }
@@ -50,7 +64,7 @@ fun CategoryMembershipPicker(
     if (create && snapshot != null) {
         CategoryEditor(null, snapshot.types, model, { create = false }, onSaved = onAdded, initialBooks = bookIds)
     } else {
-        OrganizationSheet("add to category", onDismiss, model) {
+        OrganizationSheet("add to category", onDismiss, model, scrollable = false) {
             if (snapshot == null) {
                 OrganizationEmpty(if (state.loadFailed) "Couldn't load categories." else "loading", !state.loadFailed)
             } else {
@@ -88,22 +102,30 @@ internal fun CategoryPickerContent(
     onCreate: () -> Unit,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
-    OutlinedTextField(
-        query,
-        { query = it },
-        Modifier.fillMaxWidth(),
-        label = { Text("find a category") },
-        singleLine = true,
-    )
     val matches = categories.filter { it.category.name.contains(query.trim(), ignoreCase = true) }
-    if (matches.isEmpty()) Text("No matching categories.", style = DeftTypography.body)
-    matches.forEach { category ->
-        HorizontalDivider(color = LocalDeftColors.current.line)
-        OrganizationRow(category.category.name, category.choiceDetails(), enabled = !busy) {
-            onPick(category.category.id)
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedTextField(
+            query,
+            { query = it },
+            Modifier.fillMaxWidth(),
+            label = { Text("find a category") },
+            singleLine = true,
+            enabled = !busy,
+        )
+        LazyColumn(Modifier.weight(1f, fill = false).fillMaxWidth().testTag("category_picker_list")) {
+            if (matches.isEmpty()) {
+                item { Text("No matching categories.", style = DeftTypography.body) }
+            }
+            items(matches, key = { it.category.id }) { category ->
+                HorizontalDivider(color = LocalDeftColors.current.line)
+                OrganizationRow(category.category.name, category.choiceDetails(), enabled = !busy) {
+                    onPick(category.category.id)
+                }
+            }
         }
+        HorizontalDivider(color = LocalDeftColors.current.line)
+        DeftButton("create category", onCreate, enabled = !busy, icon = DeftActionIcons.FolderPlus)
     }
-    DeftButton("create category", onCreate, enabled = !busy)
 }
 
 internal fun CategorySummary.choiceDetails(): String {
