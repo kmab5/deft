@@ -283,3 +283,26 @@ results above remain unchanged.
 - [ ] Existing Books multi-select, category editing/member order, Authors and
   reader behavior still work. Restart the app and verify bulk edits persisted.
 - [ ] 0.4.4 accepted; ready to merge this tested version into main.
+
+## 0.4.5 — create categories from selected books
+
+Install `deft-0.4.5.apk` over the existing app. The author authorized including
+0.4.4 on main with this handover; its unchecked device steps above still apply.
+Earlier recorded results are preserved.
+
+- [ ] In Books, long press and select several books. Open Add to category: create
+  category is immediately visible, including with a long list of categories.
+- [ ] Scroll the category list, then search for a name with no matches. Search
+  and create category remain reachable; creation also works in an empty library
+  of categories.
+- [ ] Create a category, name it and choose types. Save: the picker closes, Books
+  selection clears, and the category contains exactly the selected books.
+- [ ] Start creating a category, then Cancel or Back. No category is created;
+  the picker returns and the original book selection is retained. Add those
+  books to an existing category and verify the same selection was assigned.
+- [ ] Repeat with duplicate category names: the displayed type/count/ID details
+  still identify the intended existing category.
+- [ ] Check Paper and Ink, portrait and landscape, 150% text, keyboard open and
+  TalkBack. Search, results and create/save/cancel actions remain reachable.
+- [ ] Repeat the 0.4.4 multi-select checks above for categories and confirm the
+  existing library, reader and settings behavior remains intact after updating.

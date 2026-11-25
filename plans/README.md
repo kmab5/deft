@@ -1,12 +1,13 @@
 # Deft documentation index
 
-M1–M4 are complete. The accepted release is **0.4.3**, build
-[`v0.4.3-2`](https://github.com/kmab5/deft/releases/tag/v0.4.3-2), built and published
-by GitHub Actions using the persistent Deft release key. M5 is next.
+M1–M4 are complete. **0.4.5** includes category multi-select from 0.4.4 and
+visible category creation from the Books selection picker, integrated directly
+on main at the author's request. M5 is next.
 
-The [0.4.4 category multi-select addition](2026-11-23-m4-category-selection.md)
-is on `fix/m4-category-selection`, awaiting device acceptance using the appended
-[M4 retest checklist](m4-test-checklist.md#044--category-multi-select-retests).
+See the [0.4.5 implementation record](2026-11-25-m4-045-category-picker.md) and
+[M4 device checks](m4-test-checklist.md#045--create-categories-from-selected-books).
+Version tags publish permanent-key APKs through GitHub Actions; the handover tag
+is `v0.4.5-1`. Earlier checklist results remain historical, not new device validation.
 
 ## Current guidance
 
@@ -42,7 +43,7 @@ Detailed plans for M5–M10 are written before their implementation.
 | M1 | [Foundation](2026-11-13-m1-foundation.md) | [Checklist](m1-test-checklist.md) | [M1 polish and M2 recovery](2026-11-18-m1-polish-m2-recovery.md) |
 | M2 | [EPUB reader](2026-11-18-m2-epub-reader.md) | [Checklist](m2-test-checklist.md) | [0.2.5 validation](2026-11-20-m2-0.2.5-validation.md) |
 | M3 | [Tracking](2026-11-20-m3-reading-tracking.md) | [Checklist](m3-test-checklist.md) | [0.3.3 follow-up](2026-11-21-m3-033-validation.md) |
-| M4 | [Organization](2026-11-21-m4-organization.md) | [Accepted checklist](m4-test-checklist.md) | [0.4.2 device-review build](2026-11-22-m4-042-validation.md) and [0.4.3-2 CI release](https://github.com/kmab5/deft/actions/runs/45057412923) |
+| M4 | [Organization](2026-11-21-m4-organization.md) | [Accepted checklist](m4-test-checklist.md) | [0.4.2 device-review build](2026-11-22-m4-042-validation.md), [0.4.3-2 CI release](https://github.com/kmab5/deft/actions/runs/45057412923), and [0.4.5 additions/CI repair](2026-11-25-m4-045-category-picker.md) |
 
 Dated implementation, feedback and validation documents are historical records.
 Their old branch status, unchecked implementation tasks and original milestone
