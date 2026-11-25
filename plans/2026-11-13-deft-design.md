@@ -1,6 +1,6 @@
 # Deft — Design
 
-*Approved 2026-11-13; living specification. M1–M4 are complete, the current release is `v0.4.3-2`, and M5 is next. Current milestone order is recorded in §17 and the roadmap.*
+*Approved 2026-11-13; living specification. M1–M4 are complete, the accepted release is `v0.4.3-2`, and M5 is next. Current milestone order is recorded in §17 and the roadmap.*
 
 > deft — read like you mean it.
 
@@ -201,6 +201,7 @@ Users can **edit** title, authors, series and cover inside Deft. Edits are store
 - Book page shows **"Next in series"** (the lowest-positioned member after this one that is not finished).
 - **Category progress:** finished members ÷ total members (missing books included, ignored books excluded). **Abandoned books are unresolved:** they stay in the denominator, so a category containing an abandoned book never shows 100%. The bar shows finished, reading/paused, and abandoned as distinct segments. The same rule applies to author and series progress.
 - Users can merge two categories (members are unioned; on position conflicts the target's positions win).
+- **Category multi-select:** long press selects by ID, then taps toggle; select-all includes visible categories once even when grouped under multiple types. Back clears selection after closing any modal. Search/type filters prune hidden selections; rotation and display/sort changes preserve visible selections. Bulk actions add/remove chosen types without replacing other types, merge into an explicitly chosen destination (which may be selected), or delete categories without deleting books/history. Each action is atomic, rejects stale IDs, and clears selection only after success. Merge keeps destination details/positions, with remaining conflicts resolved by ascending source ID. Removing Series clears its aliases/auto-created status, following single-category editing.
 - **Category rating:** by default the average of its rated books, shown with one decimal. The user can **override** with their own rating; a reset returns to the computed average. UI shows which one is in effect.
 
 ## 8. Reading states, read-throughs and sessions
@@ -529,3 +530,4 @@ Historical rows retain the milestone numbers used when the decision was made. On
 | 2026-11-22 | 0.4.3 build 2 enables signed GitHub Actions tag publication now: full checks, permanent-certificate and tag/source validation, APK/checksum/mapping/provenance uploads, then a separate release job. Branch builds remain CI-only and unpublished. | Author requests CI to build and publish the latest 0.4.3 APK directly and to monitor the complete run. Reuses the existing key via encrypted repository secrets; preserves v0.4.3-1. |
 | 2026-11-22 | Move data exchange from M9 to M7, fixed-layout readers from M7 to M8, and converters from M8 to M9. M7 depends on M1-M6 data, not reader engines; M8/M9 extend export/backup coverage and test older-backup restoration. Conversion caches remain rebuildable and excluded. | Author requests earlier matching, exports and backup if independent. Dependency review of sections 5, 11-13 and 15 confirms this ordering; feature scope is preserved. |
 | 2026-11-22 | Refresh current release guidance to v0.4.3-2, index current versus historical documents, preserve author checklists/design evidence, and exclude local agent scratch/tool logs from Git. Documentation-only maintenance does not change the APK version or create a release tag. | Author requests repository/documentation cleanup before the next milestone. No tracked APKs, stray logs, empty files or duplicate screenshots were found; the obsolete local tool error log is removable. |
+| 2026-11-23 | Add category long-press multi-select in 0.4.4, with add/remove types, explicit-destination merge and category-only deletion. Match Books selection behavior, deduplicate grouped appearances, and use one transaction per bulk action. Ratings and suggestion-review bulk actions remain outside this addition. | Author requested category multi-item operations before M5 and confirmed these three actions. Preserve destination metadata, book files and permanent history. |

@@ -470,3 +470,18 @@ The category filter's group-by-type control uses the shared `DeftSwitch`, matchi
 Settings: off-state thumb uses `colors.text`, track uses `colors.surface2`, and
 outline uses `colors.muted`. Preserve this contrast in both palettes. M4 is
 accepted; build `v0.4.3-2` adds CI publication without changing this design.
+
+### M4 addition — 0.4.4 category selection
+
+Long press a category card to select it; show an accent outline and checkmark in
+both list and grid, with all grouped appearances reflecting the same selection.
+Keep an animated selection bar above the scrolling list: clear, count, select all
+visible, and an icon-labelled actions menu. Preserve the existing browse controls.
+Back dismisses the active modal before clearing selection. Search and filters
+remove hidden items from the selection; sort, layout and grouping preserve IDs.
+
+Add/remove types uses wrapping type chips with a pinned apply button. Merge uses
+a searchable destination sheet with type/book-count/ID subtitles to distinguish
+duplicate names, followed by confirmation. Delete confirms the selected count and
+explains that books/history stay and auto-fill may recreate source Series. Disable
+repeat operations while saving; show failures through the existing bottom notices.
