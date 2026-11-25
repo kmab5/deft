@@ -58,22 +58,17 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExternalResource
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -84,23 +79,10 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.time.Instant
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class LibrarySettingsScreenTest {
-    @get:Rule(order = 0)
-    val mainDispatcher =
-        object : ExternalResource() {
-            override fun before() {
-                Dispatchers.setMain(UnconfinedTestDispatcher())
-            }
-
-            override fun after() {
-                Dispatchers.resetMain()
-            }
-        }
-
-    @get:Rule(order = 1)
+    @get:Rule
     val compose = createComposeRule()
     private val vm by lazy { LibrarySettingsViewModel(folders, settings, scheduler, ScanStatusObserver(manager)) }
 
@@ -145,7 +127,8 @@ class LibrarySettingsScreenTest {
     @After fun close() {
         compose.runOnIdle { renderScreen.value = false }
         compose.waitForIdle()
-        runBlocking { vm.viewModelScope.coroutineContext[Job]?.cancelAndJoin() }
+        val viewModelJob = compose.runOnIdle { vm.viewModelScope.coroutineContext[Job]?.also { it.cancel() } }
+        awaitCondition { viewModelJob?.isCompleted != false }
         manager.cancelAllWork().result.get()
         WorkManagerTestInitHelper.closeWorkDatabase()
         runBlocking { scope.coroutineContext[Job]?.cancelAndJoin() }
@@ -153,15 +136,23 @@ class LibrarySettingsScreenTest {
         RuntimeEnvironment.setFontScale(1f)
     }
 
+    // Robolectric's paused Main looper must process coroutine resumptions from Room/DataStore.
+    private fun awaitCondition(condition: () -> Boolean) {
+        compose.waitUntil {
+            compose.waitForIdle()
+            condition()
+        }
+    }
+
     private fun requests() = manager.getWorkInfosForUniqueWork(ScanScheduler.WORK_NAME).get()
 
     @Test fun enablingSeriesAutoFillRequestsRescanAndDisablingKeepsExistingWorkUntouched() {
         compose.setContent { if (renderScreen.value) DeftTheme { LibrarySettingsScreen({}, vm) } }
         compose.onNodeWithText("series auto-fill").performScrollTo().performClick()
-        compose.waitUntil { runBlocking { !settings.settings.first().seriesAutoFill } }
+        awaitCondition { runBlocking { !settings.settings.first().seriesAutoFill } }
         assertEquals(0, requests().size)
         compose.onNodeWithText("series auto-fill").performClick()
-        compose.waitUntil { requests().isNotEmpty() }
+        awaitCondition { requests().isNotEmpty() }
         assertEquals(true, runBlocking { settings.settings.first().seriesAutoFill })
     }
 
@@ -219,20 +210,20 @@ class LibrarySettingsScreenTest {
             .performScrollTo()
             .assertIsOff()
             .performClick()
-        compose.waitUntil { runBlocking { settings.settings.first().advancedSearch } }
+        awaitCondition { runBlocking { settings.settings.first().advancedSearch } }
         compose.onNodeWithText("advanced search").assertIsOn()
     }
 
     @Test fun formatPersistsAndSchedules() {
         compose.setContent { if (renderScreen.value) DeftTheme { LibrarySettingsScreen({}, vm) } }
         compose.runOnIdle { vm.format(com.kmab.deft.core.model.BookFormat.PDF, false) }
-        compose.waitUntil {
+        awaitCondition {
             runBlocking {
                 com.kmab.deft.core.model.BookFormat.PDF !in
                     settings.settings.first().enabledFormats
             }
         }
-        compose.waitUntil { requests().any { !it.state.isFinished } }
+        awaitCondition { requests().any { !it.state.isFinished } }
     }
 
     @Test fun invalidExclusionReportsErrorAndRemovalUsesRepositoryOutbox() {
@@ -251,7 +242,7 @@ class LibrarySettingsScreenTest {
             }
         }
         compose.runOnIdle { vm.exclude("content://test/tree/root", "Books", Uri.parse("content://test/tree/outside")) }
-        compose.waitUntil {
+        awaitCondition {
             compose
                 .onAllNodes(
                     androidx.compose.ui.test
@@ -261,8 +252,8 @@ class LibrarySettingsScreenTest {
         }
         compose.onNodeWithText("Pick a folder inside Books").assertIsDisplayed()
         compose.runOnIdle { assertEquals(null, vm.error.value) }
-        compose.runOnIdle { vm.remove("content://test/tree/root") }
-        compose.waitUntil { runBlocking { db.libraryFolderDao().pendingRemovals().isNotEmpty() } }
+        val removal = compose.runOnIdle { vm.remove("content://test/tree/root") }
+        awaitCondition { removal.isCompleted }
         assertEquals(listOf("content://test/tree/root"), runBlocking { db.libraryFolderDao().pendingRemovals() })
         assertEquals(1, access.releases)
     }
@@ -285,10 +276,10 @@ class LibrarySettingsScreenTest {
             )[1]
             .performClick()
         compose.waitForIdle()
-        compose.waitUntil { runBlocking { db.libraryFolderDao().getAll().isEmpty() } }
+        awaitCondition { runBlocking { db.libraryFolderDao().getAll().isEmpty() } }
         manager.cancelAllWork().result.get()
         compose.onNodeWithText("rescan now").performScrollTo().performClick()
-        compose.waitUntil { requests().any { !it.state.isFinished } }
+        awaitCondition { requests().any { !it.state.isFinished } }
     }
 
     @Test fun exclusionPickerKeepsItsPurposeAfterStateRestoration() {
@@ -318,7 +309,7 @@ class LibrarySettingsScreenTest {
                 if (renderScreen.value) DeftTheme { LibrarySettingsScreen({}, vm) }
             }
         }
-        compose.waitUntil {
+        awaitCondition {
             compose
                 .onAllNodes(
                     androidx.compose.ui.test
@@ -329,7 +320,7 @@ class LibrarySettingsScreenTest {
         compose.onNodeWithText("exclude a subfolder").performScrollTo().performClick()
         restoration.emulateSavedInstanceStateRestore()
         compose.runOnUiThread { registry.dispatchResult(launchedRequestCode, Uri.parse(child)) }
-        compose.waitUntil { runBlocking { folders.exclusions(root).first().isNotEmpty() } }
+        awaitCondition { runBlocking { folders.exclusions(root).first().isNotEmpty() } }
         assertEquals(
             "child",
             runBlocking {
