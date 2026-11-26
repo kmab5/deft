@@ -2,7 +2,7 @@
 
 M1–M4 are complete. **0.4.5** includes category multi-select from 0.4.4 and
 visible category creation from the Books selection picker, integrated directly
-on main at the author's request. M5 is implemented on `feat/m5-notes` and awaits device acceptance of 0.5.0.
+on main at the author's request. M5 is implemented on `feat/m5-notes` and awaits device acceptance of 0.5.1.
 
 See the [0.4.5 implementation record](2026-11-25-m4-045-category-picker.md) and
 [M4 device checks](m4-test-checklist.md#045--create-categories-from-selected-books).

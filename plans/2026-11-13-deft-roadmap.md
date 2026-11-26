@@ -45,7 +45,7 @@
 **Acceptance:** scanning a series of EPUBs with `calibre:series` creates one ordered Series category; overriding a category rating and resetting it works; merging two authors combines their books.
 
 ## M5 — Highlights, notes, search
-**Status:** 0.5.0 implemented and locally verified on `feat/m5-notes`; awaiting device acceptance; [task plan](2026-11-25-m5-notes.md), [device checklist](m5-test-checklist.md). Not merged or accepted.
+**Status:** 0.5.1 in device review on `feat/m5-notes`; awaiting device acceptance; [task plan](2026-11-25-m5-notes.md), [device checklist](m5-test-checklist.md). Not merged or accepted.
 **Spec:** §10.1 (selection, search, define), §11, §15 (`Highlight`, `PageNote`).
 **Delivers:** text selection actions (4 highlight colors plus a colorless/no-highlight choice, note, copy, share, define via `ACTION_PROCESS_TEXT`), Readium decorations, integration/refinement of the in-book search already shipped in M2, per-book notes tab, global Notes screen with filters/search, export a book's notes as Markdown.
 **Acceptance:** highlights render on reopen at the same text; selecting text alone creates no persistent highlight. Colorless removes the visible highlight while retaining an explicitly saved note. Deleting the file keeps notes visible on the Notes screen.

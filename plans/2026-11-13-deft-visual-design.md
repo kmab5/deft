@@ -510,3 +510,5 @@ save/cancel accessible above the keyboard and through large-text/landscape layou
 errors use existing bottom notices. Cancel does not commit a draft. Explicit
 Delete is confirmed. In the reader, colored passages use a soft 24% fill and
 colorless notes have no fill. Selecting text alone makes no saved annotation.
+
+The 0.5.1 device revision consolidates filters in one sheet. Keep the applied filter count and values visible beside the results. Book selection supports title and author search. Give type and color choices text labels, and show only colors applicable to the selected type. Keep Done reachable in landscape and at large text sizes.
