@@ -79,12 +79,19 @@ internal class ReaderPagedFactory(
     private fun configuration(theme: ReaderTheme) =
         navigatorConfiguration(session.fonts, theme).apply {
             selectionActionModeCallback = annotations.selectionCallback(callbacks.selected, callbacks.action)
+            decorationTemplates[Decoration.Style.Underline::class] =
+                HtmlDecorationTemplate.underline(
+                    defaultTint = android.graphics.Color.GRAY,
+                    lineWeight = 2,
+                    cornerRadius = 0,
+                    alpha = 1.0,
+                )
             decorationTemplates[Decoration.Style.Highlight::class] =
                 HtmlDecorationTemplate.highlight(
                     defaultTint = android.graphics.Color.GRAY,
                     lineWeight = 1,
                     cornerRadius = 2,
-                    alpha = 0.24,
+                    alpha = 0.31,
                 )
         }
 }

@@ -43,7 +43,7 @@ internal class ReaderNavigator(
     private var container: FrameLayout? = null
     private var collection: Job? = null
     private var annotations: List<HighlightEntity> = emptyList()
-    private val pagedAnnotations = ReaderPagedAnnotations(activity) { fragment }
+    private val pagedAnnotations = ReaderPagedAnnotations(activity, model::notice) { fragment }
     private var generation = 0L
     private var preferences = ReaderPreferences()
     private var theme: ReaderTheme? = null
@@ -158,6 +158,11 @@ internal class ReaderNavigator(
     }
 
     fun swipe(offset: Float) = turnPhysical(right = offset < 0)
+
+    val onSelectionTouch: (Boolean) -> Unit = { down ->
+        pagedAnnotations.selectionTouch(down)
+        continuous?.selectionTouch(down)
+    }
 
     private fun turnPhysical(right: Boolean) {
         val rtl =
@@ -279,6 +284,7 @@ internal class ReaderNavigator(
                         onSelection = onSelectionStarted,
                         onSelectionAction = annotationActions.selection,
                         onAnnotation = annotationActions.edit,
+                        onNotice = model::notice,
                         onError = {
                             model.interaction.renderingFailed()
                             model.notice(

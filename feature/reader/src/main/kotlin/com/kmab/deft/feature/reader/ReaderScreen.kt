@@ -200,6 +200,7 @@ internal fun ReaderScreen(
                                     navigator::swipe,
                                     { navigator.nativeSwipes },
                                 ).apply {
+                                    onSelectionTouch = navigator.onSelectionTouch
                                     id = R.id.reader_navigator
                                     addOnAttachStateChangeListener(
                                         object : View.OnAttachStateChangeListener {
@@ -682,7 +683,8 @@ private fun ReaderSheets(
                 )
             }
             ReaderSheet.SETTINGS -> ReaderPreferencesPanel(Modifier.fillMaxWidth(), manageAssets = false)
-            ReaderSheet.CONTENTS ->
+            ReaderSheet.CONTENTS -> {
+                val annotations by model.annotations.state.collectAsStateWithLifecycle()
                 ReaderContentsPanel(
                     state = contentsState,
                     contents =
@@ -703,7 +705,17 @@ private fun ReaderSheets(
                     },
                     onRename = model::renameBookmark,
                     onRemove = model::removeBookmark,
+                    savedAnnotations = annotations.highlights,
+                    onAnnotation = { annotation ->
+                        parseLocator(annotation.locator)?.let { navigator?.go(it) }
+                        dismiss()
+                    },
+                    onEditAnnotation = { id ->
+                        dismiss()
+                        model.annotations.edit(id)
+                    },
                 )
+            }
         }
     }
 }

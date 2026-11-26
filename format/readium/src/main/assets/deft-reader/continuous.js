@@ -38,6 +38,26 @@
     entries.filter(entry => entry.ready).forEach(paintAnnotations);
   }
 
+  // Element rectangles include entire paragraph boxes, indentation and trailing blank space.
+  // Paint only the selected pieces of text, including partially selected inline spans.
+  function textRects(range) {
+    const doc = range.startContainer.ownerDocument;
+    const root = range.commonAncestorContainer;
+    const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node = root.nodeType === Node.TEXT_NODE ? root : walker.nextNode();
+    const rects = [];
+    while (node) {
+      if (range.intersectsNode(node)) {
+        const piece = doc.createRange();
+        piece.setStart(node, node === range.startContainer ? range.startOffset : 0);
+        piece.setEnd(node, node === range.endContainer ? range.endOffset : node.length);
+        if (!piece.collapsed) rects.push(...piece.getClientRects());
+      }
+      node = walker.nextNode();
+    }
+    return rects.filter(rect => rect.width > 0 && rect.height > 0);
+  }
+
   function paintAnnotations(entry) {
     entry.section.querySelectorAll('.deft-annotation').forEach(element => element.remove());
     entry.annotationRanges = [];
@@ -46,12 +66,13 @@
     savedAnnotations.filter(item => item.href === entry.href && /^#[0-9a-f]{6}$/i.test(item.color || '')).forEach(item => {
       const range = deftAnnotations.range(doc, item) || quoteRange(doc, item.text, item.progression, item.before, item.after);
       if (!range) return;
-      entry.annotationRanges.push({id: item.id, range});
+      const rects = textRects(range);
+      entry.annotationRanges.push({id: item.id, rects});
       // Host overlays work on older WebViews too, without wrapping or changing publication text.
-      Array.from(range.getClientRects()).filter(rect => rect.width > 0 && rect.height > 0).forEach(rect => {
+      rects.forEach(rect => {
         const box = document.createElement('div');
         box.className = 'deft-annotation';
-        box.style.cssText = `position:absolute;pointer-events:none;z-index:2;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:${item.color};opacity:.24`;
+        box.style.cssText = `position:absolute;pointer-events:none;z-index:2;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;${item.underline ? "box-shadow:inset 0 -2px " + item.color : "background:" + item.color + ";opacity:.31"}`;
         entry.section.appendChild(box);
       });
     });
@@ -83,7 +104,8 @@
       if (selected && !selected.isCollapsed && selected.toString().trim()) {
         const rect = selected.getRangeAt(0).getBoundingClientRect();
         return { href: entry.href, progression: clamp(rect.top / entry.height),
-          ...(lightweight ? {text: selected.toString()} : deftAnnotations.selection(entry.frame.contentDocument)) };
+          ...(lightweight ? deftAnnotations.sample(entry.frame.contentDocument) :
+            deftAnnotations.selection(entry.frame.contentDocument)) };
       }
     }
     return null;
@@ -185,7 +207,7 @@
       if (selection(true) || performance.now() - selectionChangedAt < 350) return;
       if (down && (performance.now() - down.at > 450 ||
           Math.hypot(event.clientX - down.x, event.clientY - down.y) > 12)) return;
-      const marked = entry.annotationRanges?.find(item => Array.from(item.range.getClientRects()).some(rect =>
+      const marked = entry.annotationRanges?.find(item => item.rects.some(rect =>
         event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom));
       if (marked) { event.preventDefault(); bridge('annotation', String(marked.id)); return; }
       const image = target.closest("img,image") || target.closest("svg")?.querySelector("image");

@@ -6,6 +6,8 @@ import android.view.ActionMode
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.kmab.deft.core.database.entity.HighlightEntity
+import com.kmab.deft.core.designsystem.DeftHaptic
+import com.kmab.deft.core.designsystem.performDeftHaptic
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -24,6 +26,7 @@ internal data class ReaderAnnotationActions(
 /** Paged annotations keep verified ranges and selection lifetime beside their Readium adapter. */
 internal class ReaderPagedAnnotations(
     private val activity: FragmentActivity,
+    private val notice: (String) -> Unit = {},
     private val navigator: () -> EpubNavigatorFragment?,
 ) {
     private var annotationJob: Job? = null
@@ -108,12 +111,18 @@ internal class ReaderPagedAnnotations(
         )
     }
 
-    private suspend fun currentSelection(): Locator? {
-        val navigator = navigator()
-        val selected = navigator?.currentSelection()?.locator ?: return null
-        val raw = navigator.evaluateJavascript(anchorScript + ";JSON.stringify(deftAnnotations.selection(document))")
+    private suspend fun currentSelection(full: Boolean = true): Locator? {
+        val navigator = navigator() ?: return null
+        val selected = navigator.currentLocator.value
+        val method = if (full) "selection" else "sample"
+        val install = if (full) anchorScript + ";" else ""
+        val raw = navigator.evaluateJavascript(install + "JSON.stringify(window.deftAnnotations?.$method(document))")
         val capture = runCatching { JSONObject(JSONTokener(raw).nextValue().toString()) }.getOrNull()
-        return capture?.let { selectionLocator(selected, it) } ?: selected
+        return capture?.let { selectionLocator(selected, it) }
+    }
+
+    fun selectionTouch(down: Boolean) {
+        feedback?.touchChanged(down)
     }
 
     fun selectionCallback(
@@ -124,14 +133,16 @@ internal class ReaderPagedAnnotations(
             ReaderSelectionFeedback(
                 activity.lifecycleScope,
                 activity.lifecycle,
-                { navigator()?.currentSelection()?.locator },
+                { currentSelection(full = false) },
+                { activity.window.decorView.performDeftHaptic(DeftHaptic.CHOICE) },
                 onSelectionStarted,
             )
         this.feedback = feedback
         return readerSelectionCallback(
             activity,
             feedback,
-            ReaderSelectionOwner(::currentSelection, { navigator()?.clearSelection() }, onSelectionAction),
+            ReaderSelectionOwner({ currentSelection() }, { navigator()?.clearSelection() }, onSelectionAction),
+            notice = notice,
         )
     }
 }

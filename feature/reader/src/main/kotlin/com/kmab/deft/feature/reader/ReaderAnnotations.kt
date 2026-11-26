@@ -121,7 +121,8 @@ internal class ReaderAnnotations(
     }
 }
 
-private fun HighlightEntity.draft() = HighlightDraft(bookId, locator, text, color, note, totalProgression, id)
+private fun HighlightEntity.draft() =
+    HighlightDraft(bookId, locator, text, color, note, totalProgression, id, underline)
 
 internal fun highlightHex(color: HighlightColor): String? =
     when (color) {
@@ -136,7 +137,9 @@ internal fun readerDecorations(values: List<HighlightEntity>): List<Decoration> 
     values.mapNotNull { value ->
         val color = highlightHex(value.color) ?: return@mapNotNull null
         val locator = parseLocator(value.locator) ?: return@mapNotNull null
-        Decoration(value.id.toString(), locator.forReadiumRange(), Decoration.Style.Highlight(Color.parseColor(color)))
+        val tint = Color.parseColor(color)
+        val style = if (value.underline) Decoration.Style.Underline(tint) else Decoration.Style.Highlight(tint)
+        Decoration(value.id.toString(), locator.forReadiumRange(), style)
     }
 
 internal fun continuousAnnotations(values: List<HighlightEntity>): JSONArray =
@@ -149,6 +152,7 @@ internal fun continuousAnnotations(values: List<HighlightEntity>): JSONArray =
                     put("id", value.id.toString())
                     put("href", point.href.toString().substringBefore('#'))
                     put("color", color)
+                    put("underline", value.underline)
                     put("progression", point.locations.progression ?: 0.0)
                     put("text", value.text)
                     put("before", point.text.before.orEmpty())

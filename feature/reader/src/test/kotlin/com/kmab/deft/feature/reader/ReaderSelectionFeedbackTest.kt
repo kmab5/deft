@@ -19,6 +19,74 @@ import org.robolectric.annotation.Config
 @Config(sdk = [36])
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReaderSelectionFeedbackTest {
+    @Test fun longPressPulsesBeforeReleaseAndEachChangedHandleRangePulsesOnce() =
+        runTest {
+            var current: Locator? = null
+            val starts = mutableListOf<String?>()
+            var adjustments = 0
+            val feedback =
+                ReaderSelectionFeedback(
+                    backgroundScope,
+                    ReaderLifecycle().lifecycle,
+                    { current },
+                    { adjustments++ },
+                ) { starts += it.text.highlight }
+            feedback.touchChanged(true)
+            advanceTimeBy(600)
+            assertEquals(emptyList<String>(), starts)
+            current = point("word")
+            advanceTimeBy(80)
+            assertEquals("Pulse during the long press, before UP or toolbar", listOf("word"), starts)
+            feedback.touchChanged(false)
+            val toolbar = Any()
+            feedback.toolbarStarted(toolbar)
+            advanceTimeBy(150)
+            assertEquals(0, adjustments)
+            current = point("word and")
+            advanceTimeBy(80)
+            current = point("and")
+            advanceTimeBy(80)
+            assertEquals(2, adjustments)
+            feedback.toolbarStopped(toolbar)
+            feedback.toolbarStarted(Any())
+            advanceTimeBy(200)
+            assertEquals("Toolbar recreation and unchanged range do not buzz", 2, adjustments)
+            assertEquals(listOf("word"), starts)
+            feedback.close()
+        }
+
+    @Test fun sameTextAtAnotherEndpointPulsesButScrollingDoesNot() =
+        runTest {
+            fun anchored(
+                offset: Int,
+                progression: Double = 0.0,
+            ) = point("word").copy(
+                locations =
+                    Locator.Locations(
+                        progression = progression,
+                        otherLocations = mapOf("domRange" to mapOf("start" to offset, "end" to offset + 4)),
+                    ),
+            )
+            var current = anchored(0)
+            var adjustments = 0
+            val feedback =
+                ReaderSelectionFeedback(
+                    backgroundScope,
+                    ReaderLifecycle().lifecycle,
+                    { current },
+                    { adjustments++ },
+                ) {}
+            feedback.toolbarStarted(Any())
+            advanceTimeBy(80)
+            current = anchored(5)
+            advanceTimeBy(80)
+            assertEquals(1, adjustments)
+            current = anchored(5, 0.4)
+            advanceTimeBy(150)
+            assertEquals(1, adjustments)
+            feedback.close()
+        }
+
     @Test fun waitsForRealSelectionAndDoesNotRepeatOnHandlesOrToolbarRecreation() =
         runTest {
             var current: Locator? = null

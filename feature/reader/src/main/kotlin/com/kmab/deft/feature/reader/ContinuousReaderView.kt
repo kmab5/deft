@@ -11,6 +11,8 @@ import android.webkit.WebViewClient
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.kmab.deft.core.database.entity.HighlightEntity
+import com.kmab.deft.core.designsystem.DeftHaptic
+import com.kmab.deft.core.designsystem.performDeftHaptic
 import com.kmab.deft.core.model.PageAnimation
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReaderTheme
@@ -46,6 +48,7 @@ internal class ContinuousReaderView(
             activity.lifecycleScope,
             activity.lifecycle,
             { currentSelection(full = false) },
+            { activity.window.decorView.performDeftHaptic(DeftHaptic.CHOICE) },
             callbacks.onSelection,
         )
     private val publicationResources =
@@ -131,6 +134,8 @@ internal class ContinuousReaderView(
         if (ready) script("deftContinuous.annotations(${continuousAnnotations(values)});")
     }
 
+    fun selectionTouch(down: Boolean) = selectionFeedback.touchChanged(down)
+
     fun turn(forward: Boolean) {
         val behavior = if (animate && ValueAnimator.areAnimatorsEnabled()) "smooth" else "instant"
         script("window.scrollBy({top:innerHeight*${if (forward) "0.85" else "-0.85"},behavior:'$behavior'});")
@@ -160,6 +165,7 @@ internal class ContinuousReaderView(
                 callbacks.onSelectionAction,
             ),
             delegate,
+            notice = callbacks.onNotice,
         )
 
     private suspend fun currentSelection(full: Boolean = true): Locator? =
@@ -260,5 +266,6 @@ internal data class ContinuousReaderCallbacks(
     val onSelection: (Locator) -> Unit,
     val onSelectionAction: (ReaderSelectionAction, Locator) -> Unit,
     val onAnnotation: (Long) -> Unit,
+    val onNotice: (String) -> Unit = {},
     val onError: () -> Unit,
 )

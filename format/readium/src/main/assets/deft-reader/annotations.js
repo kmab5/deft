@@ -21,17 +21,21 @@
       textNodeIndex: Array.from(node.parentElement.childNodes).filter(item => item.nodeType === 3).indexOf(node),
       charOffset: offset };
   }
-  function selection(doc) {
+  function selection(doc, lightweight = false) {
     const selected = doc.defaultView.getSelection();
     if (!selected?.rangeCount || selected.isCollapsed || !selected.toString().trim()) return null;
     const range = selected.getRangeAt(0);
-    const prefix = doc.createRange(); prefix.selectNodeContents(doc.body); prefix.setEnd(range.startContainer, range.startOffset);
-    const suffix = doc.createRange(); suffix.selectNodeContents(doc.body); suffix.setStart(range.endContainer, range.endOffset);
     const ancestor = range.commonAncestorContainer;
-    return { text: selected.toString(), before: prefix.toString().slice(-128), after: suffix.toString().slice(0, 128),
+    const result = { text: selected.toString(),
       cssSelector: selector(ancestor.nodeType === 1 ? ancestor : ancestor.parentElement),
       domRange: {start: point(range.startContainer, range.startOffset), end: point(range.endContainer, range.endOffset),
         text: range.toString()} };
+    if (!lightweight) {
+      const prefix = doc.createRange(); prefix.selectNodeContents(doc.body); prefix.setEnd(range.startContainer, range.startOffset);
+      const suffix = doc.createRange(); suffix.selectNodeContents(doc.body); suffix.setStart(range.endContainer, range.endOffset);
+      result.before = prefix.toString().slice(-128); result.after = suffix.toString().slice(0, 128);
+    }
+    return result;
   }
   function range(doc, anchor) {
     try {
@@ -80,5 +84,5 @@
     document.documentElement.appendChild(marker);
     try { return window.readium.scrollToId(marker.id); } finally { marker.remove(); }
   }
-  window.deftAnnotations = { selection, range, correctReadium, goReadium };
+  window.deftAnnotations = { selection, sample: doc => selection(doc, true), range, correctReadium, goReadium };
 })();

@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,12 +48,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.kmab.deft.core.database.entity.BookmarkEntity
+import com.kmab.deft.core.database.entity.HighlightEntity
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.util.Url
@@ -67,8 +72,11 @@ internal fun ReaderContentsPanel(
     onRename: (Long, String) -> Unit,
     onRemove: (Long) -> Unit,
     state: ReaderContentsState = rememberReaderContentsState(),
+    savedAnnotations: List<HighlightEntity> = emptyList(),
+    onAnnotation: (HighlightEntity) -> Unit = {},
+    onEditAnnotation: (Long) -> Unit = {},
 ) {
-    val bookmarks = state.bookmarks
+    val tab = state.tab
     var editing by remember { mutableStateOf<BookmarkEntity?>(null) }
     val tree = remember(contents) { contentsTree(contents) }
     val hasGroups = remember(tree) { tree.any { it.link.children.isNotEmpty() } }
@@ -94,22 +102,32 @@ internal fun ReaderContentsPanel(
     Column(Modifier.fillMaxWidth().heightIn(max = 620.dp).padding(horizontal = 20.dp)) {
         Text("your place in the book", style = MaterialTheme.typography.titleLarge)
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
-            SegmentedButton(!bookmarks, {
-                state.bookmarks = false
-            }, SegmentedButtonDefaults.itemShape(0, 2), icon = {
-                Icon(ReaderIcons.Contents, null, Modifier.size(18.dp))
-            }) { Text("contents") }
-            SegmentedButton(bookmarks, {
-                state.bookmarks = true
-            }, SegmentedButtonDefaults.itemShape(1, 2), icon = {
-                Icon(ReaderIcons.Bookmark, null, Modifier.size(18.dp))
-            }) { Text("bookmarks") }
+            ReaderContentsTab.entries.forEachIndexed { index, item ->
+                SegmentedButton(
+                    selected = tab == item,
+                    onClick = { state.tab = item },
+                    shape = SegmentedButtonDefaults.itemShape(index, ReaderContentsTab.entries.size),
+                    icon = {},
+                ) { Text(item.label) }
+            }
         }
         LazyColumn(
             Modifier.fillMaxWidth().weight(1f, fill = false).testTag("reader_contents_list"),
-            state = if (bookmarks) state.bookmarkList else state.chapterList,
+            state =
+                when (tab) {
+                    ReaderContentsTab.CONTENTS -> state.chapterList
+                    ReaderContentsTab.BOOKMARKS -> state.bookmarkList
+                    ReaderContentsTab.NOTES -> state.annotationList
+                },
         ) {
-            if (bookmarks) {
+            if (tab == ReaderContentsTab.NOTES) {
+                if (savedAnnotations.isEmpty()) {
+                    item { Text("No highlights or notes yet.", Modifier.padding(vertical = 20.dp)) }
+                }
+                itemsIndexed(savedAnnotations, key = { _, entry -> entry.id }) { _, entry ->
+                    ReaderAnnotationRow(entry, { onAnnotation(entry) }, { onEditAnnotation(entry.id) })
+                }
+            } else if (tab == ReaderContentsTab.BOOKMARKS) {
                 if (savedBookmarks.isEmpty()) {
                     item {
                         Text(
@@ -205,6 +223,42 @@ internal fun ReaderContentsPanel(
 }
 
 @Composable
+private fun ReaderAnnotationRow(
+    entry: HighlightEntity,
+    onOpen: () -> Unit,
+    onEdit: () -> Unit,
+) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            Modifier
+                .weight(1f)
+                .clickable(onClickLabel = "jump to passage", onClick = onOpen)
+                .heightIn(min = 64.dp)
+                .padding(vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(entry.text, fontStyle = FontStyle.Italic, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            entry.note?.let { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                highlightHex(entry.color)?.let { hex ->
+                    Box(
+                        Modifier
+                            .size(10.dp)
+                            .background(Color(android.graphics.Color.parseColor(hex)), CircleShape)
+                            .semantics { contentDescription = "${entry.color.name.lowercase()} highlight" },
+                    )
+                }
+                Text(
+                    "${(entry.totalProgression * PERCENT_SCALE).toInt()}%",
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+        }
+        IconButton(onClick = onEdit) { Icon(DeftActionIcons.Rename, "edit annotation") }
+    }
+}
+
+@Composable
 private fun ContentsRow(
     row: ContentsEntry,
     active: Boolean,
@@ -267,12 +321,21 @@ internal fun contentsTree(
             if (parents.size < MAX_TOC_DEPTH) contentsTree(link.children, parents + key) else emptyList()
     }
 
+internal enum class ReaderContentsTab(
+    val label: String,
+) {
+    CONTENTS("contents"),
+    BOOKMARKS("bookmarks"),
+    NOTES("notes"),
+}
+
 @Stable
 internal class ReaderContentsState(
     val chapterList: LazyListState = LazyListState(),
     val bookmarkList: LazyListState = LazyListState(),
+    val annotationList: LazyListState = LazyListState(),
 ) {
-    var bookmarks by mutableStateOf(false)
+    var tab by mutableStateOf(ReaderContentsTab.CONTENTS)
     var collapsed by mutableStateOf(emptySet<String>())
     var initialized by mutableStateOf(false)
 
@@ -296,17 +359,20 @@ private val ContentsStateSaver =
                 it.chapterList.firstVisibleItemScrollOffset,
                 it.bookmarkList.firstVisibleItemIndex,
                 it.bookmarkList.firstVisibleItemScrollOffset,
-                it.bookmarks,
+                it.tab.name,
                 it.collapsed.joinToString(","),
                 it.initialized,
+                it.annotationList.firstVisibleItemIndex,
+                it.annotationList.firstVisibleItemScrollOffset,
             )
         },
         restore = {
             ReaderContentsState(
                 LazyListState(it[0] as Int, it[1] as Int),
                 LazyListState(it[2] as Int, it[3] as Int),
+                LazyListState(it[7] as Int, it[8] as Int),
             ).apply {
-                bookmarks = it[4] as Boolean
+                tab = ReaderContentsTab.valueOf(it[4] as String)
                 collapsed = (it[5] as String).split(',').filter(String::isNotBlank).toSet()
                 initialized = it[6] as Boolean
             }

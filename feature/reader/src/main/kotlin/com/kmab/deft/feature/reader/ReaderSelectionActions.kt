@@ -5,9 +5,12 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Rect
 import android.view.ActionMode
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -62,8 +65,23 @@ internal fun readerSelectionCallback(
     feedback: ReaderSelectionFeedback,
     owner: ReaderSelectionOwner,
     delegate: ActionMode.Callback? = null,
+    notice: (String) -> Unit = {},
 ): ActionMode.Callback =
-    object : ActionMode.Callback {
+    object : ActionMode.Callback2() {
+        private val processors = ReaderTextProcessors(activity, notice)
+
+        override fun onGetContentRect(
+            mode: ActionMode,
+            view: View,
+            outRect: Rect,
+        ) {
+            if (delegate is ActionMode.Callback2) {
+                delegate.onGetContentRect(mode, view, outRect)
+            } else {
+                super.onGetContentRect(mode, view, outRect)
+            }
+        }
+
         private fun populate(menu: Menu) {
             menu.clear()
             ReaderSelectionAction.entries.forEach { value ->
@@ -71,6 +89,7 @@ internal fun readerSelectionCallback(
                     .add(Menu.NONE, value.ordinal + SELECTION_ITEM_BASE, value.ordinal, value.title)
                     .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
             }
+            processors.populate(menu)
         }
 
         override fun onCreateActionMode(
@@ -95,9 +114,18 @@ internal fun readerSelectionCallback(
             mode: ActionMode,
             item: MenuItem,
         ): Boolean {
-            val value = ReaderSelectionAction.entries.getOrNull(item.itemId - SELECTION_ITEM_BASE) ?: return false
+            val value = ReaderSelectionAction.entries.getOrNull(item.itemId - SELECTION_ITEM_BASE)
+            val target = processors.target(item)
+            if (value == null && target == null) return false
             activity.lifecycleScope.launch {
-                owner.selection()?.takeIf { !it.text.highlight.isNullOrBlank() }?.let { owner.action(value, it) }
+                val selected = owner.selection()?.takeIf { !it.text.highlight.isNullOrBlank() }
+                if (selected != null) {
+                    if (value != null) {
+                        owner.action(value, selected)
+                    } else if (target != null && !processors.launch(target, selected.text.highlight.orEmpty())) {
+                        return@launch
+                    }
+                }
                 owner.clear()
                 mode.finish()
             }
@@ -164,8 +192,17 @@ private fun FragmentActivity.selectionChooser(
         val targets =
             packageManager
                 .queryIntentActivities(intent, 0)
-                .filter { it.activityInfo.exported && it.activityInfo.enabled }
-                .map { Intent(intent).setComponent(ComponentName(it.activityInfo.packageName, it.activityInfo.name)) }
+                .filter { activity ->
+                    activity.activityInfo.exported && activity.activityInfo.enabled &&
+                        (
+                            activity.activityInfo.permission == null ||
+                                checkSelfPermission(activity.activityInfo.permission) ==
+                                PackageManager.PERMISSION_GRANTED
+                        )
+                }.map {
+                    val component = ComponentName(it.activityInfo.packageName, it.activityInfo.name)
+                    Intent(intent).setComponent(component)
+                }
         targets.firstOrNull()?.let {
             Intent
                 .createChooser(it, "Define")

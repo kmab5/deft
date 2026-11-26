@@ -28,6 +28,11 @@ class ReaderAnnotationsTest {
         assertEquals("7", readerDecorations(listOf(colored)).single().id)
         assertTrue(readerDecorations(listOf(colored.copy(color = HighlightColor.NONE))).isEmpty())
         assertTrue(readerDecorations(listOf(colored.copy(locator = "broken"))).isEmpty())
+        val underlined = colored.copy(underline = true)
+        assertTrue(
+            readerDecorations(listOf(underlined)).single().style is org.readium.r2.navigator.Decoration.Style.Underline,
+        )
+        assertTrue(continuousAnnotations(listOf(underlined)).getJSONObject(0).getBoolean("underline"))
         val continuous = continuousAnnotations(listOf(colored, colored.copy(id = 8, color = HighlightColor.NONE)))
         assertEquals(1, continuous.length())
         assertEquals("quiet passage", continuous.getJSONObject(0).getString("text"))
