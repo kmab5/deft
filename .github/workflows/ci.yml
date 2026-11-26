@@ -39,10 +39,11 @@ jobs:
         run: ./gradlew --max-workers=2 check assembleDebug
       - name: Assemble release
         # Isolate R8 from test and lint workers on the hosted runner.
-        run: ./gradlew --max-workers=1 "-Dorg.gradle.jvmargs=-Xmx5g -Dfile.encoding=UTF-8" assembleRelease
+        run: ./gradlew --max-workers=1 "-Dorg.gradle.jvmargs=-Xmx5g -Dfile.encoding=UTF-8" "-Pdeft.abiSplits=${{ startsWith(github.ref, 'refs/tags/v') }}" assembleRelease
       - name: Verify release tooling
         run: python3 -m unittest discover -s scripts/tests -v
-      - name: Verify release packaging
+      - name: Verify branch release packaging
+        if: "!startsWith(github.ref, 'refs/tags/v')"
         run: python3 scripts/verify-release.py --allow-ci
       - name: Stage permanent-key release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -54,7 +55,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ github.ref_name }}
-          path: build/release-publication/
+          path: build/release-publication/*.apk
           if-no-files-found: error
           retention-days: 30
       - name: Retain test failure reports
@@ -74,6 +75,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           name: release-${{ github.ref_name }}
@@ -85,12 +89,12 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         working-directory: release
         run: |
-          sha256sum --check deft-*.apk.sha256
+          python3 ../scripts/release_notes.py "$RELEASE_TAG" > "$RUNNER_TEMP/release-notes.md"
+          prerelease=true
+          if git merge-base --is-ancestor HEAD origin/main; then prerelease=false; fi
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG" --verify-tag --draft --title "Deft ${RELEASE_TAG#v}" --notes-file release-notes.md
+            gh release create "$RELEASE_TAG" --verify-tag --draft --title "Deft ${RELEASE_TAG#v}" --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
-          gh release upload "$RELEASE_TAG" deft-*.apk deft-*.apk.sha256 mapping.txt.gz release.json --clobber
-          prerelease=false
-          if [[ "$RELEASE_TAG" == v0.* ]]; then prerelease=true; fi
-          gh release edit "$RELEASE_TAG" --draft=false --prerelease="$prerelease" --notes-file release-notes.md
+          gh release upload "$RELEASE_TAG" deft-*.apk --clobber
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease="$prerelease" --notes-file "$RUNNER_TEMP/release-notes.md"
           gh release view "$RELEASE_TAG" --json url,assets
