@@ -134,7 +134,19 @@ async function main() {
   assert.ok(selection.before.length > 0, 'Selection preserves leading quote context');
   const sample = await evaluate('(()=>{const capture=deftAnnotations.selection;deftAnnotations.selection=()=>{throw new Error("Full anchor capture must not run in feedback sampling")};try{return deftContinuous.selection(true)}finally{deftAnnotations.selection=capture}})()');
   assert.equal(sample.text, selection.text, 'Feedback reads the selected text without chapter context traversal');
-  assert.equal(sample.domRange, undefined, 'Feedback samples do not serialize persistent anchors');
+  assert.deepEqual(sample.domRange, selection.domRange, 'Feedback identifies exact endpoints before the toolbar exists');
+  assert.equal(sample.before, undefined, 'Feedback does not capture chapter prefix text');
+  assert.equal(sample.after, undefined, 'Feedback does not capture chapter suffix text');
+  const adjustedSample = await evaluate(`(()=>{
+    const f=[...document.querySelectorAll('iframe')].find(f=>f.src.endsWith('/10.xhtml'));
+    const selected=f.contentWindow.getSelection(); const range=selected.getRangeAt(0).cloneRange();
+    const node=f.contentDocument.getElementById('p45').firstChild;
+    range.setStart(node, 1); selected.removeAllRanges(); selected.addRange(range);
+    const result=deftContinuous.selection(true);
+    range.selectNodeContents(f.contentDocument.getElementById('p45'));
+    selected.removeAllRanges(); selected.addRange(range); return result;
+  })()`);
+  assert.notDeepEqual(adjustedSample.domRange, sample.domRange, 'Moving a handle changes the sampled range');
   const crossParagraph = await evaluate(`(()=>{
     const frame=[...document.querySelectorAll('iframe')].find(f=>f.src.endsWith('/10.xhtml'));
     const doc=frame.contentDocument;
