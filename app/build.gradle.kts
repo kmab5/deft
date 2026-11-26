@@ -43,6 +43,7 @@ dependencies {
     implementation(project(":feature:organization"))
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation(project(":feature:book"))
+    implementation(project(":feature:notes"))
     implementation(project(":feature:reader"))
     implementation(project(":feature:library"))
     implementation(project(":feature:settings"))

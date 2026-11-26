@@ -7,6 +7,7 @@ import com.kmab.deft.core.database.dao.AuthorDao
 import com.kmab.deft.core.database.dao.BookDao
 import com.kmab.deft.core.database.dao.BookFileDao
 import com.kmab.deft.core.database.dao.BookmarkDao
+import com.kmab.deft.core.database.dao.HighlightDao
 import com.kmab.deft.core.database.dao.LibraryFolderDao
 import com.kmab.deft.core.database.dao.OrganizationDao
 import com.kmab.deft.core.database.dao.TrackingDao
@@ -23,6 +24,7 @@ import com.kmab.deft.core.database.entity.CategorySeriesAliasEntity
 import com.kmab.deft.core.database.entity.CategoryTypeEntity
 import com.kmab.deft.core.database.entity.CategoryTypeLinkEntity
 import com.kmab.deft.core.database.entity.ExcludedFolderEntity
+import com.kmab.deft.core.database.entity.HighlightEntity
 import com.kmab.deft.core.database.entity.LibraryFolderEntity
 import com.kmab.deft.core.database.entity.PendingRootRemovalEntity
 import com.kmab.deft.core.database.entity.ReadThroughEntity
@@ -34,6 +36,7 @@ import com.kmab.deft.core.database.entity.ReadingSessionEntity
         ReadThroughEntity::class,
         ReadingSessionEntity::class,
         BookmarkEntity::class,
+        HighlightEntity::class,
         BookFileEntity::class,
         AuthorEntity::class,
         AuthorAliasEntity::class,
@@ -48,7 +51,7 @@ import com.kmab.deft.core.database.entity.ReadingSessionEntity
         CategorySeriesAliasEntity::class,
         CategoryAutoFillExclusionEntity::class,
     ],
-    version = 7,
+    version = 9,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -60,6 +63,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun bookDao(): BookDao
 
     abstract fun bookmarkDao(): BookmarkDao
+
+    abstract fun highlightDao(): HighlightDao
 
     abstract fun bookFileDao(): BookFileDao
 

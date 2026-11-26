@@ -17,6 +17,8 @@ internal class ReaderContainer(
     private val onSwipe: (Float) -> Unit,
     private val nativeSwipes: () -> Boolean = { true },
 ) : FrameLayout(context) {
+    var onSelectionTouch: (Boolean) -> Unit = {}
+
     private enum class Route { PENDING, NATIVE_PAGE, IMMEDIATE_PAGE, BLOCKED, CONTENT }
 
     private val slop = ViewConfiguration.get(context).scaledTouchSlop
@@ -28,6 +30,10 @@ internal class ReaderContainer(
     private var nativePageDrag: ReaderNativePageDrag? = null
 
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> onSelectionTouch(true)
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> onSelectionTouch(false)
+        }
         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
             startX = event.x
             startY = event.y

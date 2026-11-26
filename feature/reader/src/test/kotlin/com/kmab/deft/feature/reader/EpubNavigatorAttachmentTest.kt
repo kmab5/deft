@@ -33,19 +33,15 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.security.MessageDigest
-import java.util.zip.CRC32
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class EpubNavigatorAttachmentTest {
     @Test fun realEpubAndBundledCatalogAttachAnActualReadiumNavigator() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val bytes = epubBytes()
+        val bytes = navigatorEpubBytes()
         val uri = Uri.parse("content://navigator-smoke/book.epub")
         shadowOf(context.contentResolver).registerInputStream(uri, bytes.inputStream())
         val hash = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
@@ -142,38 +138,5 @@ class EpubNavigatorAttachmentTest {
             activity.classLoader,
             EpubNavigatorFragment::class.java.name,
         ) as EpubNavigatorFragment
-    }
-
-    private fun epubBytes(): ByteArray {
-        val output = ByteArrayOutputStream()
-        ZipOutputStream(output).use { zip ->
-            val entries =
-                listOf(
-                    "META-INF/container.xml",
-                    "EPUB/package.opf",
-                    "EPUB/one.xhtml",
-                    "EPUB/two.xhtml",
-                    "EPUB/nav.xhtml",
-                )
-            val mimetype = "application/epub+zip".toByteArray()
-            zip.putNextEntry(
-                ZipEntry("mimetype").apply {
-                    method = ZipEntry.STORED
-                    size = mimetype.size.toLong()
-                    compressedSize = size
-                    crc = CRC32().apply { update(mimetype) }.value
-                },
-            )
-            zip.write(mimetype)
-            zip.closeEntry()
-            entries.forEach { name ->
-                zip.putNextEntry(ZipEntry(name))
-                requireNotNull(javaClass.classLoader?.getResourceAsStream("navigator-epub/$name")).use {
-                    it.copyTo(zip)
-                }
-                zip.closeEntry()
-            }
-        }
-        return output.toByteArray()
     }
 }

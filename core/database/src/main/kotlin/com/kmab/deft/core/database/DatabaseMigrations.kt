@@ -4,6 +4,41 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 object DatabaseMigrations {
+    @Suppress("MagicNumber")
+    val FROM_8_TO_9 =
+        object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE highlights ADD COLUMN underline INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+    @Suppress("MagicNumber")
+    val FROM_7_TO_8 =
+        object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS highlights (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        bookId INTEGER NOT NULL,
+                        locator TEXT NOT NULL,
+                        text TEXT NOT NULL,
+                        color TEXT NOT NULL,
+                        note TEXT,
+                        totalProgression REAL NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL,
+                        FOREIGN KEY(bookId) REFERENCES books(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_highlights_bookId ON highlights (bookId)")
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_highlights_bookId_locator ON highlights (bookId, locator)",
+                )
+            }
+        }
+
     @Suppress("MagicNumber") // Literal schema versions identify this migration.
     val FROM_6_TO_7 =
         object : Migration(6, 7) {

@@ -34,17 +34,28 @@ class ReaderLauncher
         suspend fun startupBook(): Long? =
             if (settings.preferences.first().openLastBook) books.observeContinueReading().first()?.id else null
 
-        fun open(bookId: Long) {
+        fun open(bookId: Long) = launch(bookId, null)
+
+        fun openAt(
+            bookId: Long,
+            locatorJson: String,
+        ) = launch(bookId, locatorJson)
+
+        private fun launch(
+            bookId: Long,
+            locatorJson: String?,
+        ) {
             require(bookId > 0)
             context.startActivity(
                 Intent(
                     context,
                     ReaderActivity::class.java,
-                ).putExtra(BOOK_ID, bookId).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                ).putExtra(BOOK_ID, bookId).putExtra(LOCATOR, locatorJson).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             )
         }
 
         internal companion object {
             const val BOOK_ID = "bookId"
+            const val LOCATOR = "initialLocator"
         }
     }

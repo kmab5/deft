@@ -37,6 +37,8 @@ class FolderMigrationTest {
                         DatabaseMigrations.FROM_4_TO_5,
                         DatabaseMigrations.FROM_5_TO_6,
                         DatabaseMigrations.FROM_6_TO_7,
+                        DatabaseMigrations.FROM_7_TO_8,
+                        DatabaseMigrations.FROM_8_TO_9,
                     ).build()
             try {
                 assertEquals(

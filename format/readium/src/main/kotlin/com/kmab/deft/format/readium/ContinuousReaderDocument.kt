@@ -20,6 +20,7 @@ object ContinuousReaderDocument {
             iframe{display:block;width:100%;border:0;margin:0;padding:0;overflow:hidden}
             </style>
             <script type="application/json" id="deft-chapters">$manifest</script>
+            <script defer src="https://readium_assets/deft-reader/annotations.js"></script>
             <script defer src="https://readium_assets/deft-reader/continuous.js"></script>
             </head><body><main id="deft-content"></main></body></html>
             """.trimIndent()

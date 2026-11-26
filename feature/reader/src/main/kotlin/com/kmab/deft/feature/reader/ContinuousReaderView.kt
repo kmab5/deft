@@ -3,8 +3,6 @@ package com.kmab.deft.feature.reader
 import android.animation.ValueAnimator
 import android.graphics.Color
 import android.view.ActionMode
-import android.view.Menu
-import android.view.MenuItem
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -12,6 +10,9 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
+import com.kmab.deft.core.database.entity.HighlightEntity
+import com.kmab.deft.core.designsystem.DeftHaptic
+import com.kmab.deft.core.designsystem.performDeftHaptic
 import com.kmab.deft.core.model.PageAnimation
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReaderTheme
@@ -34,14 +35,22 @@ internal class ContinuousReaderView(
     initialLocator: Locator?,
     private val callbacks: ContinuousReaderCallbacks,
 ) {
+    private var annotations = emptyList<HighlightEntity>()
     private var ready = false
     private var destroyed = false
     private var css = continuousReaderStyles(preferences, theme, session.fonts)
     private var target = initialLocator
+    private var targetSearch = false
     private var awaitingRestore = initialLocator
     private var animate = preferences.pageAnimation == PageAnimation.SLIDE
     private val selectionFeedback =
-        ReaderSelectionFeedback(activity.lifecycleScope, activity.lifecycle, ::currentSelection, callbacks.onSelection)
+        ReaderSelectionFeedback(
+            activity.lifecycleScope,
+            activity.lifecycle,
+            { currentSelection(full = false) },
+            { activity.window.decorView.performDeftHaptic(DeftHaptic.CHOICE) },
+            callbacks.onSelection,
+        )
     private val publicationResources =
         ContinuousReaderResources(session.opened.publication, activity.assets) {
             activity.runOnUiThread { if (!destroyed) callbacks.onError() }
@@ -83,7 +92,8 @@ internal class ContinuousReaderView(
                         if (url != ContinuousReaderResources.HOST_URL || destroyed) return
                         ready = true
                         script("deftContinuous.configure(${JSONObject.quote(css)});")
-                        target?.let(::go)
+                        script("deftContinuous.annotations(${continuousAnnotations(annotations)});")
+                        target?.let { go(it, targetSearch) }
                     }
                 }
             loadUrl(ContinuousReaderResources.HOST_URL)
@@ -99,8 +109,12 @@ internal class ContinuousReaderView(
         if (ready) script("deftContinuous.configure(${JSONObject.quote(css)});")
     }
 
-    fun go(locator: Locator) {
+    fun go(
+        locator: Locator,
+        search: Boolean = false,
+    ) {
         target = locator
+        targetSearch = search
         awaitingRestore = locator
         if (!ready) return
         val href = JSONObject.quote(locator.href.toString().substringBefore('#'))
@@ -110,9 +124,17 @@ internal class ContinuousReaderView(
                 "${JSONObject.quote(fragment)},${JSONObject.quote(locator.text.highlight.orEmpty())}," +
                 "${JSONObject.quote(
                     locator.text.before.orEmpty(),
-                )},${JSONObject.quote(locator.text.after.orEmpty())});",
+                )},${JSONObject.quote(locator.text.after.orEmpty())}," +
+                "${locator.toJSON().optJSONObject("locations")?.optJSONObject("domRange") ?: "null"},$search);",
         )
     }
+
+    fun annotations(values: List<HighlightEntity>) {
+        annotations = values
+        if (ready) script("deftContinuous.annotations(${continuousAnnotations(values)});")
+    }
+
+    fun selectionTouch(down: Boolean) = selectionFeedback.touchChanged(down)
 
     fun turn(forward: Boolean) {
         val behavior = if (animate && ValueAnimator.areAnimatorsEnabled()) "smooth" else "instant"
@@ -134,43 +156,27 @@ internal class ContinuousReaderView(
     }
 
     private fun selectionCallback(delegate: ActionMode.Callback) =
-        object : ActionMode.Callback {
-            override fun onCreateActionMode(
-                mode: ActionMode,
-                menu: Menu,
-            ): Boolean {
-                val created = delegate.onCreateActionMode(mode, menu)
-                if (created) selectionFeedback.toolbarStarted(mode)
-                return created
-            }
+        readerSelectionCallback(
+            activity,
+            selectionFeedback,
+            ReaderSelectionOwner(
+                { currentSelection() },
+                { script("deftContinuous.clearSelection();") },
+                callbacks.onSelectionAction,
+            ),
+            delegate,
+            notice = callbacks.onNotice,
+        )
 
-            override fun onPrepareActionMode(
-                mode: ActionMode,
-                menu: Menu,
-            ): Boolean = delegate.onPrepareActionMode(mode, menu)
-
-            override fun onActionItemClicked(
-                mode: ActionMode,
-                item: MenuItem,
-            ): Boolean = delegate.onActionItemClicked(mode, item)
-
-            override fun onDestroyActionMode(mode: ActionMode) {
-                // Android recreates the floating toolbar while a selection handle moves.
-                // The native delegate owns dismissal; clearing ranges here cancels that selection.
-                selectionFeedback.toolbarStopped(mode)
-                delegate.onDestroyActionMode(mode)
-            }
-        }
-
-    private suspend fun currentSelection(): Locator? =
+    private suspend fun currentSelection(full: Boolean = true): Locator? =
         suspendCancellableCoroutine { continuation ->
-            view.evaluateJavascript("JSON.stringify(deftContinuous.selection())") { value ->
+            view.evaluateJavascript("JSON.stringify(deftContinuous.selection(${!full}))") { value ->
                 if (!continuation.isActive) return@evaluateJavascript
                 val data = runCatching { JSONObject(JSONTokener(value).nextValue().toString()) }.getOrNull()
                 val selected =
                     data?.let {
                         locator(it.optString("href"), it.optDouble("progression", 0.0))
-                            ?.copy(text = Locator.Text(highlight = it.optString("text")))
+                            ?.let { base -> selectionLocator(base, it) }
                     }
                 continuation.resume(selected)
             }
@@ -220,6 +226,16 @@ internal class ContinuousReaderView(
             }
         }
 
+        @JavascriptInterface fun annotation(id: String) =
+            activity.runOnUiThread {
+                if (!destroyed) {
+                    id
+                        .toLongOrNull()
+                        ?.takeIf { selected -> annotations.any { it.id == selected } }
+                        ?.let(callbacks.onAnnotation)
+                }
+            }
+
         @JavascriptInterface fun tap() = activity.runOnUiThread { if (!destroyed) callbacks.onTap() }
 
         @JavascriptInterface fun image(href: String) =
@@ -248,5 +264,8 @@ internal data class ContinuousReaderCallbacks(
     val onImage: (Url) -> Unit,
     val onLink: (String) -> Unit,
     val onSelection: (Locator) -> Unit,
+    val onSelectionAction: (ReaderSelectionAction, Locator) -> Unit,
+    val onAnnotation: (Long) -> Unit,
+    val onNotice: (String) -> Unit = {},
     val onError: () -> Unit,
 )

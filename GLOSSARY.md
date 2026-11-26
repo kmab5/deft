@@ -73,7 +73,10 @@ A book that counts as done for progress: only finished books. Abandoned books ar
 ## Notes
 
 **Highlight**:
-A marked passage of text, optionally with a note.
+A marked passage of text, optionally with a note. Choosing no color keeps an explicitly saved note without a visible mark. Selecting text alone saves nothing.
+
+**Note**:
+The reader’s own text attached to a saved passage. It may accompany a colored highlight or have no highlight color.
 
 **Bookmark**:
 A saved place in a book.
