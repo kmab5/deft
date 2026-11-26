@@ -155,6 +155,18 @@ async function main() {
   assert.equal(await evaluate('calls.some(c=>c[0]==="tap")'), false, 'Selection release never toggles reader controls');
   await evaluate('deftContinuous.clearSelection()');
   assert.equal(await evaluate('deftContinuous.selection()'), null);
+  await evaluate('deftContinuous.annotations([{...savedAnnotation,underline:true}])');
+  const underlines = await evaluate(`Array.from(document.querySelectorAll(".deft-annotation"), box => {
+    const style = getComputedStyle(box);
+    const rect = box.getBoundingClientRect();
+    return {shadow: style.boxShadow, background: style.backgroundColor, width: rect.width, height: rect.height};
+  })`);
+  assert.ok(underlines.length > 0, 'An underlined selection produces visible line boxes');
+  for (const line of underlines) {
+    assert.ok(line.width > 0 && line.height > 2, 'Underline has positive width and room above the stroke');
+    assert.match(line.shadow, /0px -2px 0px 0px inset/, 'A two-pixel stroke sits against the lower edge');
+    assert.equal(line.background, 'rgba(0, 0, 0, 0)', 'Underline leaves glyph background clear');
+  }
   await evaluate('deftContinuous.annotations([{...savedAnnotation,color:null}])');
   await evaluate('deftContinuous.go(savedAnnotation.href,0,null,savedAnnotation.text,savedAnnotation.before,savedAnnotation.after,savedAnnotation.domRange)');
   assert.equal(await evaluate('[...document.querySelectorAll("iframe")].some(f=>f.contentWindow.CSS?.highlights?.has("deft-search"))'), false, 'Opening a colorless note never applies a search highlight');

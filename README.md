@@ -11,7 +11,7 @@ The full 1.0 roadmap includes:
 
 Current version: **0.4.5**, build `v0.4.5-1` ([releases](https://github.com/kmab5/deft/releases)). M1–M4 are merged: EPUB reading/search, folder scanning, automatic reading sessions, states, ratings, favorites, categories with bulk actions, category creation from selected books, series and authors. Scanning other file formats does not yet mean Deft can open them. The signed APK is built and published by GitHub Actions using the persistent release key.
 
-M5 review build **0.5.1** is on `feat/m5-notes`: persistent EPUB highlights/notes in both reading modes, global and per-book Notes, selection actions and Markdown sharing. It remains unmerged until device acceptance; see [the M5 checklist](plans/m5-test-checklist.md).
+M5 review build **0.5.2** is on `feat/m5-notes`: persistent EPUB highlights/notes in both reading modes, global and per-book Notes, selection actions and Markdown sharing. It remains unmerged until device acceptance; see [the M5 checklist](plans/m5-test-checklist.md).
 
 The remaining order is:
 

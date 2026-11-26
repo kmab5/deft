@@ -1,6 +1,6 @@
 # Deft — Design
 
-*Approved 2026-11-13; living specification. M1–M4 are complete, main is at `v0.4.5-1`, and M5 is in device review on `feat/m5-notes` (0.5.1). Current milestone order is recorded in §17 and the roadmap.*
+*Approved 2026-11-13; living specification. M1–M4 are complete, main is at `v0.4.5-1`, and M5 is in device review on `feat/m5-notes` (0.5.2). Current milestone order is recorded in §17 and the roadmap.*
 
 > deft — read like you mean it.
 
@@ -535,3 +535,4 @@ Historical rows retain the milestone numbers used when the decision was made. On
 | 2026-11-25 | M5 adds Room 8 highlights and a shared Notes repository/editor across global Notes, per-book tabs and both EPUB reading modes. Selecting text is transient; NONE keeps an explicitly saved nonblank note and removes an otherwise empty record. Notes filters overlap: a colored passage with a note matches both Highlight and Note. | Implements the approved M5 semantics with one persistence policy and no source-file writes. Missing books retain notes; ignored books are excluded until restored. |
 | 2026-11-25 | M5 Notes uses the shared app typography with italic passages, labeled four-color/NONE choices and fixed editor actions. Markdown is generated locally and shared through a narrowly scoped cache FileProvider. Fixed-layout page notes remain M8. | Applies later app-sans typography feedback, supports explicit portable note export without exposing source file paths, and preserves milestone boundaries. |
 | 2026-11-26 | Notes uses one filter sheet with a searchable book picker, labeled color swatches and type choices. Choosing bookmarks clears the color filter. Choosing highlights clears a colorless filter. Clearing filters preserves the search query. | Device review of 0.5.0 showed crowded controls and combinations that could never match. |
+| 2026-11-26 | Each colored highlight can use a fill or underline. Room 9 defaults existing annotations to fill. Reader Contents gains a Highlights/Notes tab, and Book details supports swiping to Notes. | 0.5.1 device review confirmed the repaired reader opens correctly and requested clearer passage styling and easier access to saved passages. |
