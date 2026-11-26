@@ -2,12 +2,14 @@
 
 M1–M4 are complete. **0.4.5** includes category multi-select from 0.4.4 and
 visible category creation from the Books selection picker, integrated directly
-on main at the author's request. M5 is next.
+on main at the author's request. M5 is implemented on `feat/m5-notes` and awaits device acceptance of 0.5.0.
 
 See the [0.4.5 implementation record](2026-11-25-m4-045-category-picker.md) and
 [M4 device checks](m4-test-checklist.md#045--create-categories-from-selected-books).
 Version tags publish permanent-key APKs through GitHub Actions; the handover tag
 is `v0.4.5-1`. Earlier checklist results remain historical, not new device validation.
+
+M5: [implementation plan](2026-11-25-m5-notes.md) and [device checklist](m5-test-checklist.md). The milestone remains unmerged until device acceptance.
 
 ## Current guidance
 

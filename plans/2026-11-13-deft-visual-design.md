@@ -493,3 +493,20 @@ category list and an icon-labelled create category action below it. Both stay
 visible with long lists and large text. Keep the same action when no categories
 match. It opens the existing category editor with fixed Save/Cancel actions;
 saving assigns the selected books, while Cancel returns to the picker.
+
+### M5 notes and annotation editing — 0.5.0
+
+Notes becomes the fourth working top-level tab with the same settings/scan menu
+and swipe behavior as the library tabs. Keep search visible, with compact labelled
+book/color/type filtering and an explicit reset. A bounded list uses each passage's
+3dp color rule, an italic excerpt in the shared app font, note body and secondary
+book/location metadata. This follows the later app-sans decision; reader-family
+name previews are not fonts for arbitrary note passages.
+
+Book detail has details/notes tabs using the same notes components. Missing-file
+entries stay readable, editable and exportable with a clear badge. Each color has
+a textual name and selected indication, including none. The shared editor keeps
+save/cancel accessible above the keyboard and through large-text/landscape layouts;
+errors use existing bottom notices. Cancel does not commit a draft. Explicit
+Delete is confirmed. In the reader, colored passages use a soft 24% fill and
+colorless notes have no fill. Selecting text alone makes no saved annotation.
