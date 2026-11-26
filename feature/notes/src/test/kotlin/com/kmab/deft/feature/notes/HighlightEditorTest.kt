@@ -30,11 +30,12 @@ class HighlightEditorTest {
             DeftTheme { HighlightEditor(original, { saved = it }, {}) }
         }
         compose.onNodeWithText("purple").performClick()
+        compose.onNodeWithText("underline").performClick()
         compose.onNodeWithText("note").performTextInput("Remember this")
         assertNull(saved)
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithText("save").assertIsEnabled().performClick()
-        assertEquals(original.copy(color = HighlightColor.PURPLE, note = "Remember this"), saved)
+        assertEquals(original.copy(color = HighlightColor.PURPLE, note = "Remember this", underline = true), saved)
     }
 
     @Test fun cancelNeverSavesAndDeletingRequiresConfirmation() {

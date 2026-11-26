@@ -12,6 +12,7 @@ data class HighlightDraft(
     val note: String? = null,
     val totalProgression: Double = 0.0,
     val id: Long? = null,
+    val underline: Boolean = false,
 )
 
 enum class NoteType { HIGHLIGHT, NOTE, BOOKMARK }
@@ -40,4 +41,5 @@ data class NoteEntry(
     val createdAt: Instant,
     val updatedAt: Instant,
     val type: NoteType,
+    val underline: Boolean = false,
 )

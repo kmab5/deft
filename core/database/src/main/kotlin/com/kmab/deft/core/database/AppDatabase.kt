@@ -51,7 +51,7 @@ import com.kmab.deft.core.database.entity.ReadingSessionEntity
         CategorySeriesAliasEntity::class,
         CategoryAutoFillExclusionEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
@@ -51,12 +52,17 @@ fun HighlightEditor(
     busy: Boolean = false,
 ) {
     var note by rememberSaveable(draft.bookId, draft.locator) { mutableStateOf(draft.note.orEmpty()) }
+    var underline by rememberSaveable(draft.bookId, draft.locator) { mutableStateOf(draft.underline) }
     var color by rememberSaveable(draft.bookId, draft.locator) { mutableStateOf(draft.color.name) }
     NoteEditorSheet(
         title = "highlight and note",
         busy = busy,
         onDismiss = onDismiss,
-        onSave = { onSave(draft.copy(color = HighlightColor.valueOf(color), note = note.ifBlank { null })) },
+        onSave = {
+            onSave(
+                draft.copy(color = HighlightColor.valueOf(color), note = note.ifBlank { null }, underline = underline),
+            )
+        },
         onDelete = onDelete,
     ) {
         Text(draft.text, style = DeftTypography.body.copy(fontStyle = FontStyle.Italic))
@@ -72,6 +78,13 @@ fun HighlightEditor(
                 )
             }
         }
+        FilterChip(
+            selected = underline,
+            onClick = { underline = !underline },
+            label = { Text("underline") },
+            enabled = !busy && color != HighlightColor.NONE.name,
+            colors = notesChipColors(),
+        )
         OutlinedTextField(
             note,
             { note = it },
@@ -172,7 +185,8 @@ internal fun notesChipColors() =
 internal fun HighlightColor.displayColor(): Color {
     val colors = LocalDeftColors.current
     return when (this) {
-        HighlightColor.PURPLE -> colors.accentText
+        HighlightColor.PURPLE ->
+            Color(if (colors.surface.luminance() > LIGHT_SURFACE_LUMINANCE) PURPLE_ON_LIGHT else PURPLE_ON_DARK)
         HighlightColor.GREEN -> colors.finishedText
         HighlightColor.AMBER -> colors.pausedText
         HighlightColor.GRAY -> colors.muted
@@ -186,3 +200,7 @@ internal fun HighlightColor.ruleColor(): Color =
         HighlightColor.GRAY, HighlightColor.NONE -> LocalDeftColors.current.line2
         else -> displayColor()
     }
+
+private const val LIGHT_SURFACE_LUMINANCE = 0.5f
+private const val PURPLE_ON_LIGHT = 0xFF7436A4
+private const val PURPLE_ON_DARK = 0xFFC38AF1

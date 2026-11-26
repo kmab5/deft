@@ -20,11 +20,11 @@ class HighlightsMigrationTest {
         val name = "highlights-migration-test.db"
         context.deleteDatabase(name)
         try {
-            createVersionSeven(context, name)
+            createLegacyDatabase(context, name)
             val database =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, name)
-                    .addMigrations(DatabaseMigrations.FROM_7_TO_8)
+                    .addMigrations(DatabaseMigrations.FROM_7_TO_8, DatabaseMigrations.FROM_8_TO_9)
                     .build()
             try {
                 val sqlite = database.openHelper.writableDatabase
@@ -49,13 +49,39 @@ class HighlightsMigrationTest {
         }
     }
 
-    private fun createVersionSeven(
+    @Test fun versionEightPreservesExistingFilledHighlights() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val name = "underline-migration.db"
+        context.deleteDatabase(name)
+        try {
+            createLegacyDatabase(context, name, version = 8)
+            val db =
+                Room
+                    .databaseBuilder(context, AppDatabase::class.java, name)
+                    .addMigrations(DatabaseMigrations.FROM_8_TO_9)
+                    .build()
+            try {
+                db.openHelper.writableDatabase.query("SELECT text, underline FROM highlights").use { cursor ->
+                    check(cursor.moveToFirst())
+                    assertEquals("passage", cursor.getString(0))
+                    assertEquals(0, cursor.getInt(1))
+                }
+            } finally {
+                db.close()
+            }
+        } finally {
+            context.deleteDatabase(name)
+        }
+    }
+
+    private fun createLegacyDatabase(
         context: Context,
         name: String,
+        version: Int = 7,
     ) {
         val schema =
             JSONObject(
-                File("schemas/com.kmab.deft.core.database.AppDatabase/7.json").readText(),
+                File("schemas/com.kmab.deft.core.database.AppDatabase/$version.json").readText(),
             ).getJSONObject("database")
         context.openOrCreateDatabase(name, Context.MODE_PRIVATE, null).use { old ->
             old.setForeignKeyConstraintsEnabled(true)
@@ -87,7 +113,10 @@ class HighlightsMigrationTest {
                     "VALUES (1, 'Shelf', 0, 'MANUAL', 0)",
             )
             old.execSQL("INSERT INTO category_members VALUES (1, 1, 1.0, 0, 0)")
-            old.version = 7
+            if (version == 8) {
+                old.execSQL("INSERT INTO highlights VALUES (1, 1, 'here', 'passage', 'PURPLE', NULL, 0.2, 0, 0)")
+            }
+            old.version = version
         }
     }
 }

@@ -168,6 +168,7 @@ private fun NotesEntryEditor(
                 note = entry.note,
                 totalProgression = entry.totalProgression,
                 id = entry.id,
+                underline = entry.underline,
             ),
             model::save,
             model::closeEditor,

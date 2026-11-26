@@ -17,6 +17,7 @@ data class NoteRow(
     val text: String,
     val note: String?,
     val color: HighlightColor?,
+    val underline: Boolean,
     val label: String?,
     val createdAt: Instant,
     val updatedAt: Instant,

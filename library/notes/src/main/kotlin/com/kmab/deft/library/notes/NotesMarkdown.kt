@@ -44,6 +44,8 @@ internal fun notesMarkdown(
                 }
                 entry.note?.let {
                     appendLine()
+                    appendLine("**Note**")
+                    appendLine()
                     appendLine(it.markdownLines().joinToString("\n"))
                 }
             }

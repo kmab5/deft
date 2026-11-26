@@ -1,12 +1,12 @@
 package com.kmab.deft.feature.book
 
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
@@ -30,7 +31,6 @@ import com.kmab.deft.core.database.model.BookDetails
 import com.kmab.deft.core.designsystem.DeftButton
 import com.kmab.deft.core.designsystem.DeftButtonStyle
 import com.kmab.deft.core.designsystem.DeftDialog
-import com.kmab.deft.core.designsystem.DeftMotion
 import com.kmab.deft.core.designsystem.DeftShapes
 import com.kmab.deft.core.designsystem.DeftTopBar
 import com.kmab.deft.core.designsystem.DeftTypography
@@ -38,6 +38,7 @@ import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.LocalDeftNoticeState
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
 import com.kmab.deft.core.model.BookFormat
+import kotlinx.coroutines.launch
 
 @Composable
 fun BookDetailScreen(
@@ -166,39 +167,36 @@ private fun BookDetailTabs(
         details(modifier)
         return
     }
-    var notesSelected by rememberSaveable { mutableStateOf(false) }
+    val pager = rememberPagerState { BOOK_DETAIL_PAGE_COUNT }
+    val scope = rememberCoroutineScope()
     val stateHolder = rememberSaveableStateHolder()
     val colors = LocalDeftColors.current
     Column(modifier.fillMaxSize()) {
         val notesLabel = annotationCount?.let { "notes ($it)" } ?: "notes"
         TabRow(
-            selectedTabIndex = if (notesSelected) 1 else 0,
+            selectedTabIndex = pager.currentPage,
             containerColor = colors.surface,
             contentColor = colors.accentText,
         ) {
             listOf("details", notesLabel).forEachIndexed { index, label ->
-                val isNotes = index == 1
                 Tab(
-                    selected = notesSelected == isNotes,
-                    onClick = { notesSelected = isNotes },
+                    selected = pager.currentPage == index,
+                    onClick = { scope.launch { pager.animateScrollToPage(index) } },
                     selectedContentColor = colors.accentText,
                     unselectedContentColor = colors.muted,
                     text = { Text(label, style = DeftTypography.label) },
                 )
             }
         }
-        Crossfade(
-            targetState = notesSelected,
-            modifier = Modifier.weight(1f),
-            animationSpec = tween(DeftMotion.SHORT, easing = DeftMotion.standard),
-            label = "book detail tabs",
-        ) { showingNotes ->
-            stateHolder.SaveableStateProvider(showingNotes) {
-                if (showingNotes) notes(Modifier) else details(Modifier)
+        HorizontalPager(pager, Modifier.weight(1f), verticalAlignment = Alignment.Top) { page ->
+            stateHolder.SaveableStateProvider(page) {
+                if (page == 1) notes(Modifier) else details(Modifier)
             }
         }
     }
 }
+
+private const val BOOK_DETAIL_PAGE_COUNT = 2
 
 internal fun readBlockReason(details: BookDetails): String? =
     when {

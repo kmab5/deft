@@ -29,4 +29,5 @@ data class HighlightEntity(
     val totalProgression: Double,
     val createdAt: Instant,
     val updatedAt: Instant,
+    @androidx.room.ColumnInfo(defaultValue = "0") val underline: Boolean = false,
 )

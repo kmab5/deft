@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -162,6 +163,7 @@ private fun NoteRow(
                         overflow = TextOverflow.Ellipsis,
                     )
                     entry.note?.takeIf(String::isNotBlank)?.let {
+                        if (entry.type == NoteType.HIGHLIGHT) HorizontalDivider(color = colors.line)
                         Text(
                             it,
                             style = DeftTypography.body.copy(fontSize = 13.sp),

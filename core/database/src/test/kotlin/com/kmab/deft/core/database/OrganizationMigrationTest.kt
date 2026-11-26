@@ -26,7 +26,7 @@ class OrganizationMigrationTest {
                     AppDatabase::class.java,
                 ).build()
         try {
-            assertEquals(8, db.openHelper.writableDatabase.version)
+            assertEquals(9, db.openHelper.writableDatabase.version)
         } finally {
             db.close()
         }
@@ -44,6 +44,7 @@ class OrganizationMigrationTest {
                     .addMigrations(
                         DatabaseMigrations.FROM_6_TO_7,
                         DatabaseMigrations.FROM_7_TO_8,
+                        DatabaseMigrations.FROM_8_TO_9,
                     ).build()
             try {
                 val book = db.bookDao().getById(1)!!

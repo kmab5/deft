@@ -8,7 +8,7 @@ import com.kmab.deft.core.database.entity.HighlightEntity
 import kotlinx.coroutines.flow.Flow
 
 private const val NOTES_QUERY = """
-    SELECT n.id, n.bookId, n.locator, n.totalProgression, n.text, n.note, n.color, n.label,
+    SELECT n.id, n.bookId, n.locator, n.totalProgression, n.text, n.note, n.color, n.underline, n.label,
         n.createdAt, n.updatedAt, COALESCE(b.titleOverride, b.title) AS bookTitle, b.format AS bookFormat,
         b.drmProtected,
         NOT EXISTS (SELECT 1 FROM book_files f WHERE f.bookId = b.id AND f.missing = 0) AS missing,
@@ -19,11 +19,11 @@ private const val NOTES_QUERY = """
             ORDER BY ba.position, a.id
         )), '') AS authors
     FROM (
-        SELECT id, bookId, locator, totalProgression, text, note, color,
+        SELECT id, bookId, locator, totalProgression, text, note, color, underline,
             CAST(NULL AS TEXT) AS label, createdAt, updatedAt
         FROM highlights
         UNION ALL
-        SELECT id, bookId, locator, totalProgression, '', NULL, NULL, label, createdAt, createdAt
+        SELECT id, bookId, locator, totalProgression, '', NULL, NULL, 0 AS underline, label, createdAt, createdAt
         FROM bookmarks
     ) n
     JOIN books b ON b.id = n.bookId

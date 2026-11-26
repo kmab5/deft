@@ -40,10 +40,18 @@ class NotesRepositoryTest {
             val draft = draft(book)
             val id = requireNotNull(repository.saveHighlight(draft))
             val initial = repository.observeHighlights(book).first().single()
-            assertEquals(id, repository.saveHighlight(draft.copy(note = "Remember")))
+            assertEquals(id, repository.saveHighlight(draft.copy(note = "Remember", underline = true)))
             val updated = repository.observeHighlights(book).first().single()
             assertEquals(initial.createdAt, updated.createdAt)
             assertEquals("Remember", updated.note)
+            assertTrue(updated.underline)
+            assertTrue(
+                repository
+                    .observe()
+                    .first()
+                    .single()
+                    .underline,
+            )
             assertTrue(updated.updatedAt >= initial.updatedAt)
             assertEquals(
                 id,
@@ -203,6 +211,8 @@ class NotesRepositoryTest {
 
                 > One
                 > \> Two
+
+                **Note**
 
                 \# Note
                 \- Item
