@@ -34,9 +34,26 @@ internal class ReaderSessionLoader(
         try {
             val publication = opened.publication
             val positions = withContext(Dispatchers.Default) { publication.positions() }
-            val saved = parseLocator(restored ?: details.book.currentLocator)
+            val saved =
+                sequenceOf(restored, details.book.currentLocator).mapNotNull(::parseLocator).firstOrNull { point ->
+                    publication.readingOrder.any {
+                        it.href.toString().substringBefore('#') ==
+                            point.href.toString().substringBefore('#')
+                    }
+                }
             val initial =
-                saved?.let { publication.locate(it) }
+                saved?.let { point ->
+                    publication.locate(point)?.let { resolved ->
+                        point.copy(
+                            locations =
+                                point.locations.copy(
+                                    totalProgression =
+                                        point.locations.totalProgression ?: resolved.locations.totalProgression,
+                                    position = point.locations.position ?: resolved.locations.position,
+                                ),
+                        )
+                    }
+                }
                     ?: publication.locateProgression(details.book.totalProgression.coerceIn(0.0, 1.0))
             val session =
                 ReaderSession(

@@ -27,7 +27,7 @@ class ContinuousReaderResources(
         if (uri.scheme != "https") return denied()
         if (uri.rawAuthority == "readium_assets") {
             val path = uri.rawPath.orEmpty().removePrefix("/")
-            val permitted = path == "deft-reader/continuous.js" || path.startsWith("reader-fonts/")
+            val permitted = path in TRUSTED_READER_SCRIPTS || path.startsWith("reader-fonts/")
             if (!permitted || !PublicationPolicy.isLocalResource(path)) return denied()
             return runCatching { response(mime(path), assets.open(path).use { it.readBytes() }) }.getOrElse { denied() }
         }
@@ -87,3 +87,4 @@ fun localPublicationUrl(value: String): Url? {
 }
 
 private const val HTTP_FORBIDDEN = 403
+private val TRUSTED_READER_SCRIPTS = setOf("deft-reader/continuous.js", "deft-reader/annotations.js")

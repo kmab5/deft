@@ -55,7 +55,10 @@ class ReaderActivity : FragmentActivity() {
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
         enableEdgeToEdge()
-        model.open(intent.getLongExtra(ReaderLauncher.BOOK_ID, -1L), savedInstanceState?.getString(LOCATION))
+        model.open(
+            intent.getLongExtra(ReaderLauncher.BOOK_ID, -1L),
+            savedInstanceState?.getString(LOCATION) ?: intent.getStringExtra(ReaderLauncher.LOCATOR),
+        )
         setContent { ReaderScreen(model, this) }
     }
 

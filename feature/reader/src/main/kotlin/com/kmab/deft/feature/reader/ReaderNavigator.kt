@@ -3,60 +3,57 @@
 package com.kmab.deft.feature.reader
 
 import android.animation.ValueAnimator
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.view.ActionMode
-import android.view.Menu
-import android.view.MenuItem
 import android.view.View
 import android.webkit.WebView
 import android.widget.FrameLayout
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
+import com.kmab.deft.core.database.entity.HighlightEntity
 import com.kmab.deft.core.designsystem.DeftHaptic
 import com.kmab.deft.core.designsystem.performDeftHaptic
 import com.kmab.deft.core.model.PageAnimation
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReaderTheme
 import com.kmab.deft.format.readium.localPublicationUrl
-import com.kmab.deft.format.readium.navigatorConfiguration
 import com.kmab.deft.format.readium.toNavigatorPreferences
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import org.readium.r2.navigator.HyperlinkNavigator
-import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.input.InputListener
 import org.readium.r2.navigator.input.TapEvent
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
-import org.readium.r2.shared.util.AbsoluteUrl
 import org.readium.r2.shared.util.Url
-import org.readium.r2.shared.util.data.ReadError
+
+internal data class ReaderMediaActions(
+    val image: (Url) -> Unit = {},
+    val external: (String) -> Unit = {},
+)
 
 internal class ReaderNavigator(
     private val activity: FragmentActivity,
     private val model: ReaderViewModel,
     private val session: ReaderSession,
-    private val onImage: (Url) -> Unit = {},
-    private val onExternalLink: (String) -> Unit = {},
+    private val mediaActions: ReaderMediaActions = ReaderMediaActions(),
+    private val annotationActions: ReaderAnnotationActions = ReaderAnnotationActions(),
     private val toggleChrome: () -> Unit,
 ) {
     private var fragment: EpubNavigatorFragment? = null
     private var continuous: ContinuousReaderView? = null
     private var container: FrameLayout? = null
     private var collection: Job? = null
+    private var annotations: List<HighlightEntity> = emptyList()
+    private val pagedAnnotations = ReaderPagedAnnotations(activity) { fragment }
     private var generation = 0L
     private var preferences = ReaderPreferences()
     private var theme: ReaderTheme? = null
-    private var pagedSelectionFeedback: ReaderSelectionFeedback? = null
     private val onSelectionStarted: (Locator) -> Unit = { locator ->
         activity.window.decorView.performDeftHaptic(DeftHaptic.SELECTION)
         model.interaction.selection(locator)
     }
     val handlesSwipes: Boolean
         get() =
-            !preferences.scroll && pagedSelectionFeedback?.hasToolbar != true
+            !preferences.scroll && !pagedAnnotations.hasToolbar
     val nativeSwipes: Boolean
         get() = preferences.pageAnimation == PageAnimation.SLIDE && ValueAnimator.areAnimatorsEnabled()
 
@@ -74,91 +71,54 @@ internal class ReaderNavigator(
             attachContinuous(container, initialPreferences, initialTheme)
             return
         }
-        val configuration =
-            navigatorConfiguration(session.fonts, initialTheme).apply {
-                selectionActionModeCallback = selectionCallback()
+        pagedAnnotations.pendingRange =
+            (model.state.value.locator ?: session.initialLocator)?.takeIf {
+                it.locations.otherLocations.containsKey("domRange")
             }
-        val factory =
-            EpubNavigatorFactory(session.opened.publication).createFragmentFactory(
-                initialLocator = model.state.value.locator ?: session.initialLocator,
-                initialPreferences = initialPreferences.toNavigatorPreferences(initialTheme),
-                configuration = configuration,
-                listener =
-                    object : EpubNavigatorFragment.Listener {
-                        override fun onExternalLinkActivated(url: AbsoluteUrl) {
-                            onExternalLink(url.toString())
-                        }
-
-                        override fun shouldFollowInternalLink(
-                            link: Link,
-                            context: HyperlinkNavigator.LinkContext?,
-                        ): Boolean {
-                            model.interaction.beforeJump()
-                            return true
-                        }
-
-                        override fun onResourceLoadFailed(
-                            href: Url,
-                            error: ReadError,
-                        ) {
-                            model.interaction.renderingFailed()
-                            model.notice(
-                                "A part of this book could not be displayed. Try the next chapter from Contents.",
-                            )
-                        }
-                    },
-                paginationListener =
-                    object : EpubNavigatorFragment.PaginationListener {
-                        override fun onPageLoaded() {
-                            fragment?.let {
-                                hardenWebViews(it.view)
-                                model.interaction.rendered(generation, it.currentLocator.value)
-                                applyLinkColor(activity, fragment, theme)
-                            }
-                        }
-                    },
-            )
-        val navigator =
-            factory.instantiate(
-                activity.classLoader,
-                EpubNavigatorFragment::class.java.name,
-            ) as EpubNavigatorFragment
-        fragment = navigator
-        navigator.addInputListener(
-            object : InputListener {
-                override fun onTap(event: TapEvent): Boolean {
-                    val width = navigator.view?.width ?: return false
-                    activity.lifecycleScope.launch {
-                        val image = navigator.imageAt(event, width, session.opened.publication)
-                        if (image != null) {
-                            onImage(image)
-                        } else {
-                            when (readerTapAction(event.point.x, width, preferences.tapToTurn)) {
-                                ReaderTapAction.CHROME -> toggleChrome()
-                                ReaderTapAction.LEFT -> turnPhysical(right = false)
-                                ReaderTapAction.RIGHT -> turnPhysical(right = true)
-                            }
-                        }
-                    }
-                    return true
+        val callbacks =
+            ReaderPagedCallbacks(
+                onSelectionStarted,
+                annotationActions.selection,
+                mediaActions.external,
+            ) {
+                fragment?.let {
+                    hardenWebViews(it.view)
+                    model.interaction.rendered(generation, it.currentLocator.value)
+                    applyLinkColor(activity, fragment, theme)
+                    pagedAnnotations.apply(annotations)
                 }
-            },
-        )
+            }
+        val navigator =
+            ReaderPagedFactory(activity, model, session, pagedAnnotations, callbacks).create(
+                initialPreferences,
+                initialTheme,
+                model.state.value.locator ?: session.initialLocator,
+            )
+        fragment = navigator
+        pagedAnnotations.listenForEdits(annotationActions.edit)
+        val inputActions =
+            ReaderInputActions(mediaActions.image, { preferences.tapToTurn }) { action ->
+                when (action) {
+                    ReaderTapAction.CHROME -> toggleChrome()
+                    ReaderTapAction.LEFT -> turnPhysical(right = false)
+                    ReaderTapAction.RIGHT -> turnPhysical(right = true)
+                }
+            }
+        installReaderInput(navigator, activity, session, inputActions)
         activity.supportFragmentManager
             .beginTransaction()
             .replace(container.id, navigator, "deft-epub")
             .commitNow()
+        pagedAnnotations.apply(annotations)
         collection =
-            activity.lifecycleScope.launch {
-                var previousResource: Url? = null
-                navigator.currentLocator.collect {
-                    model.interaction.location(generation, it)
-                    if (previousResource != it.href) {
-                        previousResource = it.href
-                        applyLinkColor(activity, fragment, theme)
-                    }
-                }
-            }
+            navigator.observeReadingLocation(
+                activity,
+                onLocation = { model.interaction.location(generation, it) },
+                onResourceChanged = {
+                    applyLinkColor(activity, fragment, theme)
+                    pagedAnnotations.apply(annotations)
+                },
+            )
     }
 
     fun apply(
@@ -183,6 +143,8 @@ internal class ReaderNavigator(
     }
 
     fun turn(forward: Boolean) {
+        pagedAnnotations.pendingRange = null
+        pagedAnnotations.clearSearch()
         continuous?.let {
             model.interaction.userInput()
             it.turn(forward)
@@ -203,6 +165,8 @@ internal class ReaderNavigator(
     }
 
     fun go(link: Link) {
+        pagedAnnotations.pendingRange = null
+        pagedAnnotations.clearSearch()
         continuous?.let {
             session.opened.publication.locatorFromLink(link)?.let { point ->
                 model.interaction.beforeJump()
@@ -225,27 +189,34 @@ internal class ReaderNavigator(
     fun go(
         locator: Locator,
         remember: Boolean = true,
+        search: Boolean = false,
     ) {
         continuous?.let {
             if (remember) model.interaction.beforeJump()
-            it.go(locator)
+            it.go(locator, search)
             return
         }
         val navigator = fragment ?: return
         if (remember) model.interaction.beforeJump()
+        pagedAnnotations.clearSearch()
+        if (search) pagedAnnotations.searchLocator = locator
+        pagedAnnotations.pendingRange = locator.takeIf { it.locations.otherLocations.containsKey("domRange") }
         if (!navigator.go(
-                locator,
+                locator.forReadiumRange(),
                 animated =
                     preferences.pageAnimation == PageAnimation.SLIDE && ValueAnimator.areAnimatorsEnabled(),
             )
         ) {
+            pagedAnnotations.pendingRange = null
+            pagedAnnotations.clearSearch()
             model.notice("That location is unavailable in this book.")
+        } else {
+            pagedAnnotations.apply(annotations)
         }
     }
 
     fun detach() {
-        pagedSelectionFeedback?.close()
-        pagedSelectionFeedback = null
+        pagedAnnotations.close()
         collection?.cancel()
         collection = null
         model.interaction.detachNavigator(generation)
@@ -281,14 +252,14 @@ internal class ReaderNavigator(
                     ContinuousReaderCallbacks(
                         onLocation = { model.interaction.rendered(token, it) },
                         onTap = toggleChrome,
-                        onImage = onImage,
+                        onImage = mediaActions.image,
                         onLink = { href ->
                             val resource = localPublicationUrl(href)
                             val link = resource?.let { session.opened.publication.linkWithHref(it) }
                             val point = link?.let { session.opened.publication.locatorFromLink(it) }
                             if (point == null) {
                                 if (resource == null) {
-                                    onExternalLink(href)
+                                    mediaActions.external(href)
                                 } else {
                                     model.notice("That location is unavailable in this book.")
                                 }
@@ -305,6 +276,8 @@ internal class ReaderNavigator(
                             }
                         },
                         onSelection = onSelectionStarted,
+                        onSelectionAction = annotationActions.selection,
+                        onAnnotation = annotationActions.edit,
                         onError = {
                             model.interaction.renderingFailed()
                             model.notice(
@@ -314,62 +287,14 @@ internal class ReaderNavigator(
                     ),
             )
         host.addView(continuous?.view, FrameLayout.LayoutParams(-1, -1))
+        continuous?.annotations(annotations)
     }
 
-    private fun selectionCallback(): ActionMode.Callback {
-        val feedback =
-            ReaderSelectionFeedback(
-                activity.lifecycleScope,
-                activity.lifecycle,
-                { fragment?.currentSelection()?.locator },
-                onSelectionStarted,
-            )
-        pagedSelectionFeedback = feedback
-        return object : ActionMode.Callback {
-            override fun onCreateActionMode(
-                mode: ActionMode,
-                menu: Menu,
-            ): Boolean {
-                feedback.toolbarStarted(mode)
-                menu
-                    .add(
-                        Menu.NONE,
-                        android.R.id.copy,
-                        Menu.NONE,
-                        "Copy",
-                    ).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
-                return true
-            }
-
-            override fun onPrepareActionMode(
-                mode: ActionMode,
-                menu: Menu,
-            ): Boolean = false
-
-            override fun onActionItemClicked(
-                mode: ActionMode,
-                item: MenuItem,
-            ): Boolean {
-                if (item.itemId != android.R.id.copy) return false
-                activity.lifecycleScope.launch {
-                    fragment?.currentSelection()?.locator?.text?.highlight?.let { text ->
-                        activity
-                            .getSystemService(
-                                ClipboardManager::class.java,
-                            ).setPrimaryClip(ClipData.newPlainText("Book text", text))
-                    }
-                    fragment?.clearSelection()
-                    mode.finish()
-                }
-                return true
-            }
-
-            override fun onDestroyActionMode(mode: ActionMode) {
-                // Chromium can recreate the toolbar while a selection handle moves.
-                // Its lifetime is not the lifetime of the selected DOM range.
-                feedback.toolbarStopped(mode)
-            }
-        }
+    fun annotations(values: List<HighlightEntity>) {
+        if (annotations == values) return
+        annotations = values
+        continuous?.annotations(values)
+        pagedAnnotations.apply(annotations)
     }
 }
 
@@ -406,4 +331,50 @@ private fun applyLinkColor(
                 "document.documentElement.style.setProperty('--RS__visitedColor','$color');",
         )
     }
+}
+
+private fun EpubNavigatorFragment.observeReadingLocation(
+    activity: FragmentActivity,
+    onLocation: (Locator) -> Unit,
+    onResourceChanged: () -> Unit,
+): Job =
+    activity.lifecycleScope.launch {
+        var previousResource: Url? = null
+        currentLocator.collect {
+            onLocation(it)
+            if (previousResource != it.href) {
+                previousResource = it.href
+                onResourceChanged()
+            }
+        }
+    }
+
+private data class ReaderInputActions(
+    val image: (Url) -> Unit,
+    val tapToTurn: () -> Boolean,
+    val tap: (ReaderTapAction) -> Unit,
+)
+
+private fun installReaderInput(
+    navigator: EpubNavigatorFragment,
+    activity: FragmentActivity,
+    session: ReaderSession,
+    actions: ReaderInputActions,
+) {
+    navigator.addInputListener(
+        object : InputListener {
+            override fun onTap(event: TapEvent): Boolean {
+                val width = navigator.view?.width ?: return false
+                activity.lifecycleScope.launch {
+                    val image = navigator.imageAt(event, width, session.opened.publication)
+                    if (image != null) {
+                        actions.image(image)
+                    } else {
+                        actions.tap(readerTapAction(event.point.x, width, actions.tapToTurn()))
+                    }
+                }
+                return true
+            }
+        },
+    )
 }

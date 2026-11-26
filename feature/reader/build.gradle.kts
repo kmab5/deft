@@ -20,6 +20,8 @@ dependencies {
     implementation(project(":core:datastore"))
     implementation(project(":core:designsystem"))
     implementation(project(":library:scanner"))
+    implementation(project(":library:notes"))
+    implementation(project(":feature:notes"))
     implementation(project(":format:readium"))
     implementation(project(":feature:reader-settings"))
     implementation("androidx.activity:activity-compose:1.11.0")

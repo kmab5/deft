@@ -11,7 +11,7 @@ class ContinuousReaderDocumentTest {
         val html = ContinuousReaderDocument.html(listOf("OPS/one.xhtml" to "</script><script>alert(1)</script>\n\"&"))
         val document = Jsoup.parse(html)
         val scripts = document.select("script")
-        assertEquals(2, scripts.size)
+        assertEquals(3, scripts.size)
         assertEquals("application/json", scripts.first()!!.attr("type"))
         assertTrue(scripts.first()!!.data().contains("\\u003c/script\\u003e"))
         assertTrue(scripts.first()!!.data().contains("\\u000a\\\"\\u0026"))

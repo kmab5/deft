@@ -19,6 +19,7 @@ import com.kmab.deft.core.model.TrackingPreferences
 import com.kmab.deft.feature.readersettings.ReaderFontRepository
 import com.kmab.deft.format.readium.OpenedEpub
 import com.kmab.deft.format.readium.ReaderOpenException
+import com.kmab.deft.library.notes.NotesRepository
 import com.kmab.deft.library.scanner.BookRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -77,6 +78,7 @@ internal class ReaderViewModel
         private val tracking: ReaderTracking,
         trackingSettings: TrackingSettingsRepository,
         private val launcher: ReaderLauncher,
+        notes: NotesRepository,
     ) : ViewModel() {
         private val mutableState = MutableStateFlow(ReaderState())
         val state = mutableState.asStateFlow()
@@ -98,6 +100,7 @@ internal class ReaderViewModel
         val notices = messages.asSharedFlow()
         val interaction = ReaderInteraction(mutableState, preferences, writer, events)
         val search = ReaderSearch(viewModelScope)
+        val annotations = ReaderAnnotations(viewModelScope, notes, ::notice)
         private var started = false
         private var pendingSession: ReaderSession? = null
 
@@ -137,6 +140,7 @@ internal class ReaderViewModel
                             openingChoice = snapshot.state.takeIf { gate },
                         )
                     }
+                    annotations.observe(bookId)
                     books.recordOpened(bookId)
                     books.observeBookmarks(bookId).collect { bookmarks ->
                         mutableState.update { it.copy(bookmarks = bookmarks) }

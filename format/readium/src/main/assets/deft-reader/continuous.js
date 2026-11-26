@@ -31,6 +31,31 @@
   let selectionChangedAt = 0;
   let lastLocation = "";
   let restoring = false;
+  let savedAnnotations = [];
+
+  function annotations(values) {
+    savedAnnotations = Array.isArray(values) ? values : [];
+    entries.filter(entry => entry.ready).forEach(paintAnnotations);
+  }
+
+  function paintAnnotations(entry) {
+    entry.section.querySelectorAll('.deft-annotation').forEach(element => element.remove());
+    entry.annotationRanges = [];
+    if (!entry.ready) return;
+    const doc = entry.frame.contentDocument;
+    savedAnnotations.filter(item => item.href === entry.href && /^#[0-9a-f]{6}$/i.test(item.color || '')).forEach(item => {
+      const range = deftAnnotations.range(doc, item) || quoteRange(doc, item.text, item.progression, item.before, item.after);
+      if (!range) return;
+      entry.annotationRanges.push({id: item.id, range});
+      // Host overlays work on older WebViews too, without wrapping or changing publication text.
+      Array.from(range.getClientRects()).filter(rect => rect.width > 0 && rect.height > 0).forEach(rect => {
+        const box = document.createElement('div');
+        box.className = 'deft-annotation';
+        box.style.cssText = `position:absolute;pointer-events:none;z-index:2;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:${item.color};opacity:.24`;
+        entry.section.appendChild(box);
+      });
+    });
+  }
 
   function entryAt(y) {
     if (!entries.length) return null;
@@ -51,13 +76,14 @@
     return entry ? { href: entry.href, progression: clamp((window.scrollY - entry.section.offsetTop) / entry.height) } : null;
   }
 
-  function selection() {
+  function selection(lightweight = false) {
     for (const entry of entries) {
       if (!entry.ready) continue;
       const selected = entry.frame.contentWindow.getSelection();
       if (selected && !selected.isCollapsed && selected.toString().trim()) {
         const rect = selected.getRangeAt(0).getBoundingClientRect();
-        return { href: entry.href, progression: clamp(rect.top / entry.height), text: selected.toString() };
+        return { href: entry.href, progression: clamp(rect.top / entry.height),
+          ...(lightweight ? {text: selected.toString()} : deftAnnotations.selection(entry.frame.contentDocument)) };
       }
     }
     return null;
@@ -106,6 +132,7 @@
     entry.height = height;
     entry.frame.style.height = height + "px";
     entry.section.style.height = height + "px";
+    paintAnnotations(entry);
   }
 
   function measureSoon() {
@@ -155,9 +182,12 @@
       if (!target) return;
       const link = target.closest("a[href]");
       if (link) event.preventDefault();
-      if (selection() || performance.now() - selectionChangedAt < 350) return;
+      if (selection(true) || performance.now() - selectionChangedAt < 350) return;
       if (down && (performance.now() - down.at > 450 ||
           Math.hypot(event.clientX - down.x, event.clientY - down.y) > 12)) return;
+      const marked = entry.annotationRanges?.find(item => Array.from(item.range.getClientRects()).some(rect =>
+        event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom));
+      if (marked) { event.preventDefault(); bridge('annotation', String(marked.id)); return; }
       const image = target.closest("img,image") || target.closest("svg")?.querySelector("image");
       if (image) {
         event.preventDefault();
@@ -232,6 +262,8 @@
     entry.ready = false;
     entry.frame.remove();
     entry.frame = null;
+    entry.section.querySelectorAll('.deft-annotation').forEach(element => element.remove());
+    entry.annotationRanges = [];
   }
 
   function quoteRange(doc, quote, progression, before, after) {
@@ -276,10 +308,11 @@
     const jump = pending;
     const doc = jump.entry.frame.contentDocument;
     let offset = jump.progression * jump.entry.height;
-    const range = jump.quote ? quoteRange(doc, jump.quote, jump.progression, jump.before, jump.after) : null;
+    const range = deftAnnotations.range(doc, {domRange: jump.domRange, text: jump.quote}) ||
+      (jump.quote ? quoteRange(doc, jump.quote, jump.progression, jump.before, jump.after) : null);
     if (range) {
       offset = range.getBoundingClientRect().top;
-      if (jump.entry.frame.contentWindow.CSS?.highlights && window.Highlight) {
+      if (jump.search && jump.entry.frame.contentWindow.CSS?.highlights && window.Highlight) {
         const highlight = new Highlight(range);
         jump.entry.frame.contentWindow.CSS.highlights.set("deft-search", highlight);
       }
@@ -296,7 +329,7 @@
     schedule();
   }
 
-  function go(href, progression, fragment, quote, before, after) {
+  function go(href, progression, fragment, quote, before, after, domRange, search = false) {
     let target;
     try { target = new URL(href, publication); } catch (_) { bridge("error", String(href)); return; }
     const entry = entries.find(item => item.url.origin === target.origin && item.url.pathname === target.pathname && item.url.search === target.search);
@@ -304,7 +337,7 @@
     if (entry.failed) { bridge("error", entry.href); return; }
     clearSelection();
     entries.filter(item => item.ready).forEach(item => item.frame.contentWindow.CSS?.highlights?.delete("deft-search"));
-    pending = { entry, progression: clamp(progression), fragment: fragment || target.hash, quote, before, after };
+    pending = { entry, progression: clamp(progression), fragment: fragment || target.hash, quote, before, after, domRange, search };
     load(entry);
     if (entry.ready) applyPending(); else window.scrollTo(0, entry.section.offsetTop);
     schedule();
@@ -343,7 +376,7 @@
     if (!scheduled && !disposed) { scheduled = true; requestAnimationFrame(update); }
   }
 
-  window.deftContinuous = { configure, go, current, selection, clearSelection };
+  window.deftContinuous = { configure, go, current, selection, clearSelection, annotations };
   window.addEventListener("scroll", schedule, { passive: true });
   window.addEventListener("resize", () => { measureSoon(); schedule(); });
   window.addEventListener("pagehide", () => {

@@ -86,7 +86,9 @@ import com.kmab.deft.core.designsystem.performDeftHaptic
 import com.kmab.deft.core.designsystem.rememberDeftNoticeState
 import com.kmab.deft.core.model.ReaderPreferences
 import com.kmab.deft.core.model.ReaderTheme
+import com.kmab.deft.feature.notes.HighlightEditor
 import com.kmab.deft.feature.readersettings.ReaderPreferencesPanel
+import com.kmab.deft.library.notes.HighlightDraft
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.readium.r2.shared.util.Url
@@ -99,6 +101,7 @@ internal fun ReaderScreen(
     activity: ReaderActivity,
 ) {
     val state by model.state.collectAsStateWithLifecycle()
+    val annotations by model.annotations.state.collectAsStateWithLifecycle()
     val tracking by model.trackingState.collectAsStateWithLifecycle()
     val trackingPreferences by model.trackingPreferences.collectAsStateWithLifecycle()
     val preferences by model.preferences.collectAsStateWithLifecycle()
@@ -116,6 +119,15 @@ internal fun ReaderScreen(
     var externalHref by rememberSaveable { mutableStateOf<String?>(null) }
     var chromeInteraction by remember { mutableStateOf(0) }
     var scrubbing by remember { mutableStateOf(false) }
+    var externalSelection by remember { mutableStateOf(false) }
+    DisposableEffect(activity) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) externalSelection = false
+            }
+        activity.lifecycle.addObserver(observer)
+        onDispose { activity.lifecycle.removeObserver(observer) }
+    }
     val navigator =
         remember(session) {
             session?.let {
@@ -123,8 +135,20 @@ internal fun ReaderScreen(
                     activity,
                     model,
                     it,
-                    onImage = { url -> imageHref = url.toString() },
-                    onExternalLink = { url -> externalHref = url },
+                    mediaActions =
+                        ReaderMediaActions(
+                            image = { url -> imageHref = url.toString() },
+                            external = { url -> externalHref = url },
+                        ),
+                    annotationActions =
+                        ReaderAnnotationActions(
+                            edit = model.annotations::edit,
+                            selection = { action, point ->
+                                val result = handleReaderSelection(activity, model, action, point)
+                                if (result == ReaderSelectionResult.SEARCH) sheet = ReaderSheet.SEARCH
+                                externalSelection = result == ReaderSelectionResult.EXTERNAL
+                            },
+                        ),
                 ) {
                     chrome = !chrome
                     chromeInteraction++
@@ -132,7 +156,14 @@ internal fun ReaderScreen(
             }
         }
     LaunchedEffect(model) { model.notices.collect { notices.show(it) } }
-    ReaderTrackingEffects(model, activity, state, tracking, listOf(sheet, imageHref, externalHref).any { it != null })
+    val overlays = ReaderOverlays(sheet, imageHref, externalHref, annotations.draft, externalSelection)
+    ReaderTrackingEffects(
+        model,
+        activity,
+        state,
+        tracking,
+        overlays.open,
+    )
     ReaderNavigationEffects(
         activity = activity,
         model = model,
@@ -141,16 +172,15 @@ internal fun ReaderScreen(
         preferences = preferences,
         theme = theme,
         chrome = chrome,
-        sheetOpen = sheet != null,
-        imageOpen = imageHref != null || externalHref != null,
+        sheetOpen = overlays.sheetOpen,
+        imageOpen = overlays.imageOpen,
         scrubbing = scrubbing,
         interaction = chromeInteraction,
         hideChrome = { chrome = false },
-        dismissSheet = {
-            model.search.cancel()
-            sheet = null
-        },
+        dismissSheet = { dismissReaderSheet(model, annotations) { sheet = null } },
     )
+
+    SideEffect { navigator?.annotations(annotations.highlights) }
 
     ReaderTheme(theme) {
         CompositionLocalProvider(LocalDeftNoticeState provides notices) {
@@ -159,16 +189,7 @@ internal fun ReaderScreen(
                     Column(
                         Modifier
                             .fillMaxSize()
-                            .displayCutoutPadding()
-                            .then(
-                                if (preferences.fullScreen) {
-                                    Modifier.padding(top = 8.dp)
-                                } else {
-                                    Modifier.systemBarsPadding().padding(
-                                        top = 12.dp,
-                                    )
-                                },
-                            ),
+                            .readerInsets(preferences.fullScreen),
                     ) {
                         AndroidView(
                             factory = { context ->
@@ -237,7 +258,7 @@ internal fun ReaderScreen(
                 ReaderIdleOverlay(
                     visible =
                         tracking.idle && state.rendered && !tracking.finishPrompt &&
-                            listOf(sheet, imageHref, externalHref).all { it == null },
+                            !overlays.open,
                     onResume = model.interaction::resumeReading,
                 )
                 DeftNoticeHost(notices, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
@@ -246,6 +267,7 @@ internal fun ReaderScreen(
                 model.search.cancel()
                 sheet = null
             }
+            ReaderAnnotationEditor(annotations, model.annotations)
             ReaderTrackingDialogs(
                 opening = state.openingChoice,
                 finishPrompt = tracking.finishPrompt,
@@ -651,7 +673,7 @@ private fun ReaderSheets(
                     search,
                     model.search::edit,
                     {
-                        navigator?.go(it)
+                        navigator?.go(it, search = true)
                         dismiss()
                     },
                     submit = { model.search.submit(state.session?.opened?.publication) },
@@ -693,3 +715,49 @@ private const val CONTROL_COLOR_STEPS = 20
 private const val WCAG_LUMINANCE_OFFSET = 0.05f
 
 private const val CHROME_TIMEOUT_MILLIS = 4_000L
+
+private data class ReaderOverlays(
+    val sheet: ReaderSheet?,
+    val image: String?,
+    val link: String?,
+    val draft: HighlightDraft?,
+    val external: Boolean,
+) {
+    val sheetOpen: Boolean get() = sheet != null || draft != null
+    val imageOpen: Boolean get() = image != null || link != null || external
+    val open: Boolean get() = sheetOpen || imageOpen
+}
+
+@Composable
+private fun ReaderAnnotationEditor(
+    state: ReaderAnnotationState,
+    annotations: ReaderAnnotations,
+) {
+    state.draft?.let { draft ->
+        HighlightEditor(
+            draft,
+            annotations::save,
+            annotations::dismiss,
+            onDelete = if (draft.id != null) annotations::delete else null,
+            busy = state.busy,
+        )
+    }
+}
+
+private fun dismissReaderSheet(
+    model: ReaderViewModel,
+    annotations: ReaderAnnotationState,
+    close: () -> Unit,
+) {
+    if (annotations.draft != null) {
+        model.annotations.dismiss()
+    } else {
+        model.search.cancel()
+        close()
+    }
+}
+
+private fun Modifier.readerInsets(fullScreen: Boolean): Modifier =
+    displayCutoutPadding().then(
+        if (fullScreen) Modifier.padding(top = 8.dp) else Modifier.systemBarsPadding().padding(top = 12.dp),
+    )
