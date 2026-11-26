@@ -95,7 +95,6 @@ internal class ReaderNavigator(
                 model.state.value.locator ?: session.initialLocator,
             )
         fragment = navigator
-        pagedAnnotations.listenForEdits(annotationActions.edit)
         val inputActions =
             ReaderInputActions(mediaActions.image, { preferences.tapToTurn }) { action ->
                 when (action) {
@@ -109,6 +108,8 @@ internal class ReaderNavigator(
             .beginTransaction()
             .replace(container.id, navigator, "deft-epub")
             .commitNow()
+        // Readium's decoration listener accesses the ViewModel, which requires an attached fragment.
+        pagedAnnotations.listenForEdits(annotationActions.edit)
         pagedAnnotations.apply(annotations)
         collection =
             navigator.observeReadingLocation(
