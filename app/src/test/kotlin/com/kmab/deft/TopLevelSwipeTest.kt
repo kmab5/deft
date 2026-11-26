@@ -10,7 +10,9 @@ class TopLevelSwipeTest {
         assertEquals(0, topLevelSwipeTarget(1, 100f, 72f))
         assertEquals(2, topLevelSwipeTarget(1, -100f, 72f))
         assertNull(topLevelSwipeTarget(0, 100f, 72f))
-        assertNull(topLevelSwipeTarget(2, -100f, 72f))
+        assertEquals(3, topLevelSwipeTarget(2, -100f, 72f))
+        assertEquals(2, topLevelSwipeTarget(3, 100f, 72f))
+        assertNull(topLevelSwipeTarget(3, -100f, 72f))
         assertNull(topLevelSwipeTarget(-1, -100f, 72f))
         assertNull(topLevelSwipeTarget(1, -40f, 72f))
     }

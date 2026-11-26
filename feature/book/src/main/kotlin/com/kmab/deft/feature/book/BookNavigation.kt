@@ -13,10 +13,12 @@ import com.kmab.deft.core.designsystem.DeftNoticeKind
 import com.kmab.deft.core.designsystem.LocalDeftNoticeState
 import com.kmab.deft.core.designsystem.popDestination
 import com.kmab.deft.core.designsystem.rememberDestinationBack
+import com.kmab.deft.feature.notes.NotesPane
 
 fun NavGraphBuilder.bookGraph(
     navController: NavController,
     onRead: (Long) -> Unit,
+    onOpenNote: (Long, String) -> Unit,
 ) {
     composable(
         "book/{bookId}?celebrate={celebrate}",
@@ -45,26 +47,29 @@ fun NavGraphBuilder.bookGraph(
                 navController.popDestination(entry)
             }
         }
-        BookDetailScreen(
-            state,
-            onBack,
-            {
-                state.details
-                    ?.book
-                    ?.id
-                    ?.let(onRead)
-            },
-            {
-                state.details?.book?.let { viewModel.setIgnored(!it.ignored) }
-            },
-            viewModel::forget,
-            viewModel.actions,
-            BookOrganizationLinks(
-                openAuthor = { navController.navigate("author/$it") },
-                openCategory = { navController.navigate("category/$it") },
-                openBook = { navController.navigate("book/$it") },
-            ),
-        )
+        val bookId = requireNotNull(entry.arguments).getLong("bookId")
+        NotesPane(onOpenNote, bookId) { count, pane ->
+            BookDetailScreen(
+                state,
+                onBack,
+                {
+                    state.details
+                        ?.book
+                        ?.id
+                        ?.let(onRead)
+                },
+                { state.details?.book?.let { viewModel.setIgnored(!it.ignored) } },
+                viewModel::forget,
+                viewModel.actions,
+                BookOrganizationLinks(
+                    openAuthor = { navController.navigate("author/$it") },
+                    openCategory = { navController.navigate("category/$it") },
+                    openBook = { navController.navigate("book/$it") },
+                ),
+                annotationCount = count,
+                notes = pane,
+            )
+        }
         BookCompletion(state, viewModel)
     }
 }

@@ -6,13 +6,15 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 
+internal val topLevelRoutes = listOf("books", "categories", "authors", "notes")
+
 internal fun topLevelSwipeTarget(
     current: Int,
     distance: Float,
     threshold: Float,
 ): Int? {
-    if (current !in 0..2 || abs(distance) < threshold) return null
-    return (current + if (distance < 0) 1 else -1).takeIf { it in 0..2 }
+    if (current !in topLevelRoutes.indices || abs(distance) < threshold) return null
+    return (current + if (distance < 0) 1 else -1).takeIf { it in topLevelRoutes.indices }
 }
 
 internal fun Modifier.topLevelSwipe(

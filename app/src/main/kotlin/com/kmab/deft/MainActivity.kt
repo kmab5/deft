@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
                     scanStatus,
                     scanReports,
                     readerLauncher::open,
+                    readerLauncher::openAt,
                     completedBook,
                     readerLauncher::acknowledgeCompletion,
                 )

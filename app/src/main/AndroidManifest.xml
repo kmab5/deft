@@ -1,8 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="text/markdown" />
+        </intent>
+    </queries>
     <application android:name=".DeftApplication" android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules" android:label="Deft" android:icon="@mipmap/ic_launcher" android:theme="@style/Theme.Deft" android:supportsRtl="true">
         <provider android:name="androidx.startup.InitializationProvider" android:authorities="${applicationId}.androidx-startup" android:exported="false" tools:node="merge">
             <meta-data android:name="androidx.work.WorkManagerInitializer" tools:node="remove" />
+        </provider>
+        <provider android:name="com.kmab.deft.feature.notes.NotesShareProvider" android:authorities="${applicationId}.notes-share" android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/notes_share_paths" />
         </provider>
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>

@@ -7,10 +7,8 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import org.junit.Rule
@@ -24,7 +22,7 @@ import org.robolectric.annotation.Config
 class SmokeTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
-    @Test fun launchesThreeWorkingDestinations() {
+    @Test fun launchesFourWorkingDestinations() {
         compose.onNodeWithTag("books_screen").assertIsDisplayed()
         compose.onNodeWithText("categories").performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithText("new category").fetchSemanticsNodes().size == 1 }
@@ -34,17 +32,21 @@ class SmokeTest {
             compose.onNodeWithContentDescription("dismiss notice").performClick()
         }
         compose.onNodeWithText("authors").performClick()
-        try {
-            compose.waitUntil(5_000) { compose.onAllNodesWithText("find authors").fetchSemanticsNodes().size == 1 }
-        } finally {
-            println(compose.onRoot(useUnmergedTree = true).printToString())
-        }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("find authors").fetchSemanticsNodes().size == 1 }
         compose.onNodeWithText("find authors").assertIsDisplayed()
+        compose.onNodeWithText("notes").performClick()
+        compose.onNodeWithText("search notes").assertIsDisplayed()
         compose.onNodeWithText("books").performClick()
         compose.onNodeWithTag("books_screen").assertIsDisplayed()
         compose.onNodeWithTag("main_pages").performTouchInput { swipeLeft() }
         compose.waitUntil(5_000) { compose.onAllNodesWithText("new category").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("main_pages").performTouchInput { swipeLeft() }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("find authors").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("main_pages").performTouchInput { swipeLeft() }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("search notes").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("main_pages").performTouchInput { swipeLeft() }
+        compose.onNodeWithText("search notes").assertIsDisplayed()
+        compose.onNodeWithTag("main_pages").performTouchInput { swipeRight() }
         compose.waitUntil(5_000) { compose.onAllNodesWithText("find authors").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("main_pages").performTouchInput { swipeRight() }
         compose.waitUntil(5_000) { compose.onAllNodesWithText("new category").fetchSemanticsNodes().isNotEmpty() }

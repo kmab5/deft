@@ -1,8 +1,10 @@
 package com.kmab.deft.feature.book
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -45,6 +47,28 @@ class BookDetailTest {
         compose.onNodeWithText("read").performScrollTo().performClick()
         assertEquals(1, reads)
         compose.onNodeWithText("Books/Earthsea.epub").performScrollTo().assertExists()
+    }
+
+    @Test fun notesTabShowsUnfilteredCountAndOwnsTheBookPane() {
+        compose.setContent {
+            DeftTheme {
+                BookDetailScreen(
+                    BookDetailState(fixture(), false),
+                    {},
+                    {},
+                    {},
+                    {},
+                    annotationCount = 2,
+                    notes = { Text("Book notes pane") },
+                )
+            }
+        }
+        compose.onNodeWithText("details").assertIsSelected()
+        compose.onNodeWithText("Book notes pane").assertDoesNotExist()
+        compose.onNodeWithText("notes (2)").performClick().assertIsSelected()
+        compose.onNodeWithText("Book notes pane").assertIsDisplayed()
+        compose.onNodeWithText("details").performClick().assertIsSelected()
+        compose.onNodeWithText("Book notes pane").assertDoesNotExist()
     }
 
     @Test fun protectedReadShowsNoticeWithoutOpeningContent() {

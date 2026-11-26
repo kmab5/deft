@@ -30,17 +30,21 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.kmab.deft.core.designsystem.DeftBottomBar
 import com.kmab.deft.core.designsystem.DeftMotion
 import com.kmab.deft.core.designsystem.DeftNoticeHost
+import com.kmab.deft.core.designsystem.DeftScreenMenu
+import com.kmab.deft.core.designsystem.DeftTopBar
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.LocalDeftNoticeState
 import com.kmab.deft.core.designsystem.rememberDeftNoticeState
 import com.kmab.deft.feature.book.bookGraph
 import com.kmab.deft.feature.library.ScanDetailsSheet
 import com.kmab.deft.feature.library.libraryGraph
+import com.kmab.deft.feature.notes.NotesPane
 import com.kmab.deft.feature.organization.organizationGraph
 import com.kmab.deft.feature.settings.settingsGraph
 import com.kmab.deft.library.scanner.ScanDetails
@@ -60,6 +64,7 @@ internal fun DeftApp(
     observer: ScanStatusObserver,
     reports: ScanReportStore,
     onRead: (Long) -> Unit,
+    onOpenNote: (Long, String) -> Unit,
     completedBook: Long? = null,
     onCompletionHandled: () -> Unit = {},
 ) {
@@ -113,7 +118,7 @@ internal fun DeftApp(
                         selectedReport = scan.reportSelection()
                     }
                 }
-                DeftNavigation(navController, openDetails, onRead, scan.isFinished || scan.report != null) {
+                DeftNavigation(navController, openDetails, onRead, onOpenNote, scan.isFinished || scan.report != null) {
                     DeftNoticeHost(notices, Modifier.align(Alignment.BottomCenter), paused = selectedReport != null)
                 }
             }
@@ -127,11 +132,12 @@ private fun DeftNavigation(
     navController: NavHostController,
     openDetails: () -> Unit,
     onRead: (Long) -> Unit,
+    onOpenNote: (Long, String) -> Unit,
     hasScanDetails: Boolean,
     overlay: @Composable BoxScope.() -> Unit,
 ) {
     val entry by navController.currentBackStackEntryAsState()
-    val tabs = listOf("books", "categories", "authors")
+    val tabs = topLevelRoutes
     val selected = tabs.indexOf(entry?.destination?.route)
     val selectTab: (Int) -> Unit = { index ->
         navController.navigate(tabs[index]) {
@@ -166,9 +172,20 @@ private fun DeftNavigation(
                 },
             ) {
                 libraryGraph(navController, onScanDetails = openDetails, onRead = onRead)
-                bookGraph(navController, onRead)
+                bookGraph(navController, onRead, onOpenNote)
                 organizationGraph(navController, openDetails, hasScanDetails)
                 settingsGraph(navController, onScanDetails = openDetails)
+                composable("notes") {
+                    Column(Modifier.fillMaxSize()) {
+                        DeftTopBar("notes", actions = {
+                            DeftScreenMenu(
+                                { navController.navigate("settings") },
+                                openDetails.takeIf { hasScanDetails },
+                            )
+                        })
+                        NotesPane(onOpenNote) { _, pane -> pane(Modifier.weight(1f)) }
+                    }
+                }
             }
             overlay()
         }
