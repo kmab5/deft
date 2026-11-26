@@ -22,6 +22,14 @@ android {
         versionName = deftVersion.name
         versionCode = deftVersion.code
     }
+    if (providers.gradleProperty("deft.abiSplits").orNull == "true") {
+        splits.abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+            isUniversalApk = true
+        }
+    }
     signingConfigs {
         create("release") {
             storeFile = signingValue("storeFile", "DEFT_KEYSTORE_FILE")?.let(::file)

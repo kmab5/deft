@@ -1,16 +1,12 @@
 """Stage only a verified, persistently signed tag build for GitHub Releases."""
 import argparse
-import gzip
-import hashlib
 import json
-import os
 from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
-
-from release_sdk import resolve_sdk
+import zipfile
 
 
 def release_version(tag, properties):
@@ -32,39 +28,35 @@ def validate_certificate(output, expected):
 
 def stage(tag):
     root = Path(__file__).resolve().parent.parent
-    version, code = release_version(tag, (root / 'gradle.properties').read_text())
+    version, _ = release_version(tag, (root / 'gradle.properties').read_text())
     source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
     tagged = subprocess.check_output(['git', 'rev-parse', tag + '^{commit}'], cwd=root, text=True).strip()
     if source != tagged:
         raise ValueError('Checked-out source does not match the release tag.')
-    subprocess.run([sys.executable, str(root / 'scripts/verify-release.py')], check=True)
-    sdk = resolve_sdk(root, os.environ)
-    tools = sorted((sdk / 'build-tools').glob('*'), key=lambda p: tuple(int(n) for n in p.name.split('.') if n.isdigit()))
-    apk = root / 'app/build/outputs/apk/release/app-release.apk'
-    signer = tools[-1] / ('apksigner.bat' if os.name == 'nt' else 'apksigner')
-    output = subprocess.check_output([str(signer), 'verify', '--print-certs', str(apk)], text=True)
-    certificate = (root / 'scripts/release-certificate.sha256').read_text().strip()
-    validate_certificate(output, certificate)
+    output = root / 'app/build/outputs/apk/release'
     destination = root / 'build/release-publication'
     destination.mkdir(parents=True, exist_ok=True)
-    name = f'deft-{version}.apk'
-    shutil.copyfile(apk, destination / name)
-    digest = hashlib.sha256(apk.read_bytes()).hexdigest()
-    (destination / (name + '.sha256')).write_text(f'{digest}  {name}\n', encoding='utf-8')
-    mapping = root / 'app/build/outputs/mapping/release/mapping.txt'
-    (destination / 'mapping.txt.gz').write_bytes(gzip.compress(mapping.read_bytes(), mtime=0))
-    metadata = dict(tag=tag, version=version, version_code=code, source_commit=source,
-                    apk=name, sha256=digest, certificate_sha256=certificate,
-                    workflow_run=f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}")
-    (destination / 'release.json').write_text(json.dumps(metadata, indent=2) + '\n', encoding='utf-8')
-    (destination / 'release-notes.md').write_text(
-        f'Deft {version}, build {tag.rsplit("-", 1)[1]}.\n\n'
-        'Built and published by GitHub Actions after checks and release packaging verification. '
-        'The APK is R8-minified, resource-shrunk and signed with the persistent Deft release key. '
-        'Install over your existing Deft app to preserve its data.\n\n'
-        f'Build: {metadata["workflow_run"]}\n\nSource: `{source}`\n\n'
-        'The checksum, R8 mapping and release metadata are attached for verification and crash diagnosis.\n', encoding='utf-8')
-    print(json.dumps(metadata, indent=2))
+    for stale in destination.glob('*.apk'):
+        stale.unlink()
+    expected = set(('arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'))
+    seen = set()
+    for item in json.loads((output / 'output-metadata.json').read_text())['elements']:
+        filters = item['filters']
+        abi = filters[0]['value'] if len(filters) == 1 and filters[0]['filterType'] == 'ABI' else None
+        if (filters and abi not in expected) or abi in seen:
+            raise ValueError(f'Unexpected release output filters: {filters}')
+        apk = output / item['outputFile']
+        with zipfile.ZipFile(apk) as archive:
+            packaged = {name.split('/')[1] for name in archive.namelist() if name.startswith('lib/') and name.endswith('.so')}
+        if packaged != ({abi} if abi else expected):
+            raise ValueError(f'{apk.name} has unexpected native architectures: {packaged}')
+        subprocess.run([sys.executable, str(root / 'scripts/verify-release.py'), '--pinned-certificate',
+                        '--apk', str(apk)], check=True)
+        suffix = f'-{abi}' if abi else ''
+        shutil.copyfile(apk, destination / f'deft-{version}{suffix}.apk')
+        seen.add(abi)
+    if seen != expected | {None}:
+        raise ValueError('Release requires a universal APK and all four architecture APKs.')
 
 
 if __name__ == '__main__':

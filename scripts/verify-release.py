@@ -6,9 +6,12 @@ from pathlib import Path
 import re
 import subprocess
 from release_sdk import resolve_sdk
+from release_publication import validate_certificate
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--allow-ci", action="store_true", help="Permit an explicitly CI-only certificate inside CI")
+parser.add_argument("--apk", type=Path, help="Verify a specific release output")
+parser.add_argument("--pinned-certificate", action="store_true", help="Require the published Deft certificate")
 args = parser.parse_args()
 root = Path(__file__).resolve().parent.parent
 try:
@@ -19,7 +22,7 @@ suffix = ".bat" if os.name == "nt" else ""
 tools = sorted((sdk / "build-tools").glob("*"), key=lambda p: tuple(int(n) for n in p.name.split(".") if n.isdigit()))
 if not tools:
     raise SystemExit("Android build tools are missing.")
-apk = root / "app/build/outputs/apk/release/app-release.apk"
+apk = args.apk or root / "app/build/outputs/apk/release/app-release.apk"
 mapping = root / "app/build/outputs/mapping/release/mapping.txt"
 if not apk.is_file() or not mapping.is_file() or not mapping.stat().st_size:
     raise SystemExit("Signed APK or R8 mapping is missing; run assembleRelease first.")
@@ -60,6 +63,8 @@ a, b, c, d = map(int, version.groups())
 code = a * 1000000 + b * 10000 + c * 100 + d
 if f"name='com.kmab.deft' versionCode='{code}' versionName='{a}.{b}.{c}'" not in manifest:
     raise SystemExit("APK application identity or version differs from Gradle configuration.")
+if args.pinned_certificate:
+    validate_certificate(verified, (root / 'scripts/release-certificate.sha256').read_text().strip())
 if not ci_only:
     previous = Path(setting("storeFile", "DEFT_KEYSTORE_FILE")).parent / "last-verified-version-code"
     if previous.exists() and code < int(previous.read_text().strip()):

@@ -6,7 +6,7 @@
 
 **Rule for every milestone:** it ends with an installable app that is better than the previous milestone's, all tests green, CI green, and the design doc updated if a decision changed (add a row to the design doc's Decision log, §20).
 
-**Completed: M1–M5. Current release: `v0.5.3-2`. Next: M6 statistics and goals.**
+**Completed: M1–M5. Current release: `v0.5.3-3`. Next: M6 statistics and goals.**
 
 **Review history:** M1 merged as `v0.1.2-1`, M2 as `v0.2.5-1`, and M3 after its accepted review and final polish. EPUB/library search, image viewing, launch-last-book and navigation refinements shipped ahead of the original M5 boundary. M4 acceptance and final changes are recorded in its checklist. Dated plans and validation reports remain historical evidence; see the [documentation index](README.md) for current guidance and review records.
 
@@ -16,7 +16,7 @@
 1. Work on `feat/mN-<name>` (fixes: `fix/<topic>`), branched from `main`. Push the branch so CI runs.
 2. When the milestone's acceptance criteria pass, provide a signed, R8-minified release APK using the persistent Deft release key and write `plans/mN-test-checklist.md`: the roadmap acceptance criteria plus anything risky the milestone touched, as tickable device steps, ending with a **"how does it look"** section for every screen or animation the milestone touched (visual feedback happens here, not at separate checkpoints). Version tags build and publish verified APKs through GitHub Actions; local `./gradlew assembleRelease` remains available for development verification. Give the author the release download/path and checklist in chat. A requested pre-merge revision tag is a handover, not merge authorization. Visual feedback updates the visual design doc + preview and is logged in §20.
 3. Merge only after the author explicitly says the checklist passed: `git merge --no-ff` into `main` (merge commit; history is not squashed).
-4. Tag every merge to `main` (§3 of the design): milestone → bump B (M1 = `v0.1.0-1`), fix → bump C, build/CI/packaging-only → bump D. Push the tag; CI publishes a GitHub Release (pre-release while A = 0).
+4. Tag every merge to `main` (§3 of the design): milestone → bump B (M1 = `v0.1.0-1`), fix → bump C, build/CI/packaging-only → bump D. Push the tag; CI publishes a formal GitHub Release with a changelog and APK downloads.
 
 ---
 
