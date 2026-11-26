@@ -35,8 +35,11 @@ jobs:
           else
             python3 scripts/ci-signing.py
           fi
-      - name: Verify and assemble
-        run: ./gradlew check assembleDebug assembleRelease
+      - name: Check and assemble debug
+        run: ./gradlew --max-workers=2 check assembleDebug
+      - name: Assemble release
+        # Isolate R8 from test and lint workers on the hosted runner.
+        run: ./gradlew --max-workers=1 "-Dorg.gradle.jvmargs=-Xmx5g -Dfile.encoding=UTF-8" assembleRelease
       - name: Verify release tooling
         run: python3 -m unittest discover -s scripts/tests -v
       - name: Verify release packaging

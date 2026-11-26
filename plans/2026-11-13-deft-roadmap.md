@@ -6,7 +6,7 @@
 
 **Rule for every milestone:** it ends with an installable app that is better than the previous milestone's, all tests green, CI green, and the design doc updated if a decision changed (add a row to the design doc's Decision log, §20).
 
-**Completed: M1–M5. Current release: `v0.5.3-1`. Next: M6 statistics and goals.**
+**Completed: M1–M5. Current release: `v0.5.3-2`. Next: M6 statistics and goals.**
 
 **Review history:** M1 merged as `v0.1.2-1`, M2 as `v0.2.5-1`, and M3 after its accepted review and final polish. EPUB/library search, image viewing, launch-last-book and navigation refinements shipped ahead of the original M5 boundary. M4 acceptance and final changes are recorded in its checklist. Dated plans and validation reports remain historical evidence; see the [documentation index](README.md) for current guidance and review records.
 
