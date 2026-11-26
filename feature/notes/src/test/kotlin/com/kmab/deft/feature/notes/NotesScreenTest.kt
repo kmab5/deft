@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.lifecycle.SavedStateHandle
 import androidx.room.Room
@@ -57,9 +58,11 @@ class NotesScreenTest {
         val restoration = StateRestorationTester(compose)
         restoration.setContent { DeftTheme { NotesScreen(model, { _, _ -> }) } }
         awaitText("100%_ passage")
-        choose("book", "First book")
-        choose("color", "purple")
-        choose("type", "note")
+        compose.onNodeWithText("filters").performClick()
+        chooseBook("First book")
+        compose.onNodeWithText("purple").performScrollTo().performClick()
+        compose.onNodeWithText("notes").performScrollTo().performClick()
+        compose.onNodeWithText("done").performClick()
         compose.onNode(hasSetTextAction()).performTextReplacement("%_")
         awaitText("100%_ passage")
         compose.onNodeWithText("Other passage").assertDoesNotExist()
@@ -67,10 +70,12 @@ class NotesScreenTest {
         restoration.emulateSavedInstanceStateRestore()
         awaitText("100%_ passage")
         compose.onNodeWithText("%_").assertExists()
-        compose.onNodeWithText("reset filters").performClick()
+        compose.onNodeWithText("clear filters").performClick()
+        compose.onNodeWithText("%_").assertExists()
+        compose.onNodeWithContentDescription("clear search").performClick()
         awaitText("Other passage")
         compose.onNodeWithText("Bookmark label").assertExists()
-        compose.onNodeWithText("reset filters").assertDoesNotExist()
+        compose.onNodeWithText("clear filters").assertDoesNotExist()
     }
 
     @Test fun missingBookEditsPersistAndAvailableBookOpensTheExactLocator() {
@@ -95,7 +100,9 @@ class NotesScreenTest {
         compose.onNodeWithText("Other passage").performClick()
         assertEquals(listOf(second to SECOND_LOCATOR), opened)
 
-        choose("book", "First book")
+        compose.onNodeWithText("filters").performClick()
+        chooseBook("First book")
+        compose.onNodeWithText("done").performClick()
         awaitText("100%_ passage")
         compose.onNodeWithContentDescription("edit annotation").performClick()
         compose.onNode(hasSetTextAction() and hasText("note")).performTextReplacement("Revised note")
@@ -130,6 +137,20 @@ class NotesScreenTest {
         )
     }
 
+    @Test fun bookmarksClearTheIncompatibleColorFilter() {
+        seed()
+        compose.setContent { DeftTheme { NotesScreen(model, { _, _ -> }) } }
+        awaitText("100%_ passage")
+        compose.onNodeWithText("filters").performClick()
+        compose.onNodeWithText("green").performScrollTo().performClick()
+        compose.onNodeWithText("bookmarks").performScrollTo().performClick()
+        compose.onNodeWithText("green").assertDoesNotExist()
+        compose.onNodeWithText("done").performClick()
+        awaitText("Bookmark label")
+        compose.onNodeWithText("filters · 1").assertExists()
+        compose.onNodeWithText("bookmarks").assertExists()
+    }
+
     @Test fun unavailableMarkdownReceiverReportsAnErrorAndDoesNotStartAnExport() {
         val (bookId, _) = seed()
         val notices = DeftNoticeState()
@@ -149,12 +170,11 @@ class NotesScreenTest {
         assertNull(model.share.value)
     }
 
-    private fun choose(
-        chip: String,
-        option: String,
-    ) {
-        compose.onNodeWithText(chip).performClick()
-        compose.onNodeWithText(option).performClick()
+    private fun chooseBook(title: String) {
+        compose.onNodeWithText("all books").performScrollTo().performClick()
+        val search = title.substringBefore(' ')
+        compose.onNode(hasSetTextAction() and hasText("search books")).performTextReplacement(search)
+        compose.onNodeWithText(title).performClick()
     }
 
     private fun awaitText(text: String) {

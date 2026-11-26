@@ -9,24 +9,17 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -39,7 +32,6 @@ import com.kmab.deft.core.designsystem.DeftButton
 import com.kmab.deft.core.designsystem.DeftButtonStyle
 import com.kmab.deft.core.designsystem.DeftMotion
 import com.kmab.deft.core.designsystem.DeftShapes
-import com.kmab.deft.core.designsystem.DeftSheet
 import com.kmab.deft.core.designsystem.DeftTypography
 import com.kmab.deft.core.designsystem.LocalDeftColors
 import com.kmab.deft.core.designsystem.icons.DeftActionIcons
@@ -49,7 +41,6 @@ import com.kmab.deft.library.notes.NoteFilter
 import com.kmab.deft.library.notes.NoteType
 import org.json.JSONException
 import org.json.JSONObject
-import java.util.Locale
 import kotlin.math.roundToInt
 
 private const val PERCENT_SCALE = 100
@@ -137,117 +128,6 @@ private fun EmptyNotes(
     )
 }
 
-private enum class FilterChoice { BOOK, COLOR, TYPE }
-
-@Composable
-private fun NoteFilters(
-    filter: NoteFilter,
-    books: List<NoteEntry>,
-    showBookFilter: Boolean,
-    onFilter: (NoteFilter) -> Unit,
-    onExport: (() -> Unit)?,
-    busy: Boolean,
-) {
-    var selection by rememberSaveable { mutableStateOf<FilterChoice?>(null) }
-    val selectedBook = books.firstOrNull { it.bookId == filter.bookId }
-    val active =
-        filter.query.isNotEmpty() || filter.color != null || filter.type != null ||
-            (showBookFilter && filter.bookId != null)
-    OutlinedTextField(
-        filter.query,
-        { onFilter(filter.copy(query = it)) },
-        Modifier.fillMaxWidth(),
-        label = { Text("search notes") },
-        trailingIcon = {
-            if (filter.query.isNotEmpty()) {
-                IconButton({ onFilter(filter.copy(query = "")) }) {
-                    Icon(DeftActionIcons.Close, "clear search")
-                }
-            }
-        },
-        singleLine = true,
-    )
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (showBookFilter) {
-            NoteFilterChip(
-                selectedBook?.bookTitle ?: "book",
-                filter.bookId != null,
-                { selection = FilterChoice.BOOK },
-            )
-        }
-        NoteFilterChip(filter.color?.label ?: "color", filter.color != null) { selection = FilterChoice.COLOR }
-        NoteFilterChip(filter.type?.label ?: "type", filter.type != null) { selection = FilterChoice.TYPE }
-        if (active) {
-            DeftButton(
-                "reset filters",
-                { onFilter(NoteFilter(bookId = if (showBookFilter) null else filter.bookId)) },
-                style = DeftButtonStyle.Text,
-            )
-        }
-        if (onExport != null) {
-            DeftButton("share Markdown", onExport, style = DeftButtonStyle.Text, enabled = !busy)
-        }
-    }
-    selection?.let { choice ->
-        NoteFilterSheet(choice, books, filter, { selection = null }) {
-            onFilter(it)
-            selection = null
-        }
-    }
-}
-
-@Composable
-private fun NoteFilterChip(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        colors = notesChipColors(),
-    )
-}
-
-@Composable
-private fun NoteFilterSheet(
-    choice: FilterChoice,
-    books: List<NoteEntry>,
-    filter: NoteFilter,
-    onDismiss: () -> Unit,
-    onSelect: (NoteFilter) -> Unit,
-) {
-    val filters =
-        when (choice) {
-            FilterChoice.BOOK ->
-                listOf("all books" to filter.copy(bookId = null)) +
-                    books.map { it.bookTitle to filter.copy(bookId = it.bookId) }
-            FilterChoice.COLOR ->
-                listOf("all colors" to filter.copy(color = null)) +
-                    HighlightColor.entries.map { it.label to filter.copy(color = it) }
-            FilterChoice.TYPE ->
-                listOf("all types" to filter.copy(type = null)) +
-                    NoteType.entries.map { it.label to filter.copy(type = it) }
-        }
-    DeftSheet(onDismiss) {
-        LazyColumn(Modifier.fillMaxWidth()) {
-            item {
-                Text("filter by ${choice.name.lowercase(Locale.ROOT)}", style = DeftTypography.headline)
-            }
-            items(filters) { (label, option) ->
-                FilterChip(
-                    selected = option == filter,
-                    onClick = { onSelect(option) },
-                    label = { Text(label) },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                    colors = notesChipColors(),
-                )
-            }
-        }
-    }
-}
-
 @Composable
 private fun NoteRow(
     entry: NoteEntry,
@@ -314,8 +194,6 @@ private fun NoteRow(
         }
     }
 }
-
-private val NoteType.label: String get() = name.lowercase(Locale.ROOT)
 
 @Composable
 private fun rememberLocation(entry: NoteEntry): String =
