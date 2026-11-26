@@ -12,6 +12,7 @@ import org.readium.r2.navigator.HyperlinkNavigator
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.html.HtmlDecorationTemplate
+import org.readium.r2.navigator.html.toCss
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.util.AbsoluteUrl
@@ -80,11 +81,14 @@ internal class ReaderPagedFactory(
         navigatorConfiguration(session.fonts, theme).apply {
             selectionActionModeCallback = annotations.selectionCallback(callbacks.selected, callbacks.action)
             decorationTemplates[Decoration.Style.Underline::class] =
-                HtmlDecorationTemplate.underline(
-                    defaultTint = android.graphics.Color.GRAY,
-                    lineWeight = 2,
-                    cornerRadius = 0,
-                    alpha = 1.0,
+                HtmlDecorationTemplate(
+                    layout = HtmlDecorationTemplate.Layout.BOXES,
+                    element = { decoration ->
+                        val tint = (decoration.style as Decoration.Style.Underline).tint.toCss()
+                        // Readium themes force borders to the surrounding text color.
+                        val style = "box-sizing:border-box;border:0;border-block-end:2px solid $tint !important;"
+                        """<div style="$style"></div>"""
+                    },
                 )
             decorationTemplates[Decoration.Style.Highlight::class] =
                 HtmlDecorationTemplate.highlight(

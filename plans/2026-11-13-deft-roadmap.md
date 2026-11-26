@@ -6,7 +6,7 @@
 
 **Rule for every milestone:** it ends with an installable app that is better than the previous milestone's, all tests green, CI green, and the design doc updated if a decision changed (add a row to the design doc's Decision log, §20).
 
-**Completed: M1–M4. Current handover: `v0.4.5-1`, including the 0.4.4 category multi-select addition and visible category creation from selected Books. The author authorized integration directly on main. M4's original acceptance remains `v0.4.3-1`; permanent-key CI publication shipped in build 2. In progress: M5 — highlights, notes and search on `feat/m5-notes`.**
+**Completed: M1–M5. Current release: `v0.5.3-1`. Next: M6 statistics and goals.**
 
 **Review history:** M1 merged as `v0.1.2-1`, M2 as `v0.2.5-1`, and M3 after its accepted review and final polish. EPUB/library search, image viewing, launch-last-book and navigation refinements shipped ahead of the original M5 boundary. M4 acceptance and final changes are recorded in its checklist. Dated plans and validation reports remain historical evidence; see the [documentation index](README.md) for current guidance and review records.
 
@@ -45,7 +45,7 @@
 **Acceptance:** scanning a series of EPUBs with `calibre:series` creates one ordered Series category; overriding a category rating and resetting it works; merging two authors combines their books.
 
 ## M5 — Highlights, notes, search
-**Status:** 0.5.2 in device review on `feat/m5-notes`; awaiting device acceptance; [task plan](2026-11-25-m5-notes.md), [device checklist](m5-test-checklist.md). Not merged or accepted.
+**Status:** Accepted and merged at `v0.5.3-1`. See the [task plan](2026-11-25-m5-notes.md) and [device checklist](m5-test-checklist.md).
 **Spec:** §10.1 (selection, search, define), §11, §15 (`Highlight`, `PageNote`).
 **Delivers:** text selection actions (4 highlight colors plus a colorless/no-highlight choice, note, copy, share, define via `ACTION_PROCESS_TEXT`), Readium decorations, integration/refinement of the in-book search already shipped in M2, per-book notes tab, global Notes screen with filters/search, export a book's notes as Markdown.
 **Acceptance:** highlights render on reopen at the same text; selecting text alone creates no persistent highlight. Colorless removes the visible highlight while retaining an explicitly saved note. Deleting the file keeps notes visible on the Notes screen.

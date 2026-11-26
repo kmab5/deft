@@ -9,15 +9,14 @@ The full 1.0 roadmap includes:
 - **Tracker:** accurate reading time, sessions, streaks, goals, per-book/category/author stats, and a year in review.
 - **Portable:** optional edition matching, export to Goodreads/StoryGraph/Hardcover CSV, and local zip backups.
 
-Current version: **0.4.5**, build `v0.4.5-1` ([releases](https://github.com/kmab5/deft/releases)). M1–M4 are merged: EPUB reading/search, folder scanning, automatic reading sessions, states, ratings, favorites, categories with bulk actions, category creation from selected books, series and authors. Scanning other file formats does not yet mean Deft can open them. The signed APK is built and published by GitHub Actions using the persistent release key.
+Current version: **0.5.3**, build `v0.5.3-1` ([releases](https://github.com/kmab5/deft/releases)). M1–M5 are merged: EPUB reading/search, folder scanning, automatic reading sessions, states, ratings, favorites, categories with bulk actions, category creation from selected books, series and authors. Scanning other file formats does not yet mean Deft can open them. The signed APK is built and published by GitHub Actions using the persistent release key.
 
-M5 review build **0.5.2** is on `feat/m5-notes`: persistent EPUB highlights/notes in both reading modes, global and per-book Notes, selection actions and Markdown sharing. It remains unmerged until device acceptance; see [the M5 checklist](plans/m5-test-checklist.md).
+M5 adds persistent EPUB highlights/notes in both reading modes, global and per-book Notes, selection actions and Markdown sharing. See [the M5 checklist](plans/m5-test-checklist.md).
 
 The remaining order is:
 
 | Milestone | Scope | Initial version |
 |---|---|---|
-| M5 | Highlights, notes and search refinements | 0.5.0 |
 | M6 | Statistics, goals, year in review and optional auto-scroll | 0.6.0 |
 | M7 | Edition matching, exports and local backup/restore | 0.7.0 |
 | M8 | PDF, CBZ and DjVu readers | 0.8.0 |

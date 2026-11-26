@@ -14,7 +14,7 @@ Deft is an offline, accountless Android ebook reader with a built-in reading tra
 
 ## Workflow
 
-1. Find the first unfinished milestone in the roadmap and confirm its status against tags merged into `main`. Accepted milestones can finish on patch tags (for example M4 at `v0.4.3-1`); do not require a `v0.B.0-*` tag. The remaining order is M5 notes, M6 stats, M7 data exchange, M8 fixed-layout readers, M9 converters, M10 polish.
+1. Find the first unfinished milestone in the roadmap and confirm its status against tags merged into `main`. Accepted milestones can finish on patch tags (for example M4 at `v0.4.3-1`); do not require a `v0.B.0-*` tag. The remaining order is M6 stats, M7 data exchange, M8 fixed-layout readers, M9 converters, M10 polish.
 2. Branch from `main`: `feat/mN-<name>` (fixes: `fix/<topic>`). There are no pull requests. Push the branch so CI runs on it.
 3. If the milestone has no plan in `plans/` yet, write one with superpowers:writing-plans, using the spec and the roadmap. Commit it on the branch before writing code.
 4. Execute the plan task by task with superpowers:subagent-driven-development. Each change goes red → green → commit (superpowers:test-driven-development). Shape modules with mattpocock-skills:codebase-design.

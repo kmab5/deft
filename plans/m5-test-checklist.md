@@ -4,13 +4,13 @@
 
 Install `deft-0.5.2.apk` over 0.5.1 and check the following in paged and continuous mode.
 
-- [ ] Take a hardware-button screenshot in Books and another in the reader. Check both original filenames in Gallery for `_Deft`.
-- [ ] Hold a word without releasing. Feel the first selection tick, then move each handle across several characters and feel the changes.
-- [ ] Select text near the top, middle and bottom of a scrolled chapter. The floating menu follows the visible selection. Open an installed text-processing app from the menu and verify it receives the final selection.
-- [ ] In a yellow-accent reader theme, choose purple. Check all four colors for visibility in light and dark reading themes. Switch between fill and underline, reopen the book and switch reading modes. Existing highlights keep their fill, and colorless notes stay unmarked.
-- [ ] Mark a multiline passage in continuous mode. Only the selected lines are marked. Scroll away and back, change font size and tap the passage to edit.
-- [ ] Open the reader contents panel. Find highlights and colorless notes in the new tab and jump to their locations. Test an empty book too.
-- [ ] Swipe both ways between Book details and Notes. Check the divider between an excerpt and its attached note, and confirm the exported Markdown labels the note.
+- [X] Take a hardware-button screenshot in Books and another in the reader. Check both original filenames in Gallery for `_Deft`.
+- [X] Hold a word without releasing. Feel the first selection tick, then move each handle across several characters and feel the changes.
+- [X] Select text near the top, middle and bottom of a scrolled chapter. The floating menu follows the visible selection. Open an installed text-processing app from the menu and verify it receives the final selection.
+- [X] In a yellow-accent reader theme, choose purple. Check all four colors for visibility in light and dark reading themes. Switch between fill and underline, reopen the book and switch reading modes. Existing highlights keep their fill, and colorless notes stay unmarked.
+- [X] Mark a multiline passage in continuous mode. Only the selected lines are marked. Scroll away and back, change font size and tap the passage to edit.
+- [X] Open the reader contents panel. Find highlights and colorless notes in the new tab and jump to their locations. Test an empty book too.
+- [X] Swipe both ways between Book details and Notes. Check the divider between an excerpt and its attached note, and confirm the exported Markdown labels the note.
 
 ## 0.5.1 review
 
@@ -41,7 +41,7 @@ remain M8; EPUB is the reader supported by this milestone.
 
 ## Text selection and actions
 
-- [/] Long press text in paged mode, then move both selection handles. The selected
+- [X] Long press text in paged mode, then move both selection handles. The selected
   text and existing haptic feedback are correct. Selection alone creates no entry.
 -- the haptics arent timed right. it should vibrate on long press, not on letting go of the screen. again it should vibrate on every move of the handles (it currently doesnt vibrate at all on movement of handles)
 - [/] Repeat in continuous mode, including text across inline emphasis, links and
@@ -60,7 +60,7 @@ remain M8; EPUB is the reader supported by this milestone.
 
 ## Highlight and note creation
 
-- [/] Save a purple highlight, then green, amber and gray passages. Each uses a
+- [X] Save a purple highlight, then green, amber and gray passages. Each uses a
   soft visible fill and produces one Notes entry. Do this in both reading modes.
 -- the in book purple color is actually yellow (my theme main color), make it purple
 -- the highlighting isnt actually very visible, make the color much bolder
@@ -152,8 +152,8 @@ remain M8; EPUB is the reader supported by this milestone.
 
 ## Acceptance
 
-- [\] M5 accepted; ready to merge the tested version into main.
+- [X] M5 accepted; ready to merge the tested version into main.
 
 Feedback:
 
-- plenty of screenshots, go through them all and fix the issues they show
+- final edit, make this edit and merge onto main and push: the underline highlighting doesnt have color, its just white, make it colored with the selected colored
